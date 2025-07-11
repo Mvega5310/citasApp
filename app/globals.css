@@ -1,0 +1,151 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Optimizaciones para móviles */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Mejorar scrolling en iOS */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95;
+    @apply touch-manipulation;
+    min-height: 44px; /* Tamaño mínimo para touch */
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary-500 hover:bg-secondary-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95;
+    @apply touch-manipulation;
+    min-height: 44px;
+  }
+  
+  .btn-outline {
+    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white font-medium py-3 px-6 rounded-lg transition-all duration-200;
+    @apply touch-manipulation;
+    min-height: 44px;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
+    @apply text-base; /* Evitar zoom en iOS */
+    min-height: 44px;
+  }
+  
+  .gradient-bg {
+    background: linear-gradient(135deg, #fdf2f8 0%, #f0f9ff 100%);
+  }
+  
+  .service-card {
+    @apply card hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer;
+    @apply touch-manipulation;
+  }
+  
+  .calendar-day {
+    @apply w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-primary-100;
+    @apply touch-manipulation;
+    min-height: 44px;
+  }
+  
+  .calendar-day.selected {
+    @apply bg-primary-500 text-white;
+  }
+  
+  .calendar-day.disabled {
+    @apply bg-gray-100 text-gray-400 cursor-not-allowed;
+  }
+  
+  .time-slot {
+    @apply px-4 py-2 border border-gray-300 rounded-lg cursor-pointer transition-all duration-200 hover:bg-primary-50 hover:border-primary-300;
+    @apply touch-manipulation;
+    min-height: 44px;
+  }
+  
+  .time-slot.selected {
+    @apply bg-primary-500 text-white border-primary-500;
+  }
+  
+  .time-slot.disabled {
+    @apply bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200;
+  }
+
+  /* Optimizaciones específicas para móviles */
+  @media (max-width: 640px) {
+    .btn-primary,
+    .btn-secondary,
+    .btn-outline {
+      @apply py-4 px-6 text-lg;
+      min-height: 48px;
+    }
+
+    .input-field {
+      @apply py-4 text-lg;
+      min-height: 48px;
+    }
+
+    .service-card {
+      @apply p-4;
+    }
+
+    .calendar-day {
+      @apply w-12 h-12 text-lg;
+      min-height: 48px;
+    }
+
+    .time-slot {
+      @apply py-3 text-lg;
+      min-height: 48px;
+    }
+  }
+
+  /* Mejorar navegación táctil */
+  .nav-link {
+    @apply touch-manipulation;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Optimizar scroll en móviles */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .mobile-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Mejorar accesibilidad táctil */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    @apply touch-manipulation;
+  }
+} 
