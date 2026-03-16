@@ -1,10 +1,7 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import WebVitalsClient from '@/components/WebVitalsClient';
 import './globals.css';
-
-const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'BeautyTurno - Reserva tu cita de belleza',
@@ -60,7 +57,7 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#ec4899" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
-      <body className={inter.className}>
+      <body>
         {children}
         <WebVitalsClient />
         <Toaster
