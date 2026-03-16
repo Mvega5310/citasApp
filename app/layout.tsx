@@ -1,13 +1,15 @@
-import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { Toaster } from 'react-hot-toast'
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
+import { Toaster } from 'react-hot-toast';
+import WebVitalsClient from '@/components/WebVitalsClient';
+import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'BeautyTurno - Reserva tu cita de belleza',
-  description: 'Reserva tu cita para servicios de manicure, pedicure, blower y barbería en BeautyTurno. Sistema de reservas online fácil y rápido.',
+  description:
+    'Reserva tu cita para servicios de manicure, pedicure, blower y barbería en BeautyTurno. Sistema de reservas online fácil y rápido.',
   keywords: 'beauty, salon, manicure, pedicure, blower, barbería, reservas, citas',
   authors: [{ name: 'BeautyTurno' }],
   manifest: '/manifest.json',
@@ -32,7 +34,7 @@ export const metadata: Metadata = {
     title: 'BeautyTurno - Reservas de Belleza',
     description: 'Reserva tu cita de belleza y barbería de manera fácil y rápida',
   },
-}
+};
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -40,13 +42,13 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: '#ec4899',
-}
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="es">
       <head>
@@ -60,7 +62,8 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         {children}
-        <Toaster 
+        <WebVitalsClient />
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
@@ -86,5 +89,5 @@ export default function RootLayout({
         />
       </body>
     </html>
-  )
-} 
+  );
+}

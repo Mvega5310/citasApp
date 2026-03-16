@@ -1,15 +1,14 @@
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import Link from 'next/link';
+import { ArrowRight, Clock, Sparkles, Star, Users } from 'lucide-react';
+import Footer from '@/components/Footer';
+import Header from '@/components/Header';
 import { services } from '@/lib/services';
-import { Sparkles, Clock, Star, Users, ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      
-      {/* Hero Section */}
+
       <section className="gradient-bg py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <div className="mb-8">
@@ -24,7 +23,7 @@ export default function HomePage() {
               </span>
             </h1>
             <p className="text-lg sm:text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Disfruta de nuestros servicios profesionales de manicure, pedicure, blower y barbería. 
+              Disfruta de nuestros servicios profesionales de manicure, pedicure, blower y barbería.
               Reserva tu cita de manera fácil y rápida, 24/7.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -40,7 +39,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -75,7 +73,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Services Section */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -86,7 +83,7 @@ export default function HomePage() {
               Descubre nuestra amplia gama de servicios de belleza y barbería profesionales
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {services.map((service) => (
               <div key={service.id} className="service-card group">
@@ -101,11 +98,9 @@ export default function HomePage() {
                   <span className="text-xl sm:text-2xl font-bold text-primary-600">
                     ${service.price.toLocaleString()}
                   </span>
-                  <span className="text-sm text-gray-500">
-                    {service.duration} min
-                  </span>
+                  <span className="text-sm text-gray-500">{service.duration} min</span>
                 </div>
-                <Link 
+                <Link
                   href={`/reservar?service=${service.id}`}
                   className="btn-primary w-full group-hover:scale-105 transition-transform duration-200"
                 >
@@ -117,7 +112,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 font-serif">
@@ -136,4 +130,4 @@ export default function HomePage() {
       <Footer />
     </div>
   );
-} 
+}

@@ -1,4 +1,4 @@
-import { Service } from '@/types';
+import type { Service } from '../types/index.ts';
 
 export const services: Service[] = [
   {
@@ -7,7 +7,7 @@ export const services: Service[] = [
     description: 'Manicure completo con esmaltado semipermanente',
     duration: 60,
     price: 25000,
-    icon: '💅'
+    icon: '💅',
   },
   {
     id: 'pedicure',
@@ -15,7 +15,7 @@ export const services: Service[] = [
     description: 'Pedicure completo con esmaltado semipermanente',
     duration: 75,
     price: 30000,
-    icon: '🦶'
+    icon: '🦶',
   },
   {
     id: 'blower',
@@ -23,7 +23,7 @@ export const services: Service[] = [
     description: 'Secado y peinado profesional',
     duration: 45,
     price: 20000,
-    icon: '💇‍♀️'
+    icon: '💇‍♀️',
   },
   {
     id: 'corte-cabello',
@@ -31,7 +31,7 @@ export const services: Service[] = [
     description: 'Corte de cabello profesional para hombres',
     duration: 30,
     price: 12000,
-    icon: '✂️'
+    icon: '✂️',
   },
   {
     id: 'corte-barba',
@@ -39,7 +39,7 @@ export const services: Service[] = [
     description: 'Corte de cabello y barba completo',
     duration: 45,
     price: 15000,
-    icon: '🧔'
+    icon: '🧔',
   },
   {
     id: 'cejas',
@@ -47,7 +47,7 @@ export const services: Service[] = [
     description: 'Diseño y depilación de cejas',
     duration: 20,
     price: 3000,
-    icon: '👁️'
+    icon: '👁️',
   },
   {
     id: 'solo-barba',
@@ -55,12 +55,12 @@ export const services: Service[] = [
     description: 'Arreglo y diseño de barba',
     duration: 25,
     price: 3000,
-    icon: '🪒'
-  }
+    icon: '🪒',
+  },
 ];
 
 export const getServiceById = (id: string): Service | undefined => {
-  return services.find(service => service.id === id);
+  return services.find((service) => service.id === id);
 };
 
 export const getServicePrice = (id: string): number => {
@@ -73,17 +73,56 @@ export const getServiceDuration = (id: string): number => {
   return service?.duration || 0;
 };
 
-// Horarios disponibles
-export const availableHours = [
-  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-  '18:00', '18:30', '19:00', '19:30'
-];
+// Horarios por día de la semana (0=Domingo...6=Sábado)
+export const workingSchedule: Record<number, { start: string; end: string; closed?: boolean }> = {
+  0: { start: '09:00', end: '16:00' },
+  1: { start: '09:00', end: '20:00' },
+  2: { start: '09:00', end: '20:00' },
+  3: { start: '09:00', end: '20:00' },
+  4: { start: '09:00', end: '20:00' },
+  5: { start: '09:00', end: '20:00' },
+  6: { start: '09:00', end: '18:00' },
+};
 
-// Horario de trabajo
-export const workingHours = {
-  start: '09:00',
-  end: '20:00',
-  daysOff: [0, 6] // 0 = domingo, 6 = sábado
-}; 
+const toMinutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const toHHMM = (minutes: number) => {
+  const h = Math.floor(minutes / 60).toString().padStart(2, '0');
+  const m = (minutes % 60).toString().padStart(2, '0');
+  return `${h}:${m}`;
+};
+
+export const getAvailableHoursForDate = (dateStr: string, serviceDuration = 30): string[] => {
+  const date = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return [];
+
+  const rule = workingSchedule[date.getDay()];
+  if (!rule || rule.closed) return [];
+
+  const start = toMinutes(rule.start);
+  const end = toMinutes(rule.end);
+  const slots: string[] = [];
+  const now = new Date();
+  const isSameLocalDay =
+    now.getFullYear() === date.getFullYear() &&
+    now.getMonth() === date.getMonth() &&
+    now.getDate() === date.getDate();
+
+  for (let t = start; t <= end - serviceDuration; t += 30) {
+    if (isSameLocalDay) {
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      if (t <= currentMinutes) continue;
+    }
+    slots.push(toHHMM(t));
+  }
+
+  return slots;
+};
+
+export const isOpenDay = (date: Date): boolean => {
+  const rule = workingSchedule[date.getDay()];
+  return !!(rule && !rule.closed);
+};

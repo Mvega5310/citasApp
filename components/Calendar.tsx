@@ -1,9 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, isPast } from 'date-fns';
+import { useEffect, useState } from 'react';
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  isPast,
+  isSameDay,
+  isSameMonth,
+  isToday,
+  startOfMonth,
+  subMonths,
+} from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { isOpenDay } from '@/lib/services';
 
 interface CalendarProps {
   onDateSelect: (date: string) => void;
@@ -14,32 +26,20 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availableDates, setAvailableDates] = useState<string[]>([]);
 
-  // Generate available dates for the next 30 days
   useEffect(() => {
     const dates: string[] = [];
     const today = new Date();
-    
-    for (let i = 0; i < 30; i++) {
+
+    for (let i = 0; i < 30; i += 1) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      
-      // Skip weekends (0 = Sunday, 6 = Saturday)
-      const dayOfWeek = date.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      if (isOpenDay(date)) {
         dates.push(format(date, 'yyyy-MM-dd'));
       }
     }
-    
+
     setAvailableDates(dates);
   }, []);
-
-  const nextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
-  };
-
-  const prevMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
-  };
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -52,7 +52,7 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
 
   const isDateSelected = (date: Date) => {
     if (!selectedDate) return false;
-    return isSameDay(date, new Date(selectedDate));
+    return isSameDay(date, new Date(`${selectedDate}T00:00:00`));
   };
 
   const handleDateClick = (date: Date) => {
@@ -63,10 +63,9 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
 
   return (
     <div className="max-w-md mx-auto">
-      {/* Calendar Header */}
       <div className="flex items-center justify-between mb-6">
         <button
-          onClick={prevMonth}
+          onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -75,14 +74,13 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
           {format(currentMonth, 'MMMM yyyy', { locale: es })}
         </h2>
         <button
-          onClick={nextMonth}
+          onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Days of Week */}
       <div className="grid grid-cols-7 gap-1 mb-4">
         {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day) => (
           <div key={day} className="text-center text-sm font-medium text-gray-500 py-2">
@@ -91,9 +89,8 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
         ))}
       </div>
 
-      {/* Calendar Days */}
       <div className="grid grid-cols-7 gap-1">
-        {monthDays.map((day, index) => {
+        {monthDays.map((day) => {
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isAvailable = isDateAvailable(day);
           const isSelected = isDateSelected(day);
@@ -102,7 +99,7 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
 
           return (
             <button
-              key={index}
+              key={day.toISOString()}
               onClick={() => handleDateClick(day)}
               disabled={!isAvailable || isPastDate}
               className={`
@@ -120,17 +117,16 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
         })}
       </div>
 
-      {/* Legend */}
       <div className="mt-6 flex items-center justify-center space-x-6 text-sm">
         <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-primary-500 rounded"></div>
+          <div className="w-4 h-4 bg-primary-500 rounded" />
           <span>Disponible</span>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-4 h-4 bg-gray-100 rounded"></div>
+          <div className="w-4 h-4 bg-gray-100 rounded" />
           <span>No disponible</span>
         </div>
       </div>
     </div>
   );
-} 
+}

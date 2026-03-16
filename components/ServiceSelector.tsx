@@ -11,10 +11,12 @@ export default function ServiceSelector({ services, onSelect }: ServiceSelectorP
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {services.map((service) => (
-        <div
+        <button
           key={service.id}
+          type="button"
           onClick={() => onSelect(service)}
-          className="service-card group cursor-pointer"
+          className="service-card group cursor-pointer text-left"
+          aria-label={`Seleccionar servicio ${service.name}`}
         >
           <div className="text-5xl mb-4 text-center">{service.icon}</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2 text-center">
@@ -34,7 +36,7 @@ export default function ServiceSelector({ services, onSelect }: ServiceSelectorP
           <div className="btn-primary w-full text-center group-hover:scale-105 transition-transform duration-200">
             Seleccionar
           </div>
-        </div>
+        </button>
       ))}
     </div>
   );

@@ -1,4 +1,4 @@
-// File: /Users/friendsoft/Documents/Aplicación Reservas/app/reservar/page.tsx
+// File: C:\Users\ACER\OneDrive - uniminuto.edu\Documentos\Repos\citasApp\app\reservar\page.tsx
 import * as entry from '../../../../app/reservar/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
