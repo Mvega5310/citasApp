@@ -5,9 +5,9 @@ import {
   getServiceDuration,
   getServicePrice,
   services,
-} from '../lib/services.ts';
-import { validateBookingPayload } from '../lib/booking.ts';
-import { cleanOptionalText, isValidEmail, isValidPhone, parsePaginationParams } from '../lib/api.ts';
+} from '../lib/shared/services';
+import { validateBookingPayload } from '../lib/server/booking';
+import { cleanOptionalText, isValidEmail, isValidPhone, parsePaginationParams } from '../lib/server/api';
 
 function runTest(name: string, fn: () => void) {
   try {
@@ -47,7 +47,7 @@ runTest('should validate a correct booking payload', () => {
     serviceName: 'Manicure',
     clientName: '  Ana Perez  ',
     clientEmail: 'ANA@example.com',
-    clientWhatsApp: '+57 300 123 4567',
+    clientWhatsApp: '+57 3024075828',
     date: '2026-03-20',
     time: '10:00',
   });
@@ -56,7 +56,7 @@ runTest('should validate a correct booking payload', () => {
   if (result.ok) {
     assert.equal(result.data.clientName, 'Ana Perez');
     assert.equal(result.data.clientEmail, 'ana@example.com');
-    assert.equal(result.data.clientWhatsApp, '+573001234567');
+    assert.equal(result.data.clientWhatsApp, '+573024075828');
   }
 });
 
@@ -66,7 +66,7 @@ runTest('should reject bookings with mismatched service names', () => {
     serviceName: 'Pedicure',
     clientName: 'Ana Perez',
     clientEmail: 'ana@example.com',
-    clientWhatsApp: '+573001234567',
+    clientWhatsApp: '+573024075828',
     date: '2026-03-20',
     time: '10:00',
   });
@@ -77,7 +77,7 @@ runTest('should reject bookings with mismatched service names', () => {
 runTest('should sanitize and validate common API inputs', () => {
   assert.equal(cleanOptionalText('   '), null);
   assert.equal(isValidEmail('ana@example.com'), true);
-  assert.equal(isValidPhone('+573001234567'), true);
+  assert.equal(isValidPhone('+573024075828'), true);
   assert.equal(isValidPhone('123'), false);
 });
 

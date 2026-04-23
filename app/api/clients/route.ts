@@ -6,8 +6,8 @@ import {
   isValidPhone,
   isValidUuid,
   parsePaginationParams,
-} from '@/lib/api';
-import { ensureSchema, getPool } from '@/lib/db';
+} from '@/lib/server/api';
+import { ensureSchema, getPool } from '@/lib/server/db';
 
 export async function POST(request: Request) {
   try {

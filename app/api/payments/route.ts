@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { cleanText, isValidUuid, parsePaginationParams } from '@/lib/api';
-import { ensureSchema, getPool } from '@/lib/db';
+import { cleanText, isValidUuid, parsePaginationParams } from '@/lib/server/api';
+import { ensureSchema, getPool } from '@/lib/server/db';
 
 export async function POST(request: Request) {
   try {

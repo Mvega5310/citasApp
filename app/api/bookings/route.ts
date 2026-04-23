@@ -1,9 +1,44 @@
 import { NextResponse } from 'next/server';
-import { validateBookingPayload } from '@/lib/booking';
-import { ensureSchema, getPool } from '@/lib/db';
-import { sendBookingNotification } from '@/lib/email';
-import { adminDb } from '@/lib/firebaseAdmin';
-import { logger } from '@/lib/logger';
+import { validateBookingPayload } from '@/lib/server/booking';
+import { ensureSchema, getPool } from '@/lib/server/db';
+import { sendBookingNotification } from '@/lib/server/email';
+import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { logger } from '@/lib/server/logger';
+
+async function isSlotTaken(date: string, time: string): Promise<boolean> {
+  // Check Firebase first
+  if (isFirebaseConfigured) {
+    try {
+      const db = adminDb();
+      const snap = await db
+        .collection('appointments')
+        .where('date', '==', date)
+        .where('time', '==', time)
+        .where('status', 'in', ['pending', 'confirmed'])
+        .limit(1)
+        .get();
+      return !snap.empty;
+    } catch {
+      // fall through to Postgres check
+    }
+  }
+
+  // Check PostgreSQL
+  try {
+    const pool = getPool();
+    const result = await pool.query(
+      `SELECT 1 FROM appointments
+       WHERE appointment_date = $1
+         AND appointment_time = $2
+         AND status IN ('pending', 'confirmed')
+       LIMIT 1`,
+      [date, time]
+    );
+    return (result.rowCount ?? 0) > 0;
+  } catch {
+    return false; // if DB unreachable, let the booking through
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -15,48 +50,51 @@ export async function POST(request: Request) {
     }
 
     const booking = validation.data;
+
+    // Slot conflict check
+    const taken = await isSlotTaken(booking.date, booking.time);
+    if (taken) {
+      return NextResponse.json(
+        { error: 'Este horario ya está reservado. Por favor elige otro.' },
+        { status: 409 }
+      );
+    }
+
     let id: string | null = null;
     let persistence: 'firebase' | 'postgres' | null = null;
 
-    try {
-      const db = adminDb();
-      const now = new Date();
-      const doc = await db.collection('appointments').add({
-        ...booking,
-        status: 'pending',
-        source: 'firebase',
-        createdAt: now.toISOString(),
-        updatedAt: now.toISOString(),
-      });
-
-      id = doc.id;
-      persistence = 'firebase';
-    } catch (error) {
-      logger.warn('booking_firebase_persist_failed', {
-        error: error instanceof Error ? error.message : 'unknown',
-      });
+    // Firebase path
+    if (isFirebaseConfigured) {
+      try {
+        const db = adminDb();
+        const now = new Date();
+        const doc = await db.collection('appointments').add({
+          ...booking,
+          status: 'pending',
+          source: 'firebase',
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+        });
+        id = doc.id;
+        persistence = 'firebase';
+      } catch (error) {
+        logger.warn('booking_firebase_persist_failed', {
+          error: error instanceof Error ? error.message : 'unknown',
+        });
+      }
     }
 
+    // PostgreSQL fallback
     if (!id) {
       try {
         await ensureSchema();
         const pool = getPool();
         const result = await pool.query(
-          `
-            INSERT INTO appointments(
-              service_id,
-              service_name,
-              client_name,
-              client_email,
-              client_whatsapp,
-              appointment_date,
-              appointment_time,
-              status,
-              source
-            )
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
-            RETURNING id
-          `,
+          `INSERT INTO appointments(
+            service_id, service_name, client_name, client_email,
+            client_whatsapp, appointment_date, appointment_time, status, source
+          ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          RETURNING id`,
           [
             booking.serviceId,
             booking.serviceName,
@@ -69,7 +107,6 @@ export async function POST(request: Request) {
             'postgres',
           ]
         );
-
         id = result.rows[0]?.id ?? null;
         persistence = 'postgres';
       } catch (error) {
@@ -108,7 +145,6 @@ export async function POST(request: Request) {
     logger.error('booking_route_failed', {
       error: error instanceof Error ? error.message : 'unknown',
     });
-
     return NextResponse.json({ error: 'Error al crear la reserva' }, { status: 500 });
   }
 }

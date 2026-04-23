@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
-import { cleanText, isValidEmail, parsePaginationParams } from '@/lib/api';
-import { ensureSchema, getPool } from '@/lib/db';
+import { cleanText, isValidEmail, parsePaginationParams } from '@/lib/server/api';
+import { ensureSchema, getPool } from '@/lib/server/db';
 
 const allowedRoles = new Set(['admin', 'staff']);
 

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
-import WebVitalsClient from '@/components/WebVitalsClient';
+import WebVitalsClient from '@/components/shared/WebVitalsClient';
 import './globals.css';
 
 export const metadata: Metadata = {
