@@ -16,6 +16,7 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [step, setStep] = useState(1);
+  const [bookedSlots, setBookedSlots] = useState<string[]>([]);
 
   useEffect(() => {
     const serviceId = searchParams.get('service');
@@ -37,10 +38,18 @@ export default function BookingPage() {
     setStep(2);
   };
 
-  const handleDateSelect = (date: string) => {
+  const handleDateSelect = async (date: string) => {
     setSelectedDate(date);
     setSelectedTime('');
+    setBookedSlots([]);
     setStep(3);
+    try {
+      const res = await fetch(`/api/bookings/slots?date=${date}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBookedSlots(data.booked ?? []);
+      }
+    } catch {}
   };
 
   const handleTimeSelect = (time: string) => {
@@ -151,15 +160,25 @@ export default function BookingPage() {
               </h1>
               {timeSlots.length > 0 ? (
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {timeSlots.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => handleTimeSelect(time)}
-                      className={`time-slot text-center py-3 ${selectedTime === time ? 'selected' : ''}`}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                  {timeSlots.map((time) => {
+                    const taken = bookedSlots.includes(time);
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => !taken && handleTimeSelect(time)}
+                        disabled={taken}
+                        className={`time-slot text-center py-3 ${
+                          taken
+                            ? 'opacity-40 cursor-not-allowed line-through'
+                            : selectedTime === time
+                            ? 'selected'
+                            : ''
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-center text-gray-600">

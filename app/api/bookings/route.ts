@@ -6,24 +6,21 @@ import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { logger } from '@/lib/server/logger';
 
 async function isSlotTaken(date: string, time: string): Promise<boolean> {
-  // Check Firebase first
   if (isFirebaseConfigured) {
     try {
       const db = adminDb();
+      // Two equality filters work without composite index; filter status in memory
       const snap = await db
         .collection('appointments')
         .where('date', '==', date)
         .where('time', '==', time)
-        .where('status', 'in', ['pending', 'confirmed'])
-        .limit(1)
         .get();
-      return !snap.empty;
+      return snap.docs.some((d) => ['pending', 'confirmed'].includes(d.data().status));
     } catch {
       // fall through to Postgres check
     }
   }
 
-  // Check PostgreSQL
   try {
     const pool = getPool();
     const result = await pool.query(
@@ -36,7 +33,7 @@ async function isSlotTaken(date: string, time: string): Promise<boolean> {
     );
     return (result.rowCount ?? 0) > 0;
   } catch {
-    return false; // if DB unreachable, let the booking through
+    return false;
   }
 }
 

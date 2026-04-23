@@ -50,7 +50,7 @@ const allServices: ServiceEntry[] = [
     id: 'cejas',
     name: 'Cejas',
     description: 'Diseño y depilación de cejas',
-    duration: 20,
+    duration: 10,
     price: 3000,
     icon: '👁️',
   },

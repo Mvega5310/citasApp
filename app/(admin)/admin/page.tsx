@@ -94,7 +94,7 @@ export default function AdminPage() {
         body: JSON.stringify({ status: editStatus }),
       });
       if (res.ok) {
-        setAppointments((prev) =>
+        setAllAppointments((prev) =>
           prev.map((apt) =>
             apt.id === id ? { ...apt, status: editStatus as Appointment['status'], updatedAt: new Date() } : apt
           )
@@ -112,7 +112,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/admin/appointments/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        setAppointments((prev) => prev.filter((apt) => apt.id !== id));
+        setAllAppointments((prev) => prev.filter((apt) => apt.id !== id));
         setTotal((t) => t - 1);
         toast.success('Cita eliminada');
       } else {
