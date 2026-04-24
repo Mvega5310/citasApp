@@ -75,7 +75,7 @@ export default function AdminSidebar() {
             onClick={onClose}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               isActive(href)
-                ? 'bg-pink-600 text-white'
+                ? 'bg-primary-600 text-white'
                 : 'text-gray-300 hover:bg-gray-700 hover:text-white'
             }`}
           >
@@ -125,7 +125,7 @@ export default function AdminSidebar() {
         onClick={() => setProfileOpen((v) => !v)}
         className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 hover:bg-gray-700 transition-colors group"
       >
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 to-pink-700 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-md">
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-md">
           {initials}
         </div>
         <div className="flex-1 text-left min-w-0">
@@ -147,7 +147,7 @@ export default function AdminSidebar() {
       <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 bg-gray-900 shrink-0 overflow-y-auto">
         {/* Brand */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-700">
-          <div className="w-9 h-9 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shrink-0">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -163,7 +163,7 @@ export default function AdminSidebar() {
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-pink-500 rounded-lg flex items-center justify-center">
+          <div className="w-7 h-7 bg-primary-500 rounded-lg flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
           <span className="text-white font-bold text-sm font-serif">BeautyTurno Admin</span>

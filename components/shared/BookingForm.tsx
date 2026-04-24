@@ -85,7 +85,7 @@ export default function BookingForm({ service, date, time }: BookingFormProps) {
           <h3 className="font-semibold text-gray-900 mb-3">Detalles de tu cita:</h3>
           <div className="space-y-2 text-sm text-gray-600">
             <p><strong>Servicio:</strong> {service.name}</p>
-            <p><strong>Fecha:</strong> {new Date(date).toLocaleDateString('es-ES', {
+            <p><strong>Fecha:</strong> {new Date(date + 'T12:00:00').toLocaleDateString('es-ES', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
@@ -106,7 +106,7 @@ export default function BookingForm({ service, date, time }: BookingFormProps) {
           <h3 className="font-semibold text-gray-900 mb-2">Resumen de tu reserva:</h3>
           <div className="space-y-1 text-sm text-gray-600">
             <p><strong>Servicio:</strong> {service.name}</p>
-            <p><strong>Fecha:</strong> {new Date(date).toLocaleDateString('es-ES', {
+            <p><strong>Fecha:</strong> {new Date(date + 'T12:00:00').toLocaleDateString('es-ES', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',

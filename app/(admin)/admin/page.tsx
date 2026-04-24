@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { Appointment } from '@/types';
 import {
   Calendar,
@@ -130,8 +131,9 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 pb-14 md:pb-0">
       <AdminSidebar />
+      <AdminBottomNav />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -150,7 +152,7 @@ export default function AdminPage() {
             >
               <Bell className="w-5 h-5" />
               {stats.pending > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-pink-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow">
                   {stats.pending > 99 ? '99+' : stats.pending}
                 </span>
               )}
@@ -171,7 +173,7 @@ export default function AdminPage() {
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500 mx-auto" />
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500 mx-auto" />
                 <p className="mt-3 text-gray-500 text-sm">Cargando citas...</p>
               </div>
             </div>
@@ -209,7 +211,7 @@ export default function AdminPage() {
                       onClick={() => setFilterStatus(s)}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
                         filterStatus === s
-                          ? 'bg-pink-500 text-white'
+                          ? 'bg-primary-500 text-white'
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
@@ -221,7 +223,7 @@ export default function AdminPage() {
                       type="date"
                       value={filterDate}
                       onChange={(e) => setFilterDate(e.target.value)}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-400"
                     />
                     {filterDate && (
                       <button onClick={() => setFilterDate('')} className="text-gray-400 hover:text-gray-600">
@@ -250,7 +252,7 @@ export default function AdminPage() {
                     {allAppointments.length > 0 && (filterStatus !== 'all' || filterDate) && (
                       <button
                         onClick={() => { setFilterStatus('all'); setFilterDate(''); }}
-                        className="mt-3 text-xs text-pink-500 hover:underline"
+                        className="mt-3 text-xs text-primary-500 hover:underline"
                       >
                         Limpiar filtros
                       </button>
@@ -277,7 +279,7 @@ export default function AdminPage() {
                                 <select
                                   value={editStatus}
                                   onChange={(e) => setEditStatus(e.target.value)}
-                                  className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                                  className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
                                 >
                                   {Object.entries(STATUS_LABELS).map(([val, label]) => (
                                     <option key={val} value={val}>{label}</option>
@@ -299,7 +301,7 @@ export default function AdminPage() {
 
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 text-sm text-gray-700">
-                              <span className="bg-pink-50 text-pink-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                              <span className="bg-primary-50 text-primary-700 px-2 py-0.5 rounded-md text-xs font-medium">
                                 {apt.serviceName}
                               </span>
                               <span className="flex items-center gap-1 text-xs text-gray-500">
@@ -313,7 +315,7 @@ export default function AdminPage() {
                             <div className="flex gap-3 shrink-0">
                               <button
                                 onClick={() => { setEditingId(apt.id); setEditStatus(apt.status); }}
-                                className="text-blue-500 hover:text-blue-700"
+                                className="text-primary-600 hover:text-primary-800"
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
@@ -370,7 +372,7 @@ export default function AdminPage() {
                                     <select
                                       value={editStatus}
                                       onChange={(e) => setEditStatus(e.target.value)}
-                                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
                                     >
                                       {Object.entries(STATUS_LABELS).map(([val, label]) => (
                                         <option key={val} value={val}>{label}</option>
@@ -394,7 +396,7 @@ export default function AdminPage() {
                                   <button
                                     onClick={() => { setEditingId(apt.id); setEditStatus(apt.status); }}
                                     title="Editar estado"
-                                    className="text-blue-500 hover:text-blue-700 transition-colors"
+                                    className="text-primary-600 hover:text-primary-800 transition-colors"
                                   >
                                     <Edit className="w-4 h-4" />
                                   </button>
