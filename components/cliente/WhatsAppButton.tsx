@@ -1,6 +1,6 @@
 'use client';
 
-export default function WhatsAppButton({ phone = '573001234567' }: { phone?: string }) {
+export default function WhatsAppButton({ phone = '573024075828' }: { phone?: string }) {
   return (
     <a
       href={`https://wa.me/${phone}?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20informaci%C3%B3n%20sobre%20sus%20servicios.`}

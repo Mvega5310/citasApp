@@ -1,24 +1,25 @@
 import nodemailer from 'nodemailer';
 
-const from = process.env.EMAIL_FROM || process.env.EMAIL_SERVER_USER || 'no-reply@beautyturno.com';
-const toDefault = process.env.EMAIL_TO_DEFAULT || '';
+function getTransporter() {
+  const host = process.env.EMAIL_SERVER_HOST;
+  const user = process.env.EMAIL_SERVER_USER;
+  const pass = process.env.EMAIL_SERVER_PASSWORD;
+  if (!host || !user || !pass) return null;
+  return nodemailer.createTransport({
+    host,
+    port: Number(process.env.EMAIL_SERVER_PORT || 587),
+    secure: false,
+    auth: { user, pass },
+  });
+}
 
-const hasConfig =
-  !!process.env.EMAIL_SERVER_HOST &&
-  !!process.env.EMAIL_SERVER_USER &&
-  !!process.env.EMAIL_SERVER_PASSWORD;
+function getSender() {
+  return process.env.EMAIL_FROM || process.env.EMAIL_SERVER_USER || 'no-reply@beautyturno.com';
+}
 
-const transporter = hasConfig
-  ? nodemailer.createTransport({
-      host: process.env.EMAIL_SERVER_HOST,
-      port: Number(process.env.EMAIL_SERVER_PORT || 587),
-      secure: false,
-      auth: {
-        user: process.env.EMAIL_SERVER_USER,
-        pass: process.env.EMAIL_SERVER_PASSWORD,
-      },
-    })
-  : null;
+function getToDefault() {
+  return process.env.EMAIL_TO_DEFAULT || '';
+}
 
 const baseStyle = `
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -231,6 +232,10 @@ export async function sendBookingNotification(payload: {
   date: string;
   time: string;
 }): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
+  const transporter = getTransporter();
+  const from = getSender();
+  const toDefault = getToDefault();
+
   if (!transporter) {
     return { sentToDefault: false, sentToClient: false };
   }
@@ -320,6 +325,8 @@ export async function sendAdminInvitation(payload: {
   role: string;
   setupLink: string;
 }): Promise<boolean> {
+  const transporter = getTransporter();
+  const from = getSender();
   if (!transporter) return false;
   try {
     await transporter.sendMail({
@@ -341,6 +348,9 @@ export async function sendContactMessage(payload: {
   subject: string;
   message: string;
 }): Promise<boolean> {
+  const transporter = getTransporter();
+  const from = getSender();
+  const toDefault = getToDefault();
   if (!transporter || !toDefault) return false;
 
   try {
