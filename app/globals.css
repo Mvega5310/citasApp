@@ -10,142 +10,139 @@
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
   }
-  
+
   body {
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background-color: #F5F1E8;
+    color: #3A4333;
   }
 
-  /* Optimizaciones para móviles */
   * {
     -webkit-tap-highlight-color: transparent;
-  }
-
-  /* Mejorar scrolling en iOS */
-  .smooth-scroll {
-    -webkit-overflow-scrolling: touch;
   }
 }
 
 @layer components {
+
+  /* ── Botones ── */
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95;
-    @apply touch-manipulation;
-    min-height: 44px; /* Tamaño mínimo para touch */
-  }
-  
-  .btn-secondary {
-    @apply bg-secondary-500 hover:bg-secondary-600 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:scale-95;
-    @apply touch-manipulation;
+    @apply relative overflow-hidden font-semibold py-3 px-6 rounded-xl
+           text-white transition-all duration-300 shadow-warm
+           hover:shadow-soft-lg active:scale-95 touch-manipulation;
+    background: linear-gradient(135deg, #A3B290 0%, #8A9A7B 60%, #728162 100%);
     min-height: 44px;
   }
-  
-  .btn-outline {
-    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white font-medium py-3 px-6 rounded-lg transition-all duration-200;
-    @apply touch-manipulation;
-    min-height: 44px;
-  }
-  
-  .card {
-    @apply bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100;
-  }
-  
-  .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
-    @apply text-base; /* Evitar zoom en iOS */
-    min-height: 44px;
-  }
-  
-  .gradient-bg {
-    background: linear-gradient(135deg, #fdf2f8 0%, #f0f9ff 100%);
-  }
-  
-  .service-card {
-    @apply card hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer;
-    @apply touch-manipulation;
-  }
-  
-  .calendar-day {
-    @apply w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer transition-all duration-200 hover:bg-primary-100;
-    @apply touch-manipulation;
-    min-height: 44px;
-  }
-  
-  .calendar-day.selected {
-    @apply bg-primary-500 text-white;
-  }
-  
-  .calendar-day.disabled {
-    @apply bg-gray-100 text-gray-400 cursor-not-allowed;
-  }
-  
-  .time-slot {
-    @apply px-4 py-2 border border-gray-300 rounded-lg cursor-pointer transition-all duration-200 hover:bg-primary-50 hover:border-primary-300;
-    @apply touch-manipulation;
-    min-height: 44px;
-  }
-  
-  .time-slot.selected {
-    @apply bg-primary-500 text-white border-primary-500;
-  }
-  
-  .time-slot.disabled {
-    @apply bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200;
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #8A9A7B 0%, #728162 100%);
+    transform: translateY(-1px);
   }
 
-  /* Optimizaciones específicas para móviles */
+  .btn-secondary {
+    @apply relative overflow-hidden font-semibold py-3 px-6 rounded-xl
+           text-white transition-all duration-300 shadow-warm
+           hover:shadow-soft-lg active:scale-95 touch-manipulation;
+    background: linear-gradient(135deg, #F0C39A 0%, #E8A87C 60%, #DF9060 100%);
+    min-height: 44px;
+  }
+  .btn-secondary:hover {
+    background: linear-gradient(135deg, #E8A87C 0%, #CC7848 100%);
+    transform: translateY(-1px);
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary-400 text-primary-700 font-semibold py-3 px-6
+           rounded-xl transition-all duration-300 hover:bg-primary-50
+           hover:border-primary-500 active:scale-95 touch-manipulation;
+    min-height: 44px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    @apply bg-white/80 backdrop-blur-sm rounded-2xl border border-white/60
+           shadow-soft p-4 sm:p-6;
+  }
+
+  .glass-card {
+    @apply rounded-2xl border border-white/40 shadow-soft p-4 sm:p-6;
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .service-card {
+    @apply bg-white/80 backdrop-blur-sm rounded-2xl border border-primary-100
+           shadow-soft hover:shadow-soft-lg transition-all duration-300
+           hover:-translate-y-1 cursor-pointer p-4 sm:p-6 touch-manipulation;
+  }
+
+  /* ── Inputs ── */
+  .input-field {
+    @apply w-full px-4 py-3 border border-primary-200 rounded-xl bg-white/70
+           focus:ring-2 focus:ring-primary-300 focus:border-primary-400
+           focus:bg-white transition-all duration-200 text-base text-primary-900
+           placeholder-primary-400;
+    min-height: 44px;
+  }
+
+  /* ── Fondos degradados ── */
+  .gradient-bg {
+    background: linear-gradient(160deg, #F5F1E8 0%, #E7EDE0 50%, #CFDDC0 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(160deg,
+      #F5F1E8 0%,
+      rgba(207, 221, 192, 0.6) 45%,
+      rgba(184, 197, 166, 0.4) 100%);
+  }
+
+  /* ── Calendario ── */
+  .calendar-day {
+    @apply w-10 h-10 flex items-center justify-center rounded-xl cursor-pointer
+           transition-all duration-200 hover:bg-primary-100 touch-manipulation
+           text-primary-800 font-medium;
+    min-height: 44px;
+  }
+  .calendar-day.selected {
+    background: linear-gradient(135deg, #A3B290, #8A9A7B);
+    @apply text-white shadow-warm;
+  }
+  .calendar-day.disabled {
+    @apply bg-gray-100 text-gray-300 cursor-not-allowed;
+  }
+
+  /* ── Horarios ── */
+  .time-slot {
+    @apply px-4 py-2 border border-primary-200 rounded-xl cursor-pointer
+           transition-all duration-200 hover:bg-primary-50
+           hover:border-primary-400 text-primary-800 font-medium
+           touch-manipulation bg-white/70;
+    min-height: 44px;
+  }
+  .time-slot.selected {
+    background: linear-gradient(135deg, #A3B290, #8A9A7B);
+    @apply text-white border-primary-500 shadow-warm;
+  }
+  .time-slot.disabled {
+    @apply bg-gray-50 text-gray-300 cursor-not-allowed border-gray-100;
+  }
+
+  /* ── Mobile ── */
   @media (max-width: 640px) {
     .btn-primary,
     .btn-secondary,
-    .btn-outline {
-      @apply py-4 px-6 text-lg;
-      min-height: 48px;
-    }
-
-    .input-field {
-      @apply py-4 text-lg;
-      min-height: 48px;
-    }
-
-    .service-card {
-      @apply p-4;
-    }
-
-    .calendar-day {
-      @apply w-12 h-12 text-lg;
-      min-height: 48px;
-    }
-
-    .time-slot {
-      @apply py-3 text-lg;
-      min-height: 48px;
-    }
+    .btn-outline { @apply py-4 px-6 text-base; min-height: 48px; }
+    .input-field  { @apply py-4 text-base; min-height: 48px; }
+    .service-card { @apply p-4; }
+    .calendar-day { @apply w-12 h-12; min-height: 48px; }
+    .time-slot    { @apply py-3; min-height: 48px; }
   }
 
-  /* Mejorar navegación táctil */
-  .nav-link {
-    @apply touch-manipulation;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Optimizar scroll en móviles */
-  .mobile-scroll {
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .mobile-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Mejorar accesibilidad táctil */
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-    @apply touch-manipulation;
-  }
-} 
+  .smooth-scroll     { -webkit-overflow-scrolling: touch; }
+  .mobile-scroll     { -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+  .mobile-scroll::-webkit-scrollbar { display: none; }
+  .nav-link          { @apply touch-manipulation; min-height: 44px; display: flex; align-items: center; }
+  .touch-target      { min-height: 44px; min-width: 44px; @apply touch-manipulation; }
+}

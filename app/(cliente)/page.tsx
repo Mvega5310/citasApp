@@ -45,11 +45,11 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative overflow-hidden gradient-bg py-20 sm:py-28 px-4 sm:px-6 lg:px-8">
         {/* Decorative blobs */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-pink-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-100/40 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+        <div className="absolute top-0 right-0 w-72 h-72 bg-primary-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary-200/30 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/70 backdrop-blur-sm rounded-full border border-pink-100 text-pink-700 text-sm font-medium mb-6 shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/70 backdrop-blur-sm rounded-full border border-primary-200 text-primary-700 text-sm font-medium mb-6 shadow-sm">
             <Sparkles className="w-4 h-4" />
             Belleza y barbería profesional
           </div>
@@ -95,8 +95,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors">
-              <div className="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center mb-4">
-                <Clock className="w-7 h-7 text-pink-600" />
+              <div className="w-14 h-14 bg-primary-100 rounded-2xl flex items-center justify-center mb-4">
+                <Clock className="w-7 h-7 text-primary-600" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Reserva 24/7</h3>
               <p className="text-gray-500 text-sm leading-relaxed">
@@ -104,8 +104,8 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors">
-              <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mb-4">
-                <Star className="w-7 h-7 text-purple-600" />
+              <div className="w-14 h-14 bg-secondary-100 rounded-2xl flex items-center justify-center mb-4">
+                <Star className="w-7 h-7 text-secondary-500" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Calidad premium</h3>
               <p className="text-gray-500 text-sm leading-relaxed">
@@ -113,8 +113,8 @@ export default function HomePage() {
               </p>
             </div>
             <div className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors">
-              <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-4">
-                <Users className="w-7 h-7 text-blue-600" />
+              <div className="w-14 h-14 bg-accent-100 rounded-2xl flex items-center justify-center mb-4">
+                <Users className="w-7 h-7 text-accent-600" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">Atención personalizada</h3>
               <p className="text-gray-500 text-sm leading-relaxed">
@@ -195,7 +195,7 @@ export default function HomePage() {
                 </div>
                 <p className="text-gray-600 text-sm leading-relaxed flex-1">&ldquo;{t.text}&rdquo;</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
                     {t.initials}
                   </div>
                   <div>
@@ -210,7 +210,7 @@ export default function HomePage() {
       </section>
 
       {/* Guarantees strip */}
-      <section className="py-10 px-4 sm:px-6 lg:px-8 bg-pink-50">
+      <section className="py-10 px-4 sm:px-6 lg:px-8 bg-primary-50">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
             {[
@@ -218,7 +218,7 @@ export default function HomePage() {
               { icon: Shield, label: 'Sin cargos por cancelación' },
               { icon: Star, label: 'Satisfacción garantizada' },
             ].map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center justify-center gap-2 text-pink-700">
+              <div key={label} className="flex items-center justify-center gap-2 text-primary-700">
                 <Icon className="w-5 h-5 shrink-0" />
                 <span className="text-sm font-medium">{label}</span>
               </div>
