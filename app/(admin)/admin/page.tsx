@@ -257,88 +257,162 @@ export default function AdminPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-50">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {['Cliente', 'Servicio', 'Fecha y Hora', 'Estado', 'Acciones'].map((h) => (
-                            <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                              {h}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {appointments.map((apt) => (
-                          <tr key={apt.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-5 py-4">
-                              <p className="text-sm font-semibold text-gray-900">{apt.clientName}</p>
+                  <>
+                    {/* Mobile cards */}
+                    <div className="md:hidden divide-y divide-gray-100">
+                      {appointments.map((apt) => (
+                        <div key={apt.id} className="p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="font-semibold text-gray-900">{apt.clientName}</p>
                               <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                                <Mail className="w-3 h-3" /> {apt.clientEmail}
+                                <Mail className="w-3 h-3 shrink-0" /> {apt.clientEmail}
                               </p>
                               <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                                <Phone className="w-3 h-3" /> {apt.clientWhatsApp}
+                                <Phone className="w-3 h-3 shrink-0" /> {apt.clientWhatsApp}
                               </p>
-                            </td>
-                            <td className="px-5 py-4">
-                              <span className="text-sm text-gray-800">{apt.serviceName}</span>
-                            </td>
-                            <td className="px-5 py-4">
-                              <p className="text-sm text-gray-800">
+                            </div>
+                            {editingId === apt.id ? (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <select
+                                  value={editStatus}
+                                  onChange={(e) => setEditStatus(e.target.value)}
+                                  className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                                >
+                                  {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                                    <option key={val} value={val}>{label}</option>
+                                  ))}
+                                </select>
+                                <button onClick={() => handleStatusSave(apt.id)} className="text-green-600">
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => setEditingId(null)} className="text-gray-400">
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <span className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status] ?? 'bg-gray-100 text-gray-800'}`}>
+                                {STATUS_LABELS[apt.status] ?? apt.status}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-sm text-gray-700">
+                              <span className="bg-pink-50 text-pink-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                                {apt.serviceName}
+                              </span>
+                              <span className="flex items-center gap-1 text-xs text-gray-500">
+                                <Calendar className="w-3 h-3" />
                                 {new Date(
                                   typeof apt.date === 'string' ? apt.date + 'T12:00:00' : apt.date
                                 ).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-0.5">{apt.time}</p>
-                            </td>
-                            <td className="px-5 py-4">
-                              {editingId === apt.id ? (
-                                <div className="flex items-center gap-2">
-                                  <select
-                                    value={editStatus}
-                                    onChange={(e) => setEditStatus(e.target.value)}
-                                    className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                                {' · '}{apt.time}
+                              </span>
+                            </div>
+                            <div className="flex gap-3 shrink-0">
+                              <button
+                                onClick={() => { setEditingId(apt.id); setEditStatus(apt.status); }}
+                                className="text-blue-500 hover:text-blue-700"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(apt.id, apt.clientName)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-50">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {['Cliente', 'Servicio', 'Fecha y Hora', 'Estado', 'Acciones'].map((h) => (
+                              <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                {h}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {appointments.map((apt) => (
+                            <tr key={apt.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-5 py-4">
+                                <p className="text-sm font-semibold text-gray-900">{apt.clientName}</p>
+                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                  <Mail className="w-3 h-3" /> {apt.clientEmail}
+                                </p>
+                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                  <Phone className="w-3 h-3" /> {apt.clientWhatsApp}
+                                </p>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className="text-sm text-gray-800">{apt.serviceName}</span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <p className="text-sm text-gray-800">
+                                  {new Date(
+                                    typeof apt.date === 'string' ? apt.date + 'T12:00:00' : apt.date
+                                  ).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-0.5">{apt.time}</p>
+                              </td>
+                              <td className="px-5 py-4">
+                                {editingId === apt.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <select
+                                      value={editStatus}
+                                      onChange={(e) => setEditStatus(e.target.value)}
+                                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                                    >
+                                      {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                                        <option key={val} value={val}>{label}</option>
+                                      ))}
+                                    </select>
+                                    <button onClick={() => handleStatusSave(apt.id)} className="text-green-600 hover:text-green-800">
+                                      <CheckCircle className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status] ?? 'bg-gray-100 text-gray-800'}`}>
+                                    {STATUS_LABELS[apt.status] ?? apt.status}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-5 py-4">
+                                <div className="flex gap-3">
+                                  <button
+                                    onClick={() => { setEditingId(apt.id); setEditStatus(apt.status); }}
+                                    title="Editar estado"
+                                    className="text-blue-500 hover:text-blue-700 transition-colors"
                                   >
-                                    {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                                      <option key={val} value={val}>{label}</option>
-                                    ))}
-                                  </select>
-                                  <button onClick={() => handleStatusSave(apt.id)} className="text-green-600 hover:text-green-800">
-                                    <CheckCircle className="w-4 h-4" />
+                                    <Edit className="w-4 h-4" />
                                   </button>
-                                  <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
-                                    <X className="w-4 h-4" />
+                                  <button
+                                    onClick={() => handleDelete(apt.id, apt.clientName)}
+                                    title="Eliminar cita"
+                                    className="text-red-500 hover:text-red-700 transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
                                   </button>
                                 </div>
-                              ) : (
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status] ?? 'bg-gray-100 text-gray-800'}`}>
-                                  {STATUS_LABELS[apt.status] ?? apt.status}
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-5 py-4">
-                              <div className="flex gap-3">
-                                <button
-                                  onClick={() => { setEditingId(apt.id); setEditStatus(apt.status); }}
-                                  title="Editar estado"
-                                  className="text-blue-500 hover:text-blue-700 transition-colors"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(apt.id, apt.clientName)}
-                                  title="Eliminar cita"
-                                  className="text-red-500 hover:text-red-700 transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </div>
             </>
