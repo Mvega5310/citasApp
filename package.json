@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --experimental-specifier-resolution=node tests/run-tests.ts"
+    "test": "tsx tests/run-tests.ts"
   },
   "dependencies": {
     "@types/node": "^20",
@@ -42,6 +42,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
     "jsdom": "^22.1.0",
+    "tsx": "^4.21.0",
     "vitest": "^1.5.0"
   },
   "engines": {

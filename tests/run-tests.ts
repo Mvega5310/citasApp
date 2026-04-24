@@ -43,8 +43,8 @@ runTest('should trim late slots when the service no longer fits in the schedule'
 
 runTest('should validate a correct booking payload', () => {
   const result = validateBookingPayload({
-    serviceId: 'manicure',
-    serviceName: 'Manicure',
+    serviceId: 'corte-cabello',
+    serviceName: 'Corte de Cabello',
     clientName: '  Ana Perez  ',
     clientEmail: 'ANA@example.com',
     clientWhatsApp: '+57 3024075828',
@@ -62,7 +62,7 @@ runTest('should validate a correct booking payload', () => {
 
 runTest('should reject bookings with mismatched service names', () => {
   const result = validateBookingPayload({
-    serviceId: 'manicure',
+    serviceId: 'corte-cabello',
     serviceName: 'Pedicure',
     clientName: 'Ana Perez',
     clientEmail: 'ana@example.com',
