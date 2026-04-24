@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
+import { getSessionUser } from '@/lib/server/session';
+
+export const dynamic = 'force-dynamic';
 
 const VALID_STATUSES = ['pending', 'confirmed', 'completed', 'cancelled'] as const;
 type AppointmentStatus = (typeof VALID_STATUSES)[number];
@@ -10,6 +13,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getSessionUser(request);
+  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
   const { id } = params;
   let body: { status?: string };
 

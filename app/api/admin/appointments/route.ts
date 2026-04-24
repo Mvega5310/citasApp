@@ -3,6 +3,8 @@ import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   // Firebase path — fetch all, sort client-side (avoids composite index requirement)
   if (isFirebaseConfigured) {
