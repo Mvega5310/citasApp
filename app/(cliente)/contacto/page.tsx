@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import Header from '@/components/cliente/Header';
 import Footer from '@/components/cliente/Footer';
+import BottomNav from '@/components/cliente/BottomNav';
 import { Mail, Phone, MapPin, Clock, MessageCircle, Send, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -49,7 +50,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-16 md:pb-0">
       <Header />
 
       {/* Hero */}
@@ -327,6 +328,7 @@ export default function ContactPage() {
       </section>
 
       <Footer />
+      <BottomNav />
     </div>
   );
 }

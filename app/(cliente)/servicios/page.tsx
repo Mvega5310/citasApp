@@ -1,13 +1,14 @@
 import Header from '@/components/cliente/Header';
 import Footer from '@/components/cliente/Footer';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
+import BottomNav from '@/components/cliente/BottomNav';
 import Link from 'next/link';
 import { services } from '@/lib/shared/services';
 import { Clock, Star, Shield, Heart } from 'lucide-react';
 
 export default function ServicesPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-16 md:pb-0">
       <Header />
       
       {/* Hero Section */}
@@ -26,33 +27,47 @@ export default function ServicesPage() {
       {/* Services Grid */}
       <section className="py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Mobile: horizontal cards / Desktop: grid */}
+          <div className="flex flex-col gap-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-8">
             {services.map((service) => (
               <div key={service.id} className="service-card group">
-                <div className="text-6xl mb-6 text-center">{service.icon}</div>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-3 text-center">
-                  {service.name}
-                </h3>
-                <p className="text-gray-600 mb-6 text-center leading-relaxed">
-                  {service.description}
-                </p>
-                
-                <div className="space-y-3 mb-6">
+                {/* Mobile layout: horizontal */}
+                <div className="flex md:flex-col items-center gap-4">
+                  <div className="text-5xl md:text-6xl md:mb-6 md:text-center shrink-0">{service.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg md:text-2xl font-semibold text-gray-900 md:mb-3 md:text-center">
+                      {service.name}
+                    </h3>
+                    <p className="text-sm text-gray-600 md:mb-6 md:text-center leading-relaxed hidden md:block">
+                      {service.description}
+                    </p>
+                    <div className="flex items-center gap-3 mt-1 md:hidden">
+                      <span className="text-xs text-gray-500">{service.duration} min</span>
+                      <span className="text-primary-600 font-bold">${service.price.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <Link
+                    href={`/reservar?service=${service.id}`}
+                    className="md:hidden shrink-0 px-4 py-2 bg-primary-500 text-white text-sm font-semibold rounded-lg"
+                  >
+                    Reservar
+                  </Link>
+                </div>
+
+                {/* Desktop extras */}
+                <div className="hidden md:block space-y-3 mb-6 mt-2">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Duración:</span>
                     <span className="font-medium">{service.duration} minutos</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Precio:</span>
-                    <span className="text-2xl font-bold text-primary-600">
-                      ${service.price.toLocaleString()}
-                    </span>
+                    <span className="text-2xl font-bold text-primary-600">${service.price.toLocaleString()}</span>
                   </div>
                 </div>
-
-                <Link 
+                <Link
                   href={`/reservar?service=${service.id}`}
-                  className="btn-primary w-full text-center group-hover:scale-105 transition-transform duration-200"
+                  className="hidden md:block btn-primary w-full text-center group-hover:scale-105 transition-transform duration-200"
                 >
                   Reservar Ahora
                 </Link>
@@ -135,6 +150,7 @@ export default function ServicesPage() {
 
       <Footer />
       <WhatsAppButton />
+      <BottomNav />
     </div>
   );
 }

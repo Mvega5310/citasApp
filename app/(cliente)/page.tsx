@@ -3,6 +3,7 @@ import { ArrowRight, Clock, Sparkles, Star, Users, Shield, CheckCircle } from 'l
 import Footer from '@/components/cliente/Footer';
 import Header from '@/components/cliente/Header';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
+import BottomNav from '@/components/cliente/BottomNav';
 import { services } from '@/lib/shared/services';
 
 const stats = [
@@ -38,7 +39,7 @@ const testimonials = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pb-16 md:pb-0">
       <Header />
 
       {/* Hero */}
@@ -244,6 +245,7 @@ export default function HomePage() {
 
       <Footer />
       <WhatsAppButton />
+      <BottomNav />
     </div>
   );
 }
