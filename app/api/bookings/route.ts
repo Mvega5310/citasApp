@@ -69,6 +69,8 @@ export async function POST(request: Request) {
           ...booking,
           status: 'pending',
           source: 'firebase',
+          habeasDataAccepted: booking.habeasDataAccepted,
+          notificationsAccepted: booking.notificationsAccepted,
           createdAt: now.toISOString(),
           updatedAt: now.toISOString(),
         });
@@ -89,8 +91,8 @@ export async function POST(request: Request) {
         const result = await pool.query(
           `INSERT INTO appointments(
             service_id, service_name, client_name, client_email,
-            client_whatsapp, appointment_date, appointment_time, status, source
-          ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+            client_whatsapp, appointment_date, appointment_time, status, source, metadata
+          ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
           RETURNING id`,
           [
             booking.serviceId,
@@ -102,6 +104,10 @@ export async function POST(request: Request) {
             booking.time,
             'pending',
             'postgres',
+            JSON.stringify({
+              habeasDataAccepted: booking.habeasDataAccepted,
+              notificationsAccepted: booking.notificationsAccepted,
+            }),
           ]
         );
         id = result.rows[0]?.id ?? null;

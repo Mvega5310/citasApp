@@ -215,7 +215,13 @@ export default function BookingPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-4 font-serif text-center">
                 Completa tus datos
               </h1>
-              <BookingForm service={selectedService} date={selectedDate} time={selectedTime} />
+              <BookingForm
+                service={selectedService}
+                date={selectedDate}
+                time={selectedTime}
+                availableSlots={timeSlots}
+                bookedSlots={bookedSlots}
+              />
             </div>
           )}
         </div>
