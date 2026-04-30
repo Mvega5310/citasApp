@@ -8,6 +8,8 @@ export type NormalizedBookingPayload = {
   clientWhatsApp: string;
   date: string;
   time: string;
+  habeasDataAccepted: boolean;
+  notificationsAccepted: boolean;
 };
 
 type ValidationResult =
@@ -30,6 +32,8 @@ export function normalizeBookingPayload(payload: Partial<NormalizedBookingPayloa
     clientWhatsApp: cleanText(payload.clientWhatsApp).replace(/[^\d+]/g, ''),
     date: cleanText(payload.date),
     time: cleanText(payload.time),
+    habeasDataAccepted: payload.habeasDataAccepted === true,
+    notificationsAccepted: payload.notificationsAccepted === true,
   };
 }
 
@@ -38,6 +42,10 @@ export function validateBookingPayload(payload: Partial<NormalizedBookingPayload
 
   if (!data.serviceId || !data.serviceName || !data.clientName || !data.clientEmail || !data.clientWhatsApp || !data.date || !data.time) {
     return { ok: false, error: 'Todos los campos de la reserva son obligatorios.' };
+  }
+
+  if (!data.habeasDataAccepted) {
+    return { ok: false, error: 'Debes aceptar la política de tratamiento de datos personales (Ley 1581 de 2012).' };
   }
 
   const service = getServiceById(data.serviceId);

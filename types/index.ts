@@ -42,6 +42,8 @@ export interface BookingFormData {
   clientWhatsApp: string;
   date: string;
   time: string;
+  acceptsDataPolicy: boolean;
+  acceptsNotifications: boolean;
 }
 
 export interface AdminUser {
