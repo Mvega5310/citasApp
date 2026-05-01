@@ -1,4 +1,21 @@
-import { getAvailableHoursForDate, getServiceById } from '../shared/services';
+import { getServiceById, workingSchedule } from '../shared/services';
+
+const toMin = (hhmm: string) => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return h * 60 + m;
+};
+
+function isValidScheduleSlot(dateStr: string, time: string, duration: number): boolean {
+  const d = new Date(`${dateStr}T00:00:00`);
+  const rule = workingSchedule[d.getDay()];
+  if (!rule || rule.closed) return false;
+  const slotMin = toMin(time);
+  const startMin = toMin(rule.start);
+  const endMin = toMin(rule.end);
+  if (slotMin < startMin || slotMin + duration > endMin) return false;
+  if ((slotMin - startMin) % 30 !== 0) return false;
+  return true;
+}
 
 export type NormalizedBookingPayload = {
   serviceId: string;
@@ -77,9 +94,8 @@ export function validateBookingPayload(payload: Partial<NormalizedBookingPayload
     return { ok: false, error: 'La hora seleccionada no es válida.' };
   }
 
-  const availableHours = getAvailableHoursForDate(data.date, service.duration);
-  if (!availableHours.includes(data.time)) {
-    return { ok: false, error: 'La hora elegida ya no está disponible para este servicio.' };
+  if (!isValidScheduleSlot(data.date, data.time, service.duration)) {
+    return { ok: false, error: 'La hora elegida está fuera del horario de atención.' };
   }
 
   return { ok: true, data };
