@@ -137,8 +137,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
-  // Target = Colombia now + 5 minutes
-  const target = new Date(colombiaNow().getTime() + 5 * 60 * 1000);
+  // Target = Colombia now + 10 minutes
+  const target = new Date(colombiaNow().getTime() + 10 * 60 * 1000);
   const targetDate = formatDate(target);
   const targetTime = formatHHMM(target);
 

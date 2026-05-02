@@ -351,7 +351,7 @@ function buildReminderEmail(payload: {
       <div style="${cardStyle}">
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">⏰</div>
-          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Tu cita es en 5 minutos!</h1>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Tu cita es en 10 minutos!</h1>
           <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
         </div>
         <div style="${bodyStyle}">
@@ -389,7 +389,7 @@ export async function sendReminderEmail(payload: {
     await transporter.sendMail({
       from,
       to: payload.clientEmail,
-      subject: `⏰ Tu cita de ${payload.serviceName} comienza en 5 minutos`,
+      subject: `⏰ Tu cita de ${payload.serviceName} comienza en 10 minutos`,
       html: buildReminderEmail(payload),
     });
     return true;
