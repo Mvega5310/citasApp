@@ -50,6 +50,8 @@ runTest('should validate a correct booking payload', () => {
     clientWhatsApp: '+57 3024075828',
     date: '2026-03-20',
     time: '10:00',
+    habeasDataAccepted: true,
+    notificationsAccepted: true,
   });
 
   assert.equal(result.ok, true);
@@ -58,6 +60,22 @@ runTest('should validate a correct booking payload', () => {
     assert.equal(result.data.clientEmail, 'ana@example.com');
     assert.equal(result.data.clientWhatsApp, '+573024075828');
   }
+});
+
+runTest('should reject booking without habeas data consent', () => {
+  const result = validateBookingPayload({
+    serviceId: 'corte-cabello',
+    serviceName: 'Corte de Cabello',
+    clientName: 'Ana Perez',
+    clientEmail: 'ana@example.com',
+    clientWhatsApp: '+573024075828',
+    date: '2026-03-20',
+    time: '10:00',
+    habeasDataAccepted: false,
+    notificationsAccepted: true,
+  });
+
+  assert.equal(result.ok, false);
 });
 
 runTest('should reject bookings with mismatched service names', () => {
