@@ -341,6 +341,63 @@ export async function sendAdminInvitation(payload: {
   }
 }
 
+function buildReminderEmail(payload: {
+  clientName: string;
+  serviceName: string;
+  time: string;
+}) {
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="${headerStyle}">
+          <div style="font-size:32px; margin-bottom:8px;">⏰</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Tu cita es en 5 minutos!</h1>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 24px; font-size:16px;">
+            Hola <strong>${payload.clientName}</strong>, te recordamos que tu cita está a punto de comenzar. 💅
+          </p>
+          ${buildRow('Servicio', payload.serviceName)}
+          ${buildRow('Hora', payload.time)}
+          <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
+            <p style="margin:0; font-size:13px; color:#9d174d; line-height:1.6;">
+              📍 <strong>Dirección:</strong> Calle 123 #45-67, Bogotá, Colombia<br/>
+              👟 ¡Estamos listos para recibirte!
+            </p>
+          </div>
+        </div>
+        <div style="${footerStyle}">
+          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export async function sendReminderEmail(payload: {
+  clientName: string;
+  clientEmail: string;
+  serviceName: string;
+  time: string;
+}): Promise<boolean> {
+  const transporter = getTransporter();
+  const from = getSender();
+  if (!transporter || !payload.clientEmail) return false;
+  try {
+    await transporter.sendMail({
+      from,
+      to: payload.clientEmail,
+      subject: `⏰ Tu cita de ${payload.serviceName} comienza en 5 minutos`,
+      html: buildReminderEmail(payload),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function sendContactMessage(payload: {
   name: string;
   email: string;
