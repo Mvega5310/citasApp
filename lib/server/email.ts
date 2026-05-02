@@ -165,9 +165,9 @@ function buildClientConfirmationEmail(payload: {
           ${buildRow('Hora', payload.time)}
           <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
             <p style="margin:0; font-size:13px; color:#9d174d;">
-              📍 <strong>Dirección:</strong> Calle 123 #45-67, Bogotá, Colombia<br/>
-              📞 <strong>Teléfono:</strong> +57 300 123 4567<br/>
-              ⏰ Llega 5 minutos antes de tu cita.
+              📍 <strong>Dirección:</strong> Bella vista, Colombia<br/>
+              📞 <strong>Teléfono:</strong> +57 3024075828<br/>
+              ⏰ Llega 10 minutos antes de tu cita.
             </p>
           </div>
           <p style="color:#6b7280; font-size:13px; margin:20px 0 0;">
