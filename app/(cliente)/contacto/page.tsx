@@ -81,19 +81,19 @@ export default function ContactPage() {
                     icon: Phone,
                     color: 'primary',
                     title: 'Teléfono',
-                    lines: ['+57 300 123 4567', 'Lunes a Viernes, 9:00 AM – 8:00 PM'],
+                    lines: ['+57 3024075828', 'Lunes a Viernes, 9:00 AM – 8:00 PM'],
                   },
                   {
                     icon: Mail,
                     color: 'secondary',
                     title: 'Correo Electrónico',
-                    lines: ['info@beautyturno.com', 'Respondemos en menos de 24 horas'],
+                    lines: ['marcosvega5310@gmail.com', 'Respondemos en menos de 24 horas'],
                   },
                   {
                     icon: MapPin,
                     color: 'accent',
                     title: 'Dirección',
-                    lines: ['Calle 123 #45-67, Bogotá', 'Colombia'],
+                    lines: ['Bella vista', 'Colombia'],
                   },
                   {
                     icon: Clock,
