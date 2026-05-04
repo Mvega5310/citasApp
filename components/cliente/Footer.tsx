@@ -67,11 +67,11 @@ export default function Footer() {
                 className="flex items-center gap-3 text-gray-400 hover:text-primary-400 transition-colors group"
               >
                 <Mail className="w-4 h-4 text-primary-500 shrink-0" />
-                <span className="text-sm">info@beautyturno.com</span>
+                <span className="text-sm">marcosvega5310@gmail.com</span>
               </a>
               <div className="flex items-start gap-3 text-gray-400">
                 <MapPin className="w-4 h-4 text-primary-500 shrink-0 mt-0.5" />
-                <span className="text-sm">Bella vista Cartagena</span>
+                <span className="text-sm">Bella vista, Colombia</span>
               </div>
             </div>
           </div>

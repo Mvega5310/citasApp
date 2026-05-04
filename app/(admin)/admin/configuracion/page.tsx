@@ -175,7 +175,7 @@ export default function ConfiguracionPage() {
                     icon={Phone}
                     value={settings.phone}
                     onChange={(v) => set('phone', v)}
-                    placeholder="+57 300 123 4567"
+                    placeholder="+57 3024075828"
                   />
                   <div className="grid grid-cols-2 gap-4">
                     <Field
@@ -183,7 +183,7 @@ export default function ConfiguracionPage() {
                       icon={MapPin}
                       value={settings.address}
                       onChange={(v) => set('address', v)}
-                      placeholder="Calle 123 #45-67"
+                      placeholder="Bella vista, Colombia"
                     />
                     <Field
                       label="Ciudad"
@@ -199,7 +199,7 @@ export default function ConfiguracionPage() {
                     type="email"
                     value={settings.contactEmail}
                     onChange={(v) => set('contactEmail', v)}
-                    placeholder="info@beautyturno.com"
+                    placeholder="marcosvega5310@gmail.com"
                   />
                 </div>
               </div>

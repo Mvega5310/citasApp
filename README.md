@@ -20,7 +20,7 @@ Una aplicación web moderna y responsiva para gestionar reservas de servicios de
 - **💇‍♀️ Blower** - $20,000 (45 min)
 - **✂️ Corte de Cabello** - $12,000 (30 min)
 - **🧔 Corte y Barba** - $15,000 (45 min)
-- **👁️ Cejas** - $3,000 (20 min)
+- **👁️ Cejas** - $3,000 (10 min)
 - **🪒 Solo Barba** - $3,000 (25 min)
 
 ### Para Administradores

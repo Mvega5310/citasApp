@@ -312,9 +312,9 @@ export default function ContactPage() {
             <div className="rounded-lg bg-gray-100 flex items-center justify-center h-64">
               <div className="text-center">
                 <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">Calle 123 #45-67, Bogotá, Colombia</p>
+                <p className="text-gray-600 font-medium">Bella vista, Colombia</p>
                 <a
-                  href="https://maps.google.com/?q=Bogotá,Colombia"
+                  href="https://www.google.com/maps/place/Centro+De+Vida+Bella+Vista/@10.3710068,-75.506578,17z/data=!4m14!1m7!3m6!1s0x8ef6272ed668921b:0x10f68528a6dc159!2sCentro+De+Vida+Bella+Vista!8m2!3d10.3710015!4d-75.5040031!16s%2Fg%2F11y1trpzsh!3m5!1s0x8ef6272ed668921b:0x10f68528a6dc159!8m2!3d10.3710015!4d-75.5040031!16s%2Fg%2F11y1trpzsh?entry=ttu&g_ep=EgoyMDI2MDQyOS4wIKXMDSoASAFQAw%3D%3D,Colombia"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 inline-block text-primary-600 hover:underline text-sm font-medium"
