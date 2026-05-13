@@ -140,6 +140,7 @@ function buildClientConfirmationEmail(payload: {
   clientName: string;
   date: string;
   time: string;
+  cancelUrl?: string;
 }) {
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
     weekday: 'long',
@@ -147,6 +148,18 @@ function buildClientConfirmationEmail(payload: {
     month: 'long',
     day: 'numeric',
   });
+
+  const cancelBlock = payload.cancelUrl
+    ? `<div style="text-align:center; margin-top:24px;">
+        <a href="${payload.cancelUrl}"
+           style="display:inline-block; background:#f3f4f6; color:#6b7280; text-decoration:none; padding:10px 22px; border-radius:8px; font-size:13px; font-weight:500; border:1px solid #e5e7eb;">
+          Cancelar mi cita
+        </a>
+        <p style="color:#9ca3af; font-size:11px; margin:8px 0 0;">
+          Puedes cancelar hasta 30 minutos antes de tu cita.
+        </p>
+      </div>`
+    : '';
 
   return `
     <div style="${baseStyle}">
@@ -170,13 +183,92 @@ function buildClientConfirmationEmail(payload: {
               ⏰ Llega 10 minutos antes de tu cita.
             </p>
           </div>
-          <p style="color:#6b7280; font-size:13px; margin:20px 0 0;">
-            Si necesitas cancelar o modificar tu cita, contáctanos con al menos 2 horas de anticipación.
-          </p>
+          ${cancelBlock}
         </div>
         <div style="${footerStyle}">
           BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildCancellationClientEmail(payload: {
+  clientName: string;
+  serviceName: string;
+  date: string;
+  time: string;
+}) {
+  const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="background:linear-gradient(135deg,#6b7280,#4b5563); padding:32px 40px; text-align:center;">
+          <div style="font-size:32px; margin-bottom:8px;">❌</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Cita Cancelada</h1>
+          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 24px; font-size:16px;">
+            Hola <strong>${payload.clientName}</strong>, tu cita ha sido cancelada correctamente.
+          </p>
+          ${buildRow('Servicio', payload.serviceName)}
+          ${buildRow('Fecha', dateFormatted)}
+          ${buildRow('Hora', payload.time)}
+          <div style="margin-top:24px; padding:16px; background:#f9fafb; border-radius:8px; border-left:4px solid #9ca3af;">
+            <p style="margin:0; font-size:13px; color:#6b7280; line-height:1.6;">
+              Si deseas reagendar tu cita, puedes hacerlo desde nuestra página web cuando quieras.
+            </p>
+          </div>
+        </div>
+        <div style="${footerStyle}">
+          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildLateCancellationAdminEmail(payload: {
+  clientName: string;
+  serviceName: string;
+  date: string;
+  time: string;
+}) {
+  const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="background:linear-gradient(135deg,#dc2626,#b91c1c); padding:32px 40px; text-align:center;">
+          <div style="font-size:32px; margin-bottom:8px;">⚠️</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Cancelación Tardía</h1>
+          <p style="color:#fecaca; margin:6px 0 0; font-size:14px;">El cliente canceló fuera de la ventana de 30 minutos</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 24px; font-size:15px;">
+            Un cliente canceló su cita con menos de 30 minutos de anticipación:
+          </p>
+          ${buildRow('Cliente', payload.clientName)}
+          ${buildRow('Servicio', payload.serviceName)}
+          ${buildRow('Fecha', dateFormatted)}
+          ${buildRow('Hora', payload.time)}
+        </div>
+        <div style="${footerStyle}">
+          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -224,6 +316,39 @@ function buildContactEmail(payload: {
   `;
 }
 
+export async function sendCancellationEmails(payload: {
+  clientName: string;
+  clientEmail: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  isLate: boolean;
+}): Promise<void> {
+  const transporter = getTransporter();
+  const from = getSender();
+  const toDefault = getToDefault();
+
+  if (!transporter) return;
+
+  if (payload.clientEmail) {
+    transporter.sendMail({
+      from,
+      to: payload.clientEmail,
+      subject: `Cancelación de tu cita — ${payload.serviceName}`,
+      html: buildCancellationClientEmail(payload),
+    }).catch(() => {});
+  }
+
+  if (payload.isLate && toDefault) {
+    transporter.sendMail({
+      from,
+      to: toDefault,
+      subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.serviceName}`,
+      html: buildLateCancellationAdminEmail(payload),
+    }).catch(() => {});
+  }
+}
+
 export async function sendBookingNotification(payload: {
   serviceName: string;
   clientName: string;
@@ -231,6 +356,7 @@ export async function sendBookingNotification(payload: {
   clientWhatsApp: string;
   date: string;
   time: string;
+  cancelUrl?: string;
 }): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
   const transporter = getTransporter();
   const from = getSender();
