@@ -24,7 +24,7 @@ export default function Header() {
             <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900 font-serif">BeautyTurno</span>
+            <span className="text-xl font-bold text-gray-900 font-serif">{process.env.NEXT_PUBLIC_APP_NAME ?? 'Marcos BarberShop'}</span>
           </Link>
 
           {/* Desktop Navigation only */}
