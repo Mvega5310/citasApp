@@ -13,19 +13,23 @@ import {
   Settings,
   ChevronUp,
   Users,
+  Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTenantName } from '@/lib/shared/TenantContext';
 
 type AdminProfile = { name: string; email: string; role?: string };
 
 const navItems = [
   { href: '/admin', label: 'Panel', icon: LayoutDashboard, roles: ['admin', 'viewer'] },
+  { href: '/admin/horarios', label: 'Horarios', icon: Clock, roles: ['admin'] },
   { href: '/admin/equipo', label: 'Equipo', icon: Users, roles: ['admin'] },
 ];
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const tenantName = useTenantName();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<AdminProfile>({ name: 'Administrador', email: '' });
@@ -151,7 +155,7 @@ export default function AdminSidebar() {
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="text-white font-bold text-sm font-serif leading-tight">BeautyTurno</p>
+            <p className="text-white font-bold text-sm font-serif leading-tight">{tenantName}</p>
             <p className="text-gray-400 text-xs">Administración</p>
           </div>
         </div>
@@ -166,7 +170,7 @@ export default function AdminSidebar() {
           <div className="w-7 h-7 bg-primary-500 rounded-lg flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
-          <span className="text-white font-bold text-sm font-serif">BeautyTurno Admin</span>
+          <span className="text-white font-bold text-sm font-serif">{tenantName} Admin</span>
         </div>
         <button
           onClick={() => setMobileOpen((v) => !v)}

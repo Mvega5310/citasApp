@@ -12,6 +12,22 @@ function appointmentsCol(db: FirebaseFirestore.Firestore, tenantSlug: string) {
     : db.collection('appointments');
 }
 
+async function isSlotBlocked(date: string, time: string, tenantSlug: string): Promise<boolean> {
+  if (!isFirebaseConfigured) return false;
+  try {
+    const db = adminDb();
+    const base = tenantSlug
+      ? db.collection('tenants').doc(tenantSlug).collection('blocked_slots')
+      : db.collection('blocked_slots');
+    const snap = await base.doc(date).get();
+    if (!snap.exists) return false;
+    const slots: string[] = snap.data()?.slots ?? [];
+    return slots.includes(time);
+  } catch {
+    return false;
+  }
+}
+
 async function isSlotTaken(date: string, time: string, tenantSlug: string): Promise<boolean> {
   if (isFirebaseConfigured) {
     try {
@@ -53,7 +69,18 @@ export async function POST(request: NextRequest) {
 
     const booking = validation.data;
 
-    const taken = await isSlotTaken(booking.date, booking.time, tenantSlug);
+    const [taken, blocked] = await Promise.all([
+      isSlotTaken(booking.date, booking.time, tenantSlug),
+      isSlotBlocked(booking.date, booking.time, tenantSlug),
+    ]);
+
+    if (blocked) {
+      return NextResponse.json(
+        { error: 'Este horario no está disponible en este momento. Por favor elige otro.' },
+        { status: 409 }
+      );
+    }
+
     if (taken) {
       return NextResponse.json(
         { error: 'Este horario ya está reservado. Por favor elige otro.' },
