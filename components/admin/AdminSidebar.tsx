@@ -16,7 +16,6 @@ import {
   Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useTenantName } from '@/lib/shared/TenantContext';
 
 type AdminProfile = { name: string; email: string; role?: string };
 
@@ -29,7 +28,7 @@ const navItems = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const tenantName = useTenantName();
+  const tenantName = process.env.NEXT_PUBLIC_APP_NAME ?? 'BeautyTurno';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<AdminProfile>({ name: 'Administrador', email: '' });
