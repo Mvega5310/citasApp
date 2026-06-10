@@ -82,13 +82,13 @@ export const getServiceDuration = (id: string): number => {
 
 // Horarios por día de la semana (0=Domingo...6=Sábado)
 export const workingSchedule: Record<number, { start: string; end: string; closed?: boolean }> = {
-  0: { start: '09:00', end: '16:00' },
-  1: { start: '09:00', end: '20:00' },
-  2: { start: '09:00', end: '20:00' },
-  3: { start: '09:00', end: '20:00' },
-  4: { start: '09:00', end: '20:00' },
-  5: { start: '09:00', end: '20:00' },
-  6: { start: '09:00', end: '18:00' },
+  0: { start: '09:00', end: '17:00' },
+  1: { start: '09:00', end: '19:00' },
+  2: { start: '09:00', end: '19:00' },
+  3: { start: '09:00', end: '19:00' },
+  4: { start: '09:00', end: '19:00' },
+  5: { start: '09:00', end: '19:00' },
+  6: { start: '09:00', end: '19:00' },
 };
 
 const toMinutes = (hhmm: string) => {
