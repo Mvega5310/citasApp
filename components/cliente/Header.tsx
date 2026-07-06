@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Clock } from 'lucide-react';
 import { workingSchedule } from '@/lib/shared/services';
 
-const APP_NAME = 'BeautyTurno';
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'Marcos BarberShop';
 
 const navLinks = [
   { href: '/', label: 'Inicio', exact: true },

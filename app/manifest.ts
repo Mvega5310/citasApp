@@ -2,8 +2,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'BeautyTurno - Reservas de Belleza',
-    short_name: 'BeautyTurno',
+    name: 'Marcos BarberShop - Reservas de Belleza',
+    short_name: 'Marcos BarberShop',
     description: 'Reserva tu cita de belleza y barbería de manera fácil y rápida',
     start_url: '/',
     display: 'standalone',

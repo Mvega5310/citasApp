@@ -110,7 +110,7 @@ function Tirilla({
   });
 
   const waText = encodeURIComponent(
-    `¡Reservé mi turno en BeautyTurno!\n\nServicio: ${service.name}\nFecha: ${formatDateLabel(date)}\nHora: ${time}\nCódigo: ${code}${result.cancelUrl ? `\n\nCancelar: ${result.cancelUrl}` : ''}`
+    `¡Reservé mi turno en Marcos BarberShop!\n\nServicio: ${service.name}\nFecha: ${formatDateLabel(date)}\nHora: ${time}\nCódigo: ${code}${result.cancelUrl ? `\n\nCancelar: ${result.cancelUrl}` : ''}`
   );
 
   return (
@@ -127,7 +127,7 @@ function Tirilla({
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mx-auto mb-3 font-bold text-white font-display text-sm">
             BT
           </div>
-          <p className="text-white font-semibold text-lg font-display">BeautyTurno</p>
+          <p className="text-white font-semibold text-lg font-display">Marcos BarberShop</p>
           <p className="text-white/80 text-sm mt-0.5">Turno Confirmado ✓</p>
         </div>
 

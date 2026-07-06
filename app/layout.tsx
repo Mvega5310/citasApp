@@ -4,16 +4,16 @@ import WebVitalsClient from '@/components/shared/WebVitalsClient';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'BeautyTurno - Reserva tu cita de belleza',
+  title: 'Marcos BarberShop - Reserva tu cita',
   description:
-    'Reserva tu cita para servicios de manicure, pedicure, blower y barbería en BeautyTurno. Sistema de reservas online fácil y rápido.',
-  keywords: 'beauty, salon, manicure, pedicure, blower, barbería, reservas, citas',
-  authors: [{ name: 'BeautyTurno' }],
+    'Reserva tu cita de barbería en Marcos BarberShop. Corte, arreglo de barba y más. Sistema de reservas online fácil y rápido.',
+  keywords: 'barbería, barber, corte de cabello, afeitado, reservas, citas, Marcos BarberShop',
+  authors: [{ name: 'Marcos BarberShop' }],
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'BeautyTurno',
+    title: 'Marcos BarberShop',
   },
   formatDetection: {
     telephone: false,
@@ -22,14 +22,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_ES',
     url: 'https://beautyturno.com',
-    title: 'BeautyTurno - Reservas de Belleza',
-    description: 'Reserva tu cita de belleza y barbería de manera fácil y rápida',
-    siteName: 'BeautyTurno',
+    title: 'Marcos BarberShop - Barbería Online',
+    description: 'Reserva tu cita de barbería de manera fácil y rápida',
+    siteName: 'Marcos BarberShop',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BeautyTurno - Reservas de Belleza',
-    description: 'Reserva tu cita de belleza y barbería de manera fácil y rápida',
+    title: 'Marcos BarberShop - Barbería Online',
+    description: 'Reserva tu cita de barbería de manera fácil y rápida',
   },
 };
 
@@ -55,7 +55,7 @@ export default function RootLayout({
         />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="BeautyTurno" />
+        <meta name="apple-mobile-web-app-title" content="Marcos BarberShop" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#0E1713" />
         <meta name="msapplication-tap-highlight" content="no" />
