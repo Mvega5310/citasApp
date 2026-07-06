@@ -2,13 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
+import { Clock } from 'lucide-react';
+import { workingSchedule } from '@/lib/shared/services';
+
+const APP_NAME = 'BeautyTurno';
 
 const navLinks = [
   { href: '/', label: 'Inicio', exact: true },
   { href: '/servicios', label: 'Servicios', exact: false },
   { href: '/contacto', label: 'Contacto', exact: false },
 ];
+
+function getScheduleChip(): string {
+  const day = new Date().getDay();
+  const rule = workingSchedule[day];
+  if (!rule || rule.closed) return 'Cerrado hoy';
+  return `Hoy · ${rule.start}–${rule.end}`;
+}
 
 export default function Header() {
   const pathname = usePathname();
@@ -17,48 +27,58 @@ export default function Header() {
     exact ? pathname === href : pathname.startsWith(href);
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
+    <header
+      className="sticky top-0 z-50"
+      style={{ background: '#0E1713', borderBottom: '1px solid #2C3E36' }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-lg">
-              <Sparkles className="w-6 h-6 text-white" />
+        <div className="flex justify-between items-center h-14">
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2.5">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0 font-display"
+              style={{ background: '#E84B85' }}
+            >
+              BT
             </div>
-            <span className="text-xl font-bold text-gray-900 font-serif">{process.env.NEXT_PUBLIC_APP_NAME ?? 'Marcos BarberShop'}</span>
+            <span
+              className="text-lg font-bold tracking-tight font-display hidden sm:block"
+              style={{ color: '#F1EDE3' }}
+            >
+              {APP_NAME}
+            </span>
           </Link>
 
-          {/* Desktop Navigation only */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navLinks.map(({ href, label, exact }) => {
-              const active = isActive(href, exact);
-              return (
+          {/* Schedule chip + Desktop nav */}
+          <div className="flex items-center gap-3">
+            <span
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
+              style={{ background: '#17231D', border: '1px solid #2C3E36', color: '#9FB0A2' }}
+            >
+              <Clock className="w-3 h-3" />
+              {getScheduleChip()}
+            </span>
+
+            <nav className="hidden md:flex items-center gap-1">
+              {navLinks.map(({ href, label, exact }) => (
                 <Link
                   key={href}
                   href={href}
-                  className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    active
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-600 hover:text-primary-500 hover:bg-gray-50'
-                  }`}
+                  className="relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{ color: isActive(href, exact) ? '#E84B85' : '#9FB0A2' }}
                 >
                   {label}
-                  {active && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-primary-500 rounded-full" />
-                  )}
                 </Link>
-              );
-            })}
-            <Link
-              href="/reservar"
-              className={`ml-3 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm ${
-                isActive('/reservar', false)
-                  ? 'bg-primary-600 text-white shadow-md ring-2 ring-primary-300'
-                  : 'bg-primary-500 hover:bg-primary-600 text-white hover:shadow-md'
-              }`}
-            >
-              Reservar cita
-            </Link>
-          </nav>
+              ))}
+              <Link
+                href="/reservar"
+                className="ml-2 btn-primary text-sm"
+                style={{ paddingTop: '8px', paddingBottom: '8px', paddingLeft: '20px', paddingRight: '20px', minHeight: '36px' }}
+              >
+                Reservar cita
+              </Link>
+            </nav>
+          </div>
         </div>
       </div>
     </header>

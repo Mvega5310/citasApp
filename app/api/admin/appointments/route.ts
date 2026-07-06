@@ -1,16 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  // Firebase path — fetch all, sort client-side (avoids composite index requirement)
+export async function GET(request: NextRequest) {
+  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+
   if (isFirebaseConfigured) {
     try {
       const db = adminDb();
-      const snapshot = await db.collection('appointments').get();
+      const col = tenantSlug
+        ? db.collection('tenants').doc(tenantSlug).collection('appointments')
+        : db.collection('appointments'); // fallback colección legacy
+
+      const snapshot = await col.get();
       const rows = snapshot.docs
         .map((doc) => ({ id: doc.id, ...doc.data() }))
         .sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
@@ -25,7 +30,7 @@ export async function GET() {
     }
   }
 
-  // PostgreSQL path
+  // PostgreSQL fallback
   try {
     const pool = getPool();
     const result = await pool.query(

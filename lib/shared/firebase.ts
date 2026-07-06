@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { env } from './env';
 
 const firebaseConfig = {
@@ -26,11 +26,25 @@ export const db = app ? getFirestore(app) : null;
 export const auth = app ? getAuth(app) : null;
 export const isFirebaseConfigured = hasFirebaseConfig;
 
+// Conectar al emulador solo en desarrollo y solo una vez
+if (
+  app &&
+  process.env.NEXT_PUBLIC_APP_ENV === 'development' &&
+  typeof window !== 'undefined'
+) {
+  // @ts-expect-error flag para evitar doble conexión en HMR
+  if (!window.__firebaseEmulatorsConnected) {
+    // @ts-expect-error
+    window.__firebaseEmulatorsConnected = true;
+    if (db) connectFirestoreEmulator(db, 'localhost', 8080);
+    if (auth) connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+  }
+}
+
 export function getFirebaseApp() {
   if (!hasFirebaseConfig) {
     throw new Error('Firebase no está configurado.');
   }
-
   return app ?? getApp();
 }
 
