@@ -48,9 +48,28 @@ module.exports = {
         // Fondo crema global
         cream: '#F5F1E8',
       },
+      colors: {
+        bt: {
+          body:     '#0A1210',
+          noche:    '#0E1713',
+          grafito:  '#17231D',
+          orquidea: '#E84B85',
+          menta:    '#1FA97C',
+          ambar:    '#E9B949',
+          hueso:    '#F1EDE3',
+          b1:       '#2C3E36',
+          b2:       '#263630',
+          m1:       '#9FB0A2',
+          m2:       '#7C8F81',
+          m3:       '#5D7065',
+          iconbg:   '#22322A',
+          error:    '#FF7A66',
+        },
+      },
       fontFamily: {
-        sans:  ['Inter', 'sans-serif'],
-        serif: ['Playfair Display', 'serif'],
+        sans:    ['Figtree', 'Inter', 'sans-serif'],
+        display: ['Bricolage Grotesque', 'sans-serif'],
+        serif:   ['Playfair Display', 'serif'],
       },
       backgroundImage: {
         'gradient-wellness': 'linear-gradient(135deg, #F5F1E8 0%, #E7EDE0 60%, #F4F6F1 100%)',
@@ -67,10 +86,14 @@ module.exports = {
       animation: {
         'fade-in':  'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.3s ease-out',
+        'bt-pop':   'btPop 0.35s ease-out forwards',
+        'bt-up':    'btUp 0.3s ease-out forwards',
       },
       keyframes: {
         fadeIn:  { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         slideUp: { '0%': { transform: 'translateY(10px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+        btPop:   { '0%': { transform: 'scale(0.94)', opacity: '0' }, '70%': { transform: 'scale(1.02)' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+        btUp:    { '0%': { transform: 'translateY(14px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
       },
     },
   },

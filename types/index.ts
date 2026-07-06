@@ -51,4 +51,29 @@ export interface AdminUser {
   email: string;
   role: 'admin' | 'staff';
   name: string;
-} 
+}
+
+export interface WorkingHours {
+  open: string;   // "09:00"
+  close: string;  // "18:00"
+  closed: boolean;
+}
+
+export interface TenantConfig {
+  slug: string;
+  name: string;
+  tagline?: string;
+  logoUrl?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  address: string;
+  phone: string;
+  email: string;
+  whatsapp?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  services: Service[];
+  workingHours: Record<'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado' | 'domingo', WorkingHours>;
+  active: boolean;
+}

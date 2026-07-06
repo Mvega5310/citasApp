@@ -21,19 +21,33 @@ const getServiceAccount = (): ServiceAccount | null => {
   return null;
 };
 
+const isEmulator =
+  process.env.APP_ENV === 'development' ||
+  process.env.NEXT_PUBLIC_APP_ENV === 'development' ||
+  !!process.env.FIRESTORE_EMULATOR_HOST;
+
 const sa = getServiceAccount();
 
-if (!admin.apps.length && sa) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: sa.project_id,
-      clientEmail: sa.client_email,
-      privateKey: sa.private_key,
-    }),
-  });
+if (!admin.apps.length) {
+  if (isEmulator) {
+    // En emulador no necesitamos credenciales reales
+    process.env.FIRESTORE_EMULATOR_HOST = process.env.FIRESTORE_EMULATOR_HOST ?? 'localhost:8080';
+    process.env.FIREBASE_AUTH_EMULATOR_HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? 'localhost:9099';
+    admin.initializeApp({
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? 'turnos-de-belleza',
+    });
+  } else if (sa) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: sa.project_id,
+        clientEmail: sa.client_email,
+        privateKey: sa.private_key,
+      }),
+    });
+  }
 }
 
-export const isFirebaseConfigured = !!sa;
+export const isFirebaseConfigured = isEmulator || !!sa;
 
 export const adminDb = () => {
   if (!admin.apps.length) {
@@ -48,4 +62,3 @@ export const adminAuth = () => {
   }
   return admin.auth();
 };
-

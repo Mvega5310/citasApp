@@ -1,245 +1,163 @@
 import Link from 'next/link';
-import { ArrowRight, Clock, Sparkles, Star, Users, Shield, CheckCircle } from 'lucide-react';
+import { Star } from 'lucide-react';
 import Footer from '@/components/cliente/Footer';
 import Header from '@/components/cliente/Header';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
 import BottomNav from '@/components/cliente/BottomNav';
 import { services } from '@/lib/shared/services';
 
-const stats = [
-  { value: '500+', label: 'Clientes felices' },
-  { value: '4.9★', label: 'Calificación promedio' },
-  { value: '8+', label: 'Años de experiencia' },
-  { value: '24/7', label: 'Reservas en línea' },
-];
+const testimonial = {
+  name: 'Carlos M.',
+  service: 'Corte y Barba',
+  text: 'El mejor corte que me han hecho. Reservé en 2 minutos y quedé impecable. 100% recomendado.',
+  rating: 5,
+  initials: 'CM',
+};
 
-const testimonials = [
-  {
-    name: 'María García',
-    service: 'Manicure & Pedicure',
-    text: 'Excelente servicio, las chicas son muy profesionales y el ambiente es increíble. Siempre salgo encantada.',
-    rating: 5,
-    initials: 'MG',
-  },
-  {
-    name: 'Laura Martínez',
-    service: 'Blower profesional',
-    text: 'El mejor blower que me han hecho. Duró perfecto por días y el precio es muy accesible. 100% recomendado.',
-    rating: 5,
-    initials: 'LM',
-  },
-  {
-    name: 'Sofía Rodríguez',
-    service: 'Corte y estilo',
-    text: 'Reservé mi cita en 2 minutos desde el celular. La atención fue impecable y el resultado fue exactamente lo que quería.',
-    rating: 5,
-    initials: 'SR',
-  },
-];
+const WHATSAPP = '573024075828';
 
 export default function HomePage() {
+  const featured = services.slice(0, 3);
+
   return (
-    <div className="min-h-screen bg-white pb-16 md:pb-0">
+    <div className="min-h-screen pb-16 md:pb-0" style={{ background: '#0A1210' }}>
       <Header />
 
       {/* Hero */}
-      <section className="relative overflow-hidden gradient-bg py-20 sm:py-28 px-4 sm:px-6 lg:px-8">
-        {/* Decorative blobs */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-primary-200/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-secondary-200/30 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
-
-        <div className="relative max-w-7xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/70 backdrop-blur-sm rounded-full border border-primary-200 text-primary-700 text-sm font-medium mb-6 shadow-sm">
-            <Sparkles className="w-4 h-4" />
-            Belleza y barbería profesional
+      <section className="px-5 pt-10 pb-8">
+        <div className="max-w-xl mx-auto">
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-5"
+            style={{ background: '#17231D', border: '1px solid #2C3E36', color: '#9FB0A2' }}
+          >
+            <span style={{ color: '#E84B85' }}>✦</span>
+            Barbería &amp; Belleza profesional
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6 font-serif leading-tight">
-            Tu cita de{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-secondary-500">
-              belleza
-            </span>{' '}
-            en minutos
+
+          <h1
+            className="text-4xl sm:text-5xl font-bold leading-tight mb-3 font-display"
+            style={{ color: '#F1EDE3' }}
+          >
+            Tu turno de{' '}
+            <em className="not-italic" style={{ color: '#E84B85' }}>brillar</em>
           </h1>
-          <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Manicure, pedicure, blower y barbería profesional. Reserva en línea,
-            sin filas y desde cualquier dispositivo.
+          <p className="text-base leading-relaxed mb-7" style={{ color: '#9FB0A2' }}>
+            Reserva tu cita en minutos, sin filas y desde cualquier dispositivo.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/reservar" className="btn-primary text-base px-8 py-4 inline-flex items-center justify-center">
+
+          <div className="flex flex-wrap gap-3">
+            <Link href="/reservar" className="btn-primary">
               Reservar ahora
-              <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
-            <Link href="/servicios" className="btn-outline text-base px-8 py-4 inline-flex items-center justify-center">
-              Ver servicios
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white border-b border-gray-100">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-3xl sm:text-4xl font-extrabold text-primary-500 mb-1">{s.value}</p>
-                <p className="text-sm text-gray-500 font-medium">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why us */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors">
-              <div className="w-14 h-14 bg-primary-100 rounded-2xl flex items-center justify-center mb-4">
-                <Clock className="w-7 h-7 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Reserva 24/7</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Agenda tu cita en cualquier momento del día, desde tu celular o computador.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors">
-              <div className="w-14 h-14 bg-secondary-100 rounded-2xl flex items-center justify-center mb-4">
-                <Star className="w-7 h-7 text-secondary-500" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Calidad premium</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Productos y técnicas de alta gama para que tu belleza brille de verdad.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center p-6 rounded-2xl hover:bg-gray-50 transition-colors">
-              <div className="w-14 h-14 bg-accent-100 rounded-2xl flex items-center justify-center mb-4">
-                <Users className="w-7 h-7 text-accent-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Atención personalizada</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                Cada cliente recibe un trato único, adaptado a su estilo y necesidades.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Services */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 font-serif">
-              Nuestros Servicios
-            </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-              Descubre nuestra gama completa de servicios de belleza y barbería profesionales
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {services.map((service) => (
-              <div key={service.id} className="service-card group bg-white">
-                <div className="text-4xl sm:text-5xl mb-4">{service.icon}</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{service.name}</h3>
-                <p className="text-gray-500 mb-4 text-sm leading-relaxed">{service.description}</p>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-2xl font-bold text-primary-600">
-                    ${service.price.toLocaleString()}
-                  </span>
-                  <span className="text-xs text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
-                    {service.duration} min
-                  </span>
-                </div>
-                <Link
-                  href={`/reservar?service=${service.id}`}
-                  className="btn-primary w-full text-center block text-sm"
-                >
-                  Reservar
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <Link href="/servicios" className="btn-outline inline-flex items-center gap-2">
-              Ver todos los servicios
-              <ArrowRight className="w-4 h-4" />
+            <Link href="/servicios" className="btn-outline">
+              Servicios
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 font-serif">
-              Lo que dicen nuestras clientas
-            </h2>
-            <p className="text-lg text-gray-500">
-              Más de 500 clientes confían en nosotros
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t) => (
-              <div
-                key={t.name}
-                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex gap-1">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-600 text-sm leading-relaxed flex-1">&ldquo;{t.text}&rdquo;</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{t.name}</p>
-                    <p className="text-xs text-gray-400">{t.service}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Guarantees strip */}
-      <section className="py-10 px-4 sm:px-6 lg:px-8 bg-primary-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-            {[
-              { icon: CheckCircle, label: 'Confirmación inmediata por email' },
-              { icon: Shield, label: 'Sin cargos por cancelación' },
-              { icon: Star, label: 'Satisfacción garantizada' },
-            ].map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center justify-center gap-2 text-primary-700">
-                <Icon className="w-5 h-5 shrink-0" />
-                <span className="text-sm font-medium">{label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 font-serif">
-            ¿Lista para tu transformación?
+      {/* Featured Services */}
+      <section className="px-5 py-6">
+        <div className="max-w-xl mx-auto">
+          <h2 className="text-lg font-semibold mb-4 font-display" style={{ color: '#F1EDE3' }}>
+            Servicios
           </h2>
-          <p className="text-lg text-gray-500 mb-8">
-            Reserva tu cita ahora y disfruta de nuestros servicios profesionales de belleza
-          </p>
-          <Link href="/reservar" className="btn-primary text-base px-10 py-4 inline-flex items-center gap-2">
-            Reservar mi cita
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+          <div className="flex gap-3 overflow-x-auto mobile-scroll -mx-5 px-5 pb-2">
+            {featured.map((service) => (
+              <Link
+                key={service.id}
+                href={`/reservar?service=${service.id}`}
+                className="shrink-0 w-44 rounded-[18px] p-4 flex flex-col gap-3 transition-all duration-200"
+                style={{ background: '#17231D', border: '1.5px solid #2C3E36' }}
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                  style={{ background: '#22322A' }}
+                >
+                  {service.icon}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold leading-tight mb-0.5" style={{ color: '#F1EDE3' }}>
+                    {service.name}
+                  </p>
+                  <p className="text-xs" style={{ color: '#7C8F81' }}>
+                    {service.duration} min
+                  </p>
+                </div>
+                <p className="text-base font-bold" style={{ color: '#E84B85' }}>
+                  ${service.price.toLocaleString('es-CO')}
+                </p>
+              </Link>
+            ))}
+            <Link
+              href="/servicios"
+              className="shrink-0 w-32 rounded-[18px] p-4 flex flex-col items-center justify-center gap-2"
+              style={{ background: '#0E1713', border: '1.5px dashed #2C3E36' }}
+            >
+              <span className="text-2xl" style={{ color: '#7C8F81' }}>→</span>
+              <span className="text-xs font-medium text-center" style={{ color: '#7C8F81' }}>
+                Ver todos
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonial */}
+      <section className="px-5 py-6">
+        <div className="max-w-xl mx-auto">
+          <div className="rounded-[22px] p-6" style={{ background: '#17231D', border: '1px solid #2C3E36' }}>
+            <div className="flex gap-1 mb-3">
+              {Array.from({ length: testimonial.rating }).map((_, i) => (
+                <Star key={i} className="w-4 h-4 fill-current" style={{ color: '#E9B949' }} />
+              ))}
+            </div>
+            <p className="text-sm leading-relaxed mb-4" style={{ color: '#9FB0A2' }}>
+              &ldquo;{testimonial.text}&rdquo;
+            </p>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                style={{ background: '#E84B85' }}
+              >
+                {testimonial.initials}
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: '#F1EDE3' }}>{testimonial.name}</p>
+                <p className="text-xs" style={{ color: '#7C8F81' }}>{testimonial.service}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WhatsApp CTA */}
+      <section className="px-5 pb-10 pt-2">
+        <div className="max-w-xl mx-auto">
+          <div
+            className="rounded-[22px] p-5 flex flex-col sm:flex-row items-center gap-4"
+            style={{ background: '#0E1713', border: '1px solid #2C3E36' }}
+          >
+            <div className="flex-1 text-center sm:text-left">
+              <p className="font-semibold text-base mb-1" style={{ color: '#F1EDE3' }}>
+                ¿Preguntas? Escríbenos
+              </p>
+              <p className="text-sm" style={{ color: '#7C8F81' }}>
+                Respuesta inmediata por WhatsApp
+              </p>
+            </div>
+            <a
+              href={`https://wa.me/${WHATSAPP}?text=Hola%2C%20me%20gustar%C3%ADa%20informaci%C3%B3n%20sobre%20sus%20servicios.`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-whatsapp shrink-0"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+              WhatsApp
+            </a>
+          </div>
         </div>
       </section>
 

@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx tests/run-tests.ts"
+    "test": "tsx tests/run-tests.ts",
+    "emulators": "firebase emulators:start",
+    "seed:tenant": "tsx scripts/seed-tenant.ts"
   },
   "dependencies": {
     "@types/node": "^20",
