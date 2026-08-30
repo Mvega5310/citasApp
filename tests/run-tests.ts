@@ -9,13 +9,16 @@ import {
 import { validateBookingPayload } from '../lib/server/booking';
 import { cleanOptionalText, isValidEmail, isValidPhone, parsePaginationParams } from '../lib/server/api';
 
+let failures = 0;
+
 function runTest(name: string, fn: () => void) {
   try {
     fn();
     console.log(`PASS ${name}`);
   } catch (error) {
+    failures++;
     console.error(`FAIL ${name}`);
-    throw error;
+    console.error(error instanceof Error ? error.message : error);
   }
 }
 
@@ -36,9 +39,11 @@ runTest('should provide price and duration helpers', () => {
 });
 
 runTest('should trim late slots when the service no longer fits in the schedule', () => {
+  // 2026-03-21 es viernes: horario 09:00–19:00. Con 75 min, el último turno
+  // que cabe antes de cerrar es 17:30 (termina 18:45); 18:00 ya no cabe.
   const slots = getAvailableHoursForDate('2026-03-21', 75);
-  assert.ok(!slots.includes('17:00'));
-  assert.equal(slots.at(-1), '16:30');
+  assert.ok(!slots.includes('18:00'));
+  assert.equal(slots.at(-1), '17:30');
 });
 
 runTest('should validate a correct booking payload', () => {
@@ -104,3 +109,9 @@ runTest('should clamp pagination params to safe limits', () => {
   assert.equal(parsed.limit, 100);
   assert.equal(parsed.offset, 0);
 });
+
+if (failures > 0) {
+  console.error(`\n${failures} test(s) failed.`);
+  process.exit(1);
+}
+console.log('\nAll tests passed.');

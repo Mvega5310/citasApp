@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Clock } from 'lucide-react';
 import { workingSchedule } from '@/lib/shared/services';
 
-const APP_NAME = 'BeautyTurno';
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'Marcos BarberShop';
 
 const navLinks = [
   { href: '/', label: 'Inicio', exact: true },
@@ -35,12 +35,12 @@ export default function Header() {
         <div className="flex justify-between items-center h-14">
           {/* Brand */}
           <Link href="/" className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0 font-display"
-              style={{ background: '#E84B85' }}
-            >
-              BT
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/api/logo?size=64"
+              alt={APP_NAME}
+              className="w-8 h-8 rounded-xl object-cover shrink-0"
+            />
             <span
               className="text-lg font-bold tracking-tight font-display hidden sm:block"
               style={{ color: '#F1EDE3' }}

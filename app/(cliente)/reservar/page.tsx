@@ -92,6 +92,7 @@ function Tirilla({
   service,
   date,
   time,
+  additionalTimes = [],
   email,
   onReset,
 }: {
@@ -99,18 +100,22 @@ function Tirilla({
   service: Service;
   date: string;
   time: string;
+  additionalTimes?: string[];
   email: string;
   onReset: () => void;
 }) {
   const code = btCode(result.id);
+  const allTimes = [time, ...additionalTimes];
+  const isGroup = allTimes.length > 1;
   const dateLabel = new Date(`${date}T00:00:00`).toLocaleDateString('es-ES', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   });
 
+  const timesLabel = allTimes.join(', ');
   const waText = encodeURIComponent(
-    `¡Reservé mi turno en BeautyTurno!\n\nServicio: ${service.name}\nFecha: ${formatDateLabel(date)}\nHora: ${time}\nCódigo: ${code}${result.cancelUrl ? `\n\nCancelar: ${result.cancelUrl}` : ''}`
+    `¡Reservé mi turno en Marcos BarberShop!\n\nServicio: ${service.name}\nFecha: ${formatDateLabel(date)}\n${isGroup ? `Horas: ${timesLabel}` : `Hora: ${time}`}\nCódigo: ${code}${result.cancelUrl ? `\n\n${isGroup ? 'Gestionar citas' : 'Cancelar'}: ${result.cancelUrl}` : ''}`
   );
 
   return (
@@ -125,10 +130,12 @@ function Tirilla({
           style={{ background: 'linear-gradient(135deg, #E84B85 0%, #C93870 100%)' }}
         >
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mx-auto mb-3 font-bold text-white font-display text-sm">
-            BT
+            MB
           </div>
-          <p className="text-white font-semibold text-lg font-display">BeautyTurno</p>
-          <p className="text-white/80 text-sm mt-0.5">Turno Confirmado ✓</p>
+          <p className="text-white font-semibold text-lg font-display">Marcos BarberShop</p>
+          <p className="text-white/80 text-sm mt-0.5">
+            {isGroup ? `${allTimes.length} Turnos Confirmados ✓` : 'Turno Confirmado ✓'}
+          </p>
         </div>
 
         {/* Perforated divider top */}
@@ -163,9 +170,11 @@ function Tirilla({
             </div>
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#5D7065' }}>
-                Hora
+                {isGroup ? 'Horas' : 'Hora'}
               </p>
-              <p className="text-sm font-semibold" style={{ color: '#F1EDE3' }}>{time}</p>
+              <p className="text-sm font-semibold" style={{ color: '#F1EDE3' }}>
+                {isGroup ? timesLabel : time}
+              </p>
             </div>
           </div>
 
@@ -315,7 +324,7 @@ export default function BookingPage() {
     resetForm();
   };
 
-  const postSlot = async (data: FormData, slotTime: string): Promise<BookingResult> => {
+  const buildValidatedBooking = (data: FormData, slotTime: string) => {
     const payload = normalizeBookingPayload({
       ...data,
       serviceId: selectedService!.id,
@@ -327,11 +336,14 @@ export default function BookingPage() {
     });
     const validation = validateBookingPayload(payload);
     if (!validation.ok) throw new Error(validation.error);
+    return validation.data;
+  };
 
+  const postSlot = async (data: FormData, slotTime: string): Promise<BookingResult> => {
     const res = await fetch('/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(validation.data),
+      body: JSON.stringify(buildValidatedBooking(data, slotTime)),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -340,30 +352,34 @@ export default function BookingPage() {
     return res.json();
   };
 
+  // Reserva varios horarios juntos (misma sesión) como un solo grupo: se crean
+  // todas las citas de forma atómica y se notifican en un único correo con un
+  // enlace de gestión que permite cancelar una, varias o todas.
+  const postGroup = async (data: FormData, times: string[]): Promise<BookingResult> => {
+    const bookings = times.map((t) => buildValidatedBooking(data, t));
+    const res = await fetch('/api/bookings/group', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookings }),
+    });
+    const result = await res.json();
+    if (!res.ok) {
+      throw new Error(result?.error || 'No se pudieron confirmar las citas. Por favor intenta de nuevo.');
+    }
+    return { id: result.ids[0], cancelUrl: result.cancelUrl, emailSent: result.emailSent };
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
     try {
       const allTimes = [selectedTime, ...additionalTimes];
-      let firstResult: BookingResult | null = null;
-      let successCount = 0;
+      const result = allTimes.length > 1
+        ? await postGroup(data, allTimes)
+        : await postSlot(data, allTimes[0]);
 
-      for (const t of allTimes) {
-        try {
-          const result = await postSlot(data, t);
-          if (!firstResult) firstResult = result;
-          successCount++;
-        } catch (err) {
-          logger.warn('booking_slot_failed', { time: t, error: String(err) });
-        }
-      }
-
-      if (successCount === 0 || !firstResult) {
-        throw new Error('No se pudo confirmar ninguna reserva. Por favor intenta de nuevo.');
-      }
-
-      logger.info('bookings_created', { count: successCount });
+      logger.info('bookings_created', { count: allTimes.length });
       setConfirmedEmail(data.clientEmail);
-      setBookingResult(firstResult);
+      setBookingResult(result);
       setStep(5);
     } catch (err) {
       alert((err as Error).message || 'Error al crear la reserva. Por favor intenta de nuevo.');
@@ -770,6 +786,7 @@ export default function BookingPage() {
             service={selectedService}
             date={selectedDate}
             time={selectedTime}
+            additionalTimes={additionalTimes}
             email={confirmedEmail}
             onReset={handleReset}
           />

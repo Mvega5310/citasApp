@@ -1,26 +1,26 @@
 {
-  "name": "BeautyTurno Admin",
-  "short_name": "BT Admin",
-  "description": "Panel de administración de BeautyTurno",
+  "name": "Marcos BarberShop Admin",
+  "short_name": "MB Admin",
+  "description": "Panel de administración de Marcos BarberShop",
   "start_url": "/admin",
   "scope": "/admin",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ec4899",
+  "background_color": "#0E1713",
+  "theme_color": "#0E1713",
   "orientation": "portrait-primary",
   "lang": "es",
   "icons": [
     {
-      "src": "/icon-192x192.png",
+      "src": "/api/logo?size=192",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icon-512x512.png",
+      "src": "/api/logo?size=512",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

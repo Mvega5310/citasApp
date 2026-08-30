@@ -17,6 +17,7 @@ export interface Appointment {
   date: string;
   time: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  groupId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

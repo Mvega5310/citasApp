@@ -2,20 +2,20 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'BeautyTurno - Reservas de Belleza',
-    short_name: 'BeautyTurno',
-    description: 'Reserva tu cita de belleza y barbería de manera fácil y rápida',
+    name: 'Marcos BarberShop - Reservas',
+    short_name: 'Marcos BarberShop',
+    description: 'Reserva tu cita de barbería en Marcos BarberShop de manera fácil y rápida',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#6b7a5e',
+    background_color: '#0E1713',
+    theme_color: '#0E1713',
     orientation: 'portrait-primary',
     scope: '/',
     lang: 'es',
-    categories: ['lifestyle', 'beauty'],
+    categories: ['lifestyle', 'barbershop'],
     icons: [
-      { src: '/api/icon?size=192&color=%236b7a5e&accent=%23d4a853&initial=B', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-      { src: '/api/icon?size=512&color=%236b7a5e&accent=%23d4a853&initial=B', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: '/api/logo?size=192', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/api/logo?size=512', sizes: '512x512', type: 'image/png', purpose: 'any' },
     ],
   };
 }

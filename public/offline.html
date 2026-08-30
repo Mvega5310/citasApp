@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sin conexión — Marcos BarberShop</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #0E1713;
+      color: #F1EDE3;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .wrap {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      gap: 12px;
+    }
+    .badge {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #6b7a5e, #d4a853);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 24px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    h1 { font-size: 18px; margin: 0; }
+    p { color: #9FB0A2; font-size: 14px; margin: 0; max-width: 280px; }
+    button {
+      margin-top: 16px;
+      background: #E84B85;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="badge">B</div>
+    <h1>Sin conexión</h1>
+    <p>No pudimos cargar esta página porque no tienes conexión a internet. Revisa tu conexión e inténtalo de nuevo.</p>
+    <button onclick="location.reload()">Reintentar</button>
+  </div>
+</body>
+</html>

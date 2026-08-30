@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCancelToken, msUntilAppointment, CANCEL_WINDOW_MS } from '@/lib/server/cancelToken';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { sendCancellationEmails } from '@/lib/server/email';
-
-function appointmentsCol(db: ReturnType<typeof adminDb>, tenantSlug: string) {
-  return tenantSlug
-    ? db.collection('tenants').doc(tenantSlug).collection('appointments')
-    : db.collection('appointments');
-}
+import { appointmentsCol } from '@/lib/server/appointments';
+import { sendCancellationEmails, sendGroupCancellationEmails } from '@/lib/server/email';
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json();
+    const { token, appointmentIds } = await request.json();
     if (!token) {
       return NextResponse.json({ error: 'Token requerido' }, { status: 400 });
     }
@@ -21,14 +16,77 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Enlace inválido o expirado' }, { status: 400 });
     }
 
-    const { appointmentId, tenantSlug, date, time, serviceName, clientName } = payload;
-    const isLate = msUntilAppointment(date, time) < CANCEL_WINDOW_MS;
-
     if (!isFirebaseConfigured) {
       return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
     }
 
     const db = adminDb();
+
+    if (payload.kind === 'group') {
+      const { groupId, tenantSlug, clientName } = payload;
+
+      if (!Array.isArray(appointmentIds) || appointmentIds.length === 0) {
+        return NextResponse.json(
+          { error: 'Selecciona al menos una cita para cancelar.' },
+          { status: 400 }
+        );
+      }
+
+      const col = appointmentsCol(db, tenantSlug);
+      const cancelled: { serviceName: string; date: string; time: string }[] = [];
+      let anyLate = false;
+      let clientEmail = '';
+
+      for (const id of appointmentIds) {
+        if (typeof id !== 'string') continue;
+        const ref = col.doc(id);
+        const snap = await ref.get();
+        if (!snap.exists) continue;
+
+        const data = snap.data()!;
+        if (data.groupId !== groupId) continue;
+        if (data.status === 'cancelled') continue;
+
+        const isLate = msUntilAppointment(data.date, data.time) < CANCEL_WINDOW_MS;
+        await ref.update({
+          status: 'cancelled',
+          cancelledAt: new Date().toISOString(),
+          cancelledBy: 'client',
+          lateCancel: isLate,
+        });
+
+        if (isLate) anyLate = true;
+        clientEmail = data.clientEmail;
+        cancelled.push({ serviceName: data.serviceName, date: data.date, time: data.time });
+      }
+
+      if (cancelled.length === 0) {
+        return NextResponse.json(
+          { error: 'No fue posible cancelar las citas seleccionadas.' },
+          { status: 409 }
+        );
+      }
+
+      const remainingSnap = await col.where('groupId', '==', groupId).get();
+      const stillActive = remainingSnap.docs
+        .map((d) => d.data())
+        .filter((d) => d.status !== 'cancelled')
+        .map((d) => ({ serviceName: d.serviceName, date: d.date, time: d.time }));
+
+      sendGroupCancellationEmails({
+        clientName,
+        clientEmail,
+        cancelled,
+        stillActive,
+        anyLate,
+      }).catch(() => {});
+
+      return NextResponse.json({ ok: true, cancelledCount: cancelled.length, anyLate });
+    }
+
+    const { appointmentId, tenantSlug, date, time, serviceName, clientName } = payload;
+    const isLate = msUntilAppointment(date, time) < CANCEL_WINDOW_MS;
+
     const ref = appointmentsCol(db, tenantSlug).doc(appointmentId);
     const snap = await ref.get();
 

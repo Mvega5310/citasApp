@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 
 export type CancelTokenPayload = {
+  kind?: 'single';
   appointmentId: string;
   tenantSlug: string;
   date: string;
@@ -9,11 +10,26 @@ export type CancelTokenPayload = {
   clientName: string;
 };
 
+export type GroupCancelTokenPayload = {
+  kind: 'group';
+  groupId: string;
+  tenantSlug: string;
+  clientName: string;
+};
+
 function secret() {
   return new TextEncoder().encode(process.env.ADMIN_SECRET ?? 'cancel-secret-fallback');
 }
 
 export async function generateCancelToken(payload: CancelTokenPayload): Promise<string> {
+  return new SignJWT({ kind: 'single', ...payload })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('30d')
+    .sign(secret());
+}
+
+export async function generateGroupCancelToken(payload: GroupCancelTokenPayload): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -21,10 +37,12 @@ export async function generateCancelToken(payload: CancelTokenPayload): Promise<
     .sign(secret());
 }
 
-export async function verifyCancelToken(token: string): Promise<CancelTokenPayload | null> {
+export async function verifyCancelToken(
+  token: string
+): Promise<CancelTokenPayload | GroupCancelTokenPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
-    return payload as unknown as CancelTokenPayload;
+    return payload as unknown as CancelTokenPayload | GroupCancelTokenPayload;
   } catch {
     return null;
   }

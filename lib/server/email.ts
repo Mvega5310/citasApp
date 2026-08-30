@@ -397,6 +397,257 @@ export async function sendBookingNotification(payload: {
   return { sentToDefault, sentToClient };
 }
 
+type GroupAppointmentInfo = { serviceName: string; date: string; time: string };
+
+function formatGroupDate(date: string) {
+  return new Date(date + 'T12:00:00').toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function buildGroupAppointmentList(appointments: GroupAppointmentInfo[]) {
+  return appointments
+    .map(
+      (a, i) => `
+        <div style="margin-bottom:12px; padding:14px 16px; background:#f9fafb; border-radius:8px; border-left:4px solid #ec4899;">
+          <p style="margin:0 0 4px; font-size:12px; font-weight:600; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px;">Cita ${i + 1}</p>
+          <p style="margin:0; font-size:15px; color:#111827; font-weight:500;">${a.serviceName}</p>
+          <p style="margin:2px 0 0; font-size:13px; color:#6b7280;">${formatGroupDate(a.date)} · ${a.time}</p>
+        </div>
+      `
+    )
+    .join('');
+}
+
+function buildGroupBookingAdminEmail(payload: {
+  clientName: string;
+  clientEmail: string;
+  clientWhatsApp: string;
+  appointments: GroupAppointmentInfo[];
+}) {
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="${headerStyle}">
+          <div style="font-size:32px; margin-bottom:8px;">📅</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Nuevas Reservas</h1>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 20px; font-size:15px;">
+            Se registraron <strong>${payload.appointments.length} citas</strong> en una misma reserva. Aquí están los detalles:
+          </p>
+          ${buildRow('Cliente', payload.clientName)}
+          ${buildRow('Email', payload.clientEmail)}
+          ${buildRow('WhatsApp', payload.clientWhatsApp)}
+          <div style="margin-top:16px;">
+            ${buildGroupAppointmentList(payload.appointments)}
+          </div>
+        </div>
+        <div style="${footerStyle}">
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildGroupBookingClientEmail(payload: {
+  clientName: string;
+  appointments: GroupAppointmentInfo[];
+  cancelUrl?: string;
+}) {
+  const cancelBlock = payload.cancelUrl
+    ? `<div style="text-align:center; margin-top:24px;">
+        <a href="${payload.cancelUrl}"
+           style="display:inline-block; background:#f3f4f6; color:#6b7280; text-decoration:none; padding:10px 22px; border-radius:8px; font-size:13px; font-weight:500; border:1px solid #e5e7eb;">
+          Gestionar mis citas
+        </a>
+        <p style="color:#9ca3af; font-size:11px; margin:8px 0 0;">
+          Desde ahí puedes cancelar una, varias o todas tus citas.
+        </p>
+      </div>`
+    : '';
+
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="${headerStyle}">
+          <div style="font-size:32px; margin-bottom:8px;">✨</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Citas Confirmadas!</h1>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 20px; font-size:16px;">
+            Hola <strong>${payload.clientName}</strong>, reservamos <strong>${payload.appointments.length} citas</strong> con éxito. 🎉
+          </p>
+          ${buildGroupAppointmentList(payload.appointments)}
+          <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
+            <p style="margin:0; font-size:13px; color:#9d174d;">
+              📍 <strong>Dirección:</strong> Bella vista, Colombia<br/>
+              📞 <strong>Teléfono:</strong> +57 3024075828<br/>
+              ⏰ Llega 10 minutos antes de cada cita.
+            </p>
+          </div>
+          ${cancelBlock}
+        </div>
+        <div style="${footerStyle}">
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export async function sendGroupBookingNotification(payload: {
+  clientName: string;
+  clientEmail: string;
+  clientWhatsApp: string;
+  appointments: GroupAppointmentInfo[];
+  cancelUrl?: string;
+}): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
+  const transporter = getTransporter();
+  const from = getSender();
+  const toDefault = getToDefault();
+
+  if (!transporter) {
+    return { sentToDefault: false, sentToClient: false };
+  }
+
+  const subject = `Nuevas reservas: ${payload.appointments.length} citas — ${payload.clientName}`;
+  let sentToDefault = false;
+  let sentToClient = false;
+
+  if (toDefault) {
+    try {
+      await transporter.sendMail({
+        from,
+        to: toDefault,
+        subject,
+        html: buildGroupBookingAdminEmail(payload),
+      });
+      sentToDefault = true;
+    } catch {}
+  }
+
+  if (payload.clientEmail) {
+    try {
+      await transporter.sendMail({
+        from,
+        to: payload.clientEmail,
+        subject: `✅ Confirmación de tus ${payload.appointments.length} citas`,
+        html: buildGroupBookingClientEmail(payload),
+      });
+      sentToClient = true;
+    } catch {}
+  }
+
+  return { sentToDefault, sentToClient };
+}
+
+function buildGroupCancellationClientEmail(payload: {
+  clientName: string;
+  cancelled: GroupAppointmentInfo[];
+  stillActive: GroupAppointmentInfo[];
+}) {
+  const stillActiveBlock = payload.stillActive.length
+    ? `<div style="margin-top:20px;">
+        <p style="${labelStyle}">Citas que siguen activas</p>
+        <div style="margin-top:8px;">${buildGroupAppointmentList(payload.stillActive)}</div>
+      </div>`
+    : '';
+
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="background:linear-gradient(135deg,#6b7280,#4b5563); padding:32px 40px; text-align:center;">
+          <div style="font-size:32px; margin-bottom:8px;">❌</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Citas Canceladas</h1>
+          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 20px; font-size:16px;">
+            Hola <strong>${payload.clientName}</strong>, se cancelaron ${payload.cancelled.length} de tus citas correctamente.
+          </p>
+          ${buildGroupAppointmentList(payload.cancelled)}
+          ${stillActiveBlock}
+          <div style="margin-top:24px; padding:16px; background:#f9fafb; border-radius:8px; border-left:4px solid #9ca3af;">
+            <p style="margin:0; font-size:13px; color:#6b7280; line-height:1.6;">
+              Si deseas reagendar, puedes hacerlo desde nuestra página web cuando quieras.
+            </p>
+          </div>
+        </div>
+        <div style="${footerStyle}">
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildGroupLateCancellationAdminEmail(payload: {
+  clientName: string;
+  cancelled: GroupAppointmentInfo[];
+}) {
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="background:linear-gradient(135deg,#dc2626,#b91c1c); padding:32px 40px; text-align:center;">
+          <div style="font-size:32px; margin-bottom:8px;">⚠️</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Cancelación Tardía</h1>
+          <p style="color:#fecaca; margin:6px 0 0; font-size:14px;">El cliente canceló fuera de la ventana de 30 minutos</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 24px; font-size:15px;">
+            <strong>${payload.clientName}</strong> canceló ${payload.cancelled.length} cita(s) con menos de 30 minutos de anticipación:
+          </p>
+          ${buildGroupAppointmentList(payload.cancelled)}
+        </div>
+        <div style="${footerStyle}">
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export async function sendGroupCancellationEmails(payload: {
+  clientName: string;
+  clientEmail: string;
+  cancelled: GroupAppointmentInfo[];
+  stillActive: GroupAppointmentInfo[];
+  anyLate: boolean;
+}): Promise<void> {
+  const transporter = getTransporter();
+  const from = getSender();
+  const toDefault = getToDefault();
+
+  if (!transporter) return;
+
+  if (payload.clientEmail) {
+    transporter.sendMail({
+      from,
+      to: payload.clientEmail,
+      subject: `Cancelación de ${payload.cancelled.length} cita(s)`,
+      html: buildGroupCancellationClientEmail(payload),
+    }).catch(() => {});
+  }
+
+  if (payload.anyLate && toDefault) {
+    transporter.sendMail({
+      from,
+      to: toDefault,
+      subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.cancelled.length} cita(s)`,
+      html: buildGroupLateCancellationAdminEmail(payload),
+    }).catch(() => {});
+  }
+}
+
 function buildAdminInvitationEmail(payload: {
   inviteeName: string;
   inviterName: string;

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LogOut,
-  Sparkles,
   Menu,
   X,
   LayoutDashboard,
@@ -16,7 +15,6 @@ import {
   Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useTenantName } from '@/lib/shared/TenantContext';
 
 type AdminProfile = { name: string; email: string; role?: string };
 
@@ -29,7 +27,7 @@ const navItems = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const tenantName = useTenantName();
+  const tenantName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Marcos BarberShop';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<AdminProfile>({ name: 'Administrador', email: '' });
@@ -151,9 +149,12 @@ export default function AdminSidebar() {
       <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 bg-gray-900 shrink-0 overflow-y-auto">
         {/* Brand */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-700">
-          <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/api/logo?size=72"
+            alt={tenantName}
+            className="w-9 h-9 rounded-lg object-cover shrink-0"
+          />
           <div>
             <p className="text-white font-bold text-sm font-serif leading-tight">{tenantName}</p>
             <p className="text-gray-400 text-xs">Administración</p>
@@ -167,9 +168,12 @@ export default function AdminSidebar() {
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-primary-500 rounded-lg flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/api/logo?size=56"
+            alt={tenantName}
+            className="w-7 h-7 rounded-lg object-cover"
+          />
           <span className="text-white font-bold text-sm font-serif">{tenantName} Admin</span>
         </div>
         <button
