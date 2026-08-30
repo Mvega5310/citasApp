@@ -47,8 +47,6 @@ module.exports = {
         },
         // Fondo crema global
         cream: '#F5F1E8',
-      },
-      colors: {
         bt: {
           body:     '#0A1210',
           noche:    '#0E1713',

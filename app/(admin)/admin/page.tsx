@@ -364,7 +364,7 @@ export default function AdminPage() {
                                   <select
                                     value={editStatus}
                                     onChange={(e) => setEditStatus(e.target.value)}
-                                    className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                    className="text-xs bg-white text-gray-900 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
                                   >
                                     {Object.entries(STATUS_LABELS).map(([val, label]) => (
                                       <option key={val} value={val}>{label}</option>
@@ -478,7 +478,7 @@ export default function AdminPage() {
                                     <select
                                       value={editStatus}
                                       onChange={(e) => setEditStatus(e.target.value)}
-                                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                      className="text-xs bg-white text-gray-900 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
                                     >
                                       {Object.entries(STATUS_LABELS).map(([val, label]) => (
                                         <option key={val} value={val}>{label}</option>
