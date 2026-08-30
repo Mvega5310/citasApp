@@ -23,7 +23,7 @@ type SalonSettings = {
 };
 
 const DEFAULTS: SalonSettings = {
-  salonName: 'BeautyTurno',
+  salonName: 'Marcos BarberShop',
   phone: '+57 300 123 4567',
   address: 'Calle 123 #45-67',
   city: 'Bogotá',
@@ -168,7 +168,7 @@ export default function ConfiguracionPage() {
                     icon={Store}
                     value={settings.salonName}
                     onChange={(v) => set('salonName', v)}
-                    placeholder="BeautyTurno"
+                    placeholder="Marcos BarberShop"
                   />
                   <Field
                     label="Teléfono"

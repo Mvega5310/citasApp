@@ -2,8 +2,10 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Lock, Eye, EyeOff, Sparkles, Mail } from 'lucide-react';
+import { Lock, Eye, EyeOff, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Marcos BarberShop';
 
 function LoginForm() {
   const router = useRouter();
@@ -116,10 +118,13 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl shadow-lg mb-4">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 font-serif">BeautyTurno</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/api/logo?size=128"
+            alt={APP_NAME}
+            className="inline-flex w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover"
+          />
+          <h1 className="text-2xl font-bold text-gray-900 font-serif">{APP_NAME}</h1>
           <p className="text-gray-500 text-sm mt-1">Panel de Administración</p>
         </div>
 
@@ -136,7 +141,7 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          Solo personal autorizado · BeautyTurno © {new Date().getFullYear()}
+          Solo personal autorizado · {APP_NAME} © {new Date().getFullYear()}
         </p>
       </div>
     </div>

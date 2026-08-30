@@ -109,7 +109,7 @@ function buildAdminBookingEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">📅</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Nueva Reserva</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:15px;">
@@ -128,7 +128,7 @@ function buildAdminBookingEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -167,7 +167,7 @@ function buildClientConfirmationEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">✨</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Cita Confirmada!</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:16px;">
@@ -186,7 +186,7 @@ function buildClientConfirmationEmail(payload: {
           ${cancelBlock}
         </div>
         <div style="${footerStyle}">
-          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -213,7 +213,7 @@ function buildCancellationClientEmail(payload: {
         <div style="background:linear-gradient(135deg,#6b7280,#4b5563); padding:32px 40px; text-align:center;">
           <div style="font-size:32px; margin-bottom:8px;">❌</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Cita Cancelada</h1>
-          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
+          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:16px;">
@@ -229,7 +229,7 @@ function buildCancellationClientEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -268,7 +268,7 @@ function buildLateCancellationAdminEmail(payload: {
           ${buildRow('Hora', payload.time)}
         </div>
         <div style="${footerStyle}">
-          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -288,7 +288,7 @@ function buildContactEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">💬</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Nuevo Mensaje</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Formulario de Contacto · BeautyTurno</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Formulario de Contacto · Marcos BarberShop</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:15px;">
@@ -309,7 +309,7 @@ function buildContactEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          BeautyTurno · ${new Date().getFullYear()}
+          Marcos BarberShop · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -661,7 +661,7 @@ function buildAdminInvitationEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">🔐</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Invitación al Panel</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">BeautyTurno · Administración</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop · Administración</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 20px; font-size:16px;">
@@ -669,7 +669,7 @@ function buildAdminInvitationEmail(payload: {
           </p>
           <p style="color:#374151; margin:0 0 20px; font-size:15px; line-height:1.6;">
             <strong>${payload.inviterName}</strong> te ha invitado a unirte como
-            <strong>${roleLabel}</strong> del panel de administración de BeautyTurno.
+            <strong>${roleLabel}</strong> del panel de administración de Marcos BarberShop.
           </p>
           <p style="color:#374151; margin:0 0 28px; font-size:15px; line-height:1.6;">
             Haz clic en el botón para crear tu contraseña y activar tu cuenta:
@@ -687,7 +687,7 @@ function buildAdminInvitationEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          BeautyTurno · ${new Date().getFullYear()}<br/>
+          Marcos BarberShop · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -709,7 +709,7 @@ export async function sendAdminInvitation(payload: {
     await transporter.sendMail({
       from,
       to: payload.inviteeEmail,
-      subject: `Invitación al panel de administración — BeautyTurno`,
+      subject: `Invitación al panel de administración — Marcos BarberShop`,
       html: buildAdminInvitationEmail(payload),
     });
     return true;
@@ -729,7 +729,7 @@ function buildReminderEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">⏰</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Tu cita es en 10 minutos!</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:16px;">
@@ -745,7 +745,7 @@ function buildReminderEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          BeautyTurno · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>

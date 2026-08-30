@@ -16,7 +16,7 @@ export type SalonSettings = {
 };
 
 const DEFAULTS: SalonSettings = {
-  salonName: 'BeautyTurno',
+  salonName: 'Marcos BarberShop',
   phone: '+57 300 123 4567',
   address: 'Calle 123 #45-67',
   city: 'Bogotá',
