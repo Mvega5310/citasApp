@@ -73,13 +73,13 @@ export async function POST(request: NextRequest) {
         .filter((d) => d.status !== 'cancelled')
         .map((d) => ({ serviceName: d.serviceName, date: d.date, time: d.time }));
 
-      sendGroupCancellationEmails({
+      await sendGroupCancellationEmails({
         clientName,
         clientEmail,
         cancelled,
         stillActive,
         anyLate,
-      }).catch(() => {});
+      });
 
       return NextResponse.json({ ok: true, cancelledCount: cancelled.length, anyLate });
     }
@@ -106,15 +106,14 @@ export async function POST(request: NextRequest) {
       lateCancel: isLate,
     });
 
-    // Fire emails without blocking the response
-    sendCancellationEmails({
+    await sendCancellationEmails({
       clientName,
       clientEmail: data.clientEmail,
       serviceName,
       date,
       time,
       isLate,
-    }).catch(() => {});
+    });
 
     return NextResponse.json({ ok: true, isLate });
   } catch {

@@ -10,6 +10,13 @@ function getTransporter() {
     port: Number(process.env.EMAIL_SERVER_PORT || 587),
     secure: false,
     auth: { user, pass },
+    // Sin estos límites, un servidor de destino lento (Hotmail/Outlook suele
+    // demorar o hacer greylisting) puede dejar la conexión colgada varios
+    // minutos (el timeout por defecto de nodemailer es de hasta 10 min),
+    // bloqueando cualquier ruta que espere el envío del correo.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
   });
 }
 
@@ -330,23 +337,31 @@ export async function sendCancellationEmails(payload: {
 
   if (!transporter) return;
 
-  if (payload.clientEmail) {
-    transporter.sendMail({
-      from,
-      to: payload.clientEmail,
-      subject: `Cancelación de tu cita — ${payload.serviceName}`,
-      html: buildCancellationClientEmail(payload),
-    }).catch(() => {});
-  }
-
-  if (payload.isLate && toDefault) {
-    transporter.sendMail({
-      from,
-      to: toDefault,
-      subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.serviceName}`,
-      html: buildLateCancellationAdminEmail(payload),
-    }).catch(() => {});
-  }
+  // Se espera a que ambos envíos terminen (en paralelo) antes de devolver el
+  // control: en un entorno serverless, una promesa "suelta" que sigue
+  // corriendo después de responder al cliente puede quedar cortada a medias.
+  await Promise.all([
+    payload.clientEmail
+      ? transporter
+          .sendMail({
+            from,
+            to: payload.clientEmail,
+            subject: `Cancelación de tu cita — ${payload.serviceName}`,
+            html: buildCancellationClientEmail(payload),
+          })
+          .catch(() => {})
+      : Promise.resolve(),
+    payload.isLate && toDefault
+      ? transporter
+          .sendMail({
+            from,
+            to: toDefault,
+            subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.serviceName}`,
+            html: buildLateCancellationAdminEmail(payload),
+          })
+          .catch(() => {})
+      : Promise.resolve(),
+  ]);
 }
 
 export async function sendBookingNotification(payload: {
@@ -367,32 +382,28 @@ export async function sendBookingNotification(payload: {
   }
 
   const subject = `Nueva reserva: ${payload.serviceName} — ${payload.date} ${payload.time}`;
-  let sentToDefault = false;
-  let sentToClient = false;
 
-  if (toDefault) {
-    try {
-      await transporter.sendMail({
-        from,
-        to: toDefault,
-        subject,
-        html: buildAdminBookingEmail(payload),
-      });
-      sentToDefault = true;
-    } catch {}
-  }
-
-  if (payload.clientEmail) {
-    try {
-      await transporter.sendMail({
-        from,
-        to: payload.clientEmail,
-        subject: `✅ Confirmación de tu cita — ${payload.serviceName}`,
-        html: buildClientConfirmationEmail(payload),
-      });
-      sentToClient = true;
-    } catch {}
-  }
+  // Se envían en paralelo (no uno tras otro) para que un destinatario lento
+  // no duplique la espera del otro.
+  const [sentToDefault, sentToClient] = await Promise.all([
+    toDefault
+      ? transporter
+          .sendMail({ from, to: toDefault, subject, html: buildAdminBookingEmail(payload) })
+          .then(() => true)
+          .catch(() => false)
+      : Promise.resolve(false),
+    payload.clientEmail
+      ? transporter
+          .sendMail({
+            from,
+            to: payload.clientEmail,
+            subject: `✅ Confirmación de tu cita — ${payload.serviceName}`,
+            html: buildClientConfirmationEmail(payload),
+          })
+          .then(() => true)
+          .catch(() => false)
+      : Promise.resolve(false),
+  ]);
 
   return { sentToDefault, sentToClient };
 }
@@ -519,32 +530,26 @@ export async function sendGroupBookingNotification(payload: {
   }
 
   const subject = `Nuevas reservas: ${payload.appointments.length} citas — ${payload.clientName}`;
-  let sentToDefault = false;
-  let sentToClient = false;
 
-  if (toDefault) {
-    try {
-      await transporter.sendMail({
-        from,
-        to: toDefault,
-        subject,
-        html: buildGroupBookingAdminEmail(payload),
-      });
-      sentToDefault = true;
-    } catch {}
-  }
-
-  if (payload.clientEmail) {
-    try {
-      await transporter.sendMail({
-        from,
-        to: payload.clientEmail,
-        subject: `✅ Confirmación de tus ${payload.appointments.length} citas`,
-        html: buildGroupBookingClientEmail(payload),
-      });
-      sentToClient = true;
-    } catch {}
-  }
+  const [sentToDefault, sentToClient] = await Promise.all([
+    toDefault
+      ? transporter
+          .sendMail({ from, to: toDefault, subject, html: buildGroupBookingAdminEmail(payload) })
+          .then(() => true)
+          .catch(() => false)
+      : Promise.resolve(false),
+    payload.clientEmail
+      ? transporter
+          .sendMail({
+            from,
+            to: payload.clientEmail,
+            subject: `✅ Confirmación de tus ${payload.appointments.length} citas`,
+            html: buildGroupBookingClientEmail(payload),
+          })
+          .then(() => true)
+          .catch(() => false)
+      : Promise.resolve(false),
+  ]);
 
   return { sentToDefault, sentToClient };
 }
@@ -629,23 +634,28 @@ export async function sendGroupCancellationEmails(payload: {
 
   if (!transporter) return;
 
-  if (payload.clientEmail) {
-    transporter.sendMail({
-      from,
-      to: payload.clientEmail,
-      subject: `Cancelación de ${payload.cancelled.length} cita(s)`,
-      html: buildGroupCancellationClientEmail(payload),
-    }).catch(() => {});
-  }
-
-  if (payload.anyLate && toDefault) {
-    transporter.sendMail({
-      from,
-      to: toDefault,
-      subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.cancelled.length} cita(s)`,
-      html: buildGroupLateCancellationAdminEmail(payload),
-    }).catch(() => {});
-  }
+  await Promise.all([
+    payload.clientEmail
+      ? transporter
+          .sendMail({
+            from,
+            to: payload.clientEmail,
+            subject: `Cancelación de ${payload.cancelled.length} cita(s)`,
+            html: buildGroupCancellationClientEmail(payload),
+          })
+          .catch(() => {})
+      : Promise.resolve(),
+    payload.anyLate && toDefault
+      ? transporter
+          .sendMail({
+            from,
+            to: toDefault,
+            subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.cancelled.length} cita(s)`,
+            html: buildGroupLateCancellationAdminEmail(payload),
+          })
+          .catch(() => {})
+      : Promise.resolve(),
+  ]);
 }
 
 function buildAdminInvitationEmail(payload: {
