@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Header from '@/components/cliente/Header';
 import Footer from '@/components/cliente/Footer';
 import BottomNav from '@/components/cliente/BottomNav';
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 
 const WHATSAPP = '573024075828';
@@ -59,16 +59,16 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen pb-16 md:pb-0" style={{ background: '#0A1210' }}>
+    <div className="min-h-screen pb-16 md:pb-0" style={{ background: '#100E0C' }}>
       <Header />
 
       <main className="max-w-xl mx-auto px-5 py-8">
         {/* Heading */}
         <div className="mb-7">
-          <h1 className="text-3xl font-bold font-display mb-2" style={{ color: '#F1EDE3' }}>
+          <h1 className="text-3xl font-bold font-display mb-2" style={{ color: '#F4EEE5' }}>
             Contáctanos
           </h1>
-          <p className="text-sm" style={{ color: '#7C8F81' }}>
+          <p className="text-sm" style={{ color: '#A39583' }}>
             Estamos aquí para ayudarte
           </p>
         </div>
@@ -79,7 +79,7 @@ export default function ContactPage() {
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-4 rounded-[18px] p-5 mb-4 transition-all duration-200 active:scale-[0.98]"
-          style={{ background: '#1FA97C', color: 'white' }}
+          style={{ background: '#24845E', color: 'white' }}
         >
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/20 shrink-0">
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
@@ -90,7 +90,7 @@ export default function ContactPage() {
             <p className="font-semibold text-base">Escribir por WhatsApp</p>
             <p className="text-sm opacity-80">Respuesta rápida garantizada</p>
           </div>
-          <span className="text-xl opacity-70">→</span>
+          <ArrowRight className="w-5 h-5 opacity-70 shrink-0" width={20} height={20} aria-hidden="true" />
         </a>
 
         {/* Info cards */}
@@ -106,17 +106,17 @@ export default function ContactPage() {
               target={href.startsWith('http') ? '_blank' : undefined}
               rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
               className="flex items-center gap-4 rounded-[14px] p-4 transition-all duration-200"
-              style={{ background: '#17231D', border: '1px solid #2C3E36' }}
+              style={{ background: '#201A15', border: '1px solid #403328' }}
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: '#22322A' }}
+                style={{ background: '#191511' }}
               >
-                <Icon className="w-4 h-4" style={{ color: '#E84B85' }} />
+                <Icon className="w-4 h-4" style={{ color: '#C69B62' }} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs mb-0.5" style={{ color: '#7C8F81' }}>{label}</p>
-                <p className="text-sm font-medium truncate" style={{ color: '#F1EDE3' }}>{value}</p>
+                <p className="text-xs mb-0.5" style={{ color: '#A39583' }}>{label}</p>
+                <p className="text-sm font-medium truncate" style={{ color: '#F4EEE5' }}>{value}</p>
               </div>
             </a>
           ))}
@@ -125,17 +125,17 @@ export default function ContactPage() {
         {/* Hours */}
         <div
           className="rounded-[14px] p-4 mb-6"
-          style={{ background: '#17231D', border: '1px solid #2C3E36' }}
+          style={{ background: '#201A15', border: '1px solid #403328' }}
         >
           <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4" style={{ color: '#E84B85' }} />
-            <p className="text-sm font-semibold" style={{ color: '#F1EDE3' }}>Horarios</p>
+            <Clock className="w-4 h-4" style={{ color: '#C69B62' }} />
+            <p className="text-sm font-semibold" style={{ color: '#F4EEE5' }}>Horarios</p>
           </div>
           <div className="flex flex-col gap-2">
             {hours.map(({ day, hours: h }) => (
               <div key={day} className="flex justify-between items-center">
-                <span className="text-sm" style={{ color: '#9FB0A2' }}>{day}</span>
-                <span className="text-sm font-medium" style={{ color: '#F1EDE3' }}>{h}</span>
+                <span className="text-sm" style={{ color: '#B8AA99' }}>{day}</span>
+                <span className="text-sm font-medium" style={{ color: '#F4EEE5' }}>{h}</span>
               </div>
             ))}
           </div>
@@ -144,53 +144,54 @@ export default function ContactPage() {
         {/* Map placeholder */}
         <div
           className="rounded-[14px] p-5 mb-6 flex flex-col items-center gap-3"
-          style={{ background: '#17231D', border: '1px solid #2C3E36' }}
+          style={{ background: '#201A15', border: '1px solid #403328' }}
         >
-          <MapPin className="w-8 h-8" style={{ color: '#5D7065' }} />
-          <p className="text-sm text-center" style={{ color: '#9FB0A2' }}>{ADDRESS}</p>
+          <MapPin className="w-8 h-8" style={{ color: '#857767' }} />
+          <p className="text-sm text-center" style={{ color: '#B8AA99' }}>{ADDRESS}</p>
           <a
             href={MAPS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium transition-colors duration-200"
-            style={{ color: '#E84B85' }}
+            className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium transition-colors duration-200"
+            style={{ color: '#C69B62' }}
           >
-            Ver en Google Maps →
+            Ver en Google Maps
+            <ArrowUpRight className="w-4 h-4" width={16} height={16} aria-hidden="true" />
           </a>
         </div>
 
         {/* Contact form */}
-        <div className="rounded-[18px] p-5" style={{ background: '#17231D', border: '1px solid #2C3E36' }}>
+        <div className="rounded-[18px] p-5" style={{ background: '#201A15', border: '1px solid #403328' }}>
           {submitted ? (
             <div className="flex flex-col items-center py-8 text-center">
               <div
                 className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
-                style={{ background: '#22322A' }}
+                style={{ background: '#191511' }}
               >
-                <CheckCircle className="w-7 h-7" style={{ color: '#1FA97C' }} />
+                <CheckCircle className="w-7 h-7" style={{ color: '#24845E' }} />
               </div>
-              <p className="font-semibold text-base mb-1" style={{ color: '#F1EDE3' }}>
+              <p className="font-semibold text-base mb-1" style={{ color: '#F4EEE5' }}>
                 ¡Mensaje enviado!
               </p>
-              <p className="text-sm mb-5" style={{ color: '#7C8F81' }}>
+              <p className="text-sm mb-5" style={{ color: '#A39583' }}>
                 Te responderemos en menos de 24 horas.
               </p>
               <button
                 onClick={() => setSubmitted(false)}
                 className="text-sm font-medium"
-                style={{ color: '#E84B85' }}
+                style={{ color: '#C69B62' }}
               >
                 Enviar otro mensaje
               </button>
             </div>
           ) : (
             <>
-              <p className="font-semibold text-base mb-4" style={{ color: '#F1EDE3' }}>
+              <p className="font-semibold text-base mb-4" style={{ color: '#F4EEE5' }}>
                 Envíanos un mensaje
               </p>
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                     Nombre completo *
                   </label>
                   <input
@@ -208,7 +209,7 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                     Correo electrónico *
                   </label>
                   <input
@@ -226,7 +227,7 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                     Asunto *
                   </label>
                   <select
@@ -246,7 +247,7 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                  <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                     Mensaje *
                   </label>
                   <textarea

@@ -27,54 +27,54 @@ export default function Header() {
     exact ? pathname === href : pathname.startsWith(href);
 
   return (
-    <header
-      className="sticky top-0 z-50"
-      style={{ background: '#0E1713', borderBottom: '1px solid #2C3E36' }}
-    >
+    <header className="sticky top-0 z-50 bg-cafe-bg/90 backdrop-blur-md border-b border-cafe-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-14">
-          {/* Brand */}
-          <Link href="/" className="flex items-center gap-2.5">
+        <div className="flex justify-between items-center h-16">
+          {/* Marca */}
+          <Link href="/" className="flex items-center gap-3 min-h-[44px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/api/logo?size=64"
               alt={APP_NAME}
-              className="w-8 h-8 rounded-xl object-cover shrink-0"
+              width={36}
+              height={36}
+              className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border"
             />
-            <span
-              className="text-lg font-bold tracking-tight font-display hidden sm:block"
-              style={{ color: '#F1EDE3' }}
-            >
+            <span className="font-display text-lg font-medium tracking-tight text-cafe-text hidden min-[420px]:block">
               {APP_NAME}
             </span>
           </Link>
 
-          {/* Schedule chip + Desktop nav */}
-          <div className="flex items-center gap-3">
-            <span
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
-              style={{ background: '#17231D', border: '1px solid #2C3E36', color: '#9FB0A2' }}
-            >
-              <Clock className="w-3 h-3" />
+          {/* Horario + navegación de escritorio */}
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-cafe-card/70 border border-cafe-border text-cafe-muted">
+              <Clock className="w-3.5 h-3.5 text-cafe-gold" width={14} height={14} aria-hidden="true" />
               {getScheduleChip()}
             </span>
 
-            <nav className="hidden md:flex items-center gap-1">
-              {navLinks.map(({ href, label, exact }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className="relative px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
-                  style={{ color: isActive(href, exact) ? '#E84B85' : '#9FB0A2' }}
-                >
-                  {label}
-                </Link>
-              ))}
-              <Link
-                href="/reservar"
-                className="ml-2 btn-primary text-sm"
-                style={{ paddingTop: '8px', paddingBottom: '8px', paddingLeft: '20px', paddingRight: '20px', minHeight: '36px' }}
-              >
+            <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
+              {navLinks.map(({ href, label, exact }) => {
+                const active = isActive(href, exact);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`relative px-3 py-2 text-sm font-semibold transition-colors duration-200 ${
+                      active ? 'text-cafe-goldlight' : 'text-cafe-muted hover:text-cafe-text'
+                    }`}
+                  >
+                    {label}
+                    {active && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-3 right-3 -bottom-0.5 h-px bg-cafe-gold"
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+              <Link href="/reservar" className="ml-3 btn-primary text-sm py-2 px-5 min-h-[40px]">
                 Reservar cita
               </Link>
             </nav>

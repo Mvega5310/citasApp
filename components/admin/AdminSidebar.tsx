@@ -75,10 +75,11 @@ export default function AdminSidebar() {
             key={href}
             href={href}
             onClick={onClose}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            aria-current={isActive(href) ? 'page' : undefined}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
               isActive(href)
-                ? 'bg-primary-600 text-white'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                ? 'bg-cafe-gold/15 text-cafe-goldlight ring-1 ring-inset ring-cafe-gold/30'
+                : 'text-cafe-muted hover:bg-cafe-hover hover:text-cafe-text'
             }`}
           >
             <Icon className="w-5 h-5 shrink-0" />
@@ -89,32 +90,32 @@ export default function AdminSidebar() {
   );
 
   const ProfileSection = ({ onClose }: { onClose?: () => void }) => (
-    <div className="px-3 py-3 border-t border-gray-700" ref={dropdownRef}>
+    <div className="px-3 py-3 border-t border-cafe-border" ref={dropdownRef}>
       {/* Dropdown menu */}
       {profileOpen && (
-        <div className="mb-1 bg-gray-800 rounded-xl overflow-hidden shadow-lg ring-1 ring-white/10">
-          <div className="px-4 py-3 border-b border-gray-700">
-            <p className="text-white text-xs font-semibold truncate">{profile.name}</p>
-            <p className="text-gray-400 text-xs truncate mt-0.5">{profile.email}</p>
+        <div className="mb-1 bg-cafe-card rounded-xl overflow-hidden shadow-lg shadow-black/40 ring-1 ring-cafe-border">
+          <div className="px-4 py-3 border-b border-cafe-border">
+            <p className="text-cafe-text text-xs font-semibold truncate">{profile.name}</p>
+            <p className="text-cafe-muted text-xs truncate mt-0.5">{profile.email}</p>
           </div>
           <button
             onClick={() => { setProfileOpen(false); onClose?.(); router.push('/admin/perfil'); }}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-cafe-muted hover:bg-cafe-hover hover:text-cafe-text transition-colors"
           >
             <User className="w-4 h-4 shrink-0" />
             Perfil
           </button>
           <button
             onClick={() => { setProfileOpen(false); onClose?.(); router.push('/admin/configuracion'); }}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-cafe-muted hover:bg-cafe-hover hover:text-cafe-text transition-colors"
           >
             <Settings className="w-4 h-4 shrink-0" />
             Configuración
           </button>
-          <div className="border-t border-gray-700" />
+          <div className="border-t border-cafe-border" />
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors"
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:bg-red-400/10 hover:text-red-300 transition-colors"
           >
             <LogOut className="w-4 h-4 shrink-0" />
             Cerrar sesión
@@ -125,17 +126,17 @@ export default function AdminSidebar() {
       {/* Profile trigger button */}
       <button
         onClick={() => setProfileOpen((v) => !v)}
-        className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 hover:bg-gray-700 transition-colors group"
+        className="flex items-center gap-3 w-full rounded-xl px-3 py-2.5 hover:bg-cafe-hover transition-colors group"
       >
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-md">
+        <div className="w-9 h-9 rounded-full bg-cafe-gold flex items-center justify-center text-cafe-bg text-sm font-bold shrink-0">
           {initials}
         </div>
         <div className="flex-1 text-left min-w-0">
-          <p className="text-white text-sm font-medium truncate leading-tight">{profile.name}</p>
-          <p className="text-gray-400 text-xs truncate">{profile.email}</p>
+          <p className="text-cafe-text text-sm font-medium truncate leading-tight">{profile.name}</p>
+          <p className="text-cafe-muted text-xs truncate">{profile.email}</p>
         </div>
         <ChevronUp
-          className={`w-4 h-4 text-gray-400 group-hover:text-gray-200 transition-transform duration-200 ${
+          className={`w-4 h-4 text-cafe-subtle group-hover:text-cafe-text transition-transform duration-200 ${
             profileOpen ? '' : 'rotate-180'
           }`}
         />
@@ -146,18 +147,18 @@ export default function AdminSidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 bg-gray-900 shrink-0 overflow-y-auto">
+      <aside className="hidden md:flex flex-col w-64 h-screen sticky top-0 bg-cafe-soft border-r border-cafe-border shrink-0 overflow-y-auto">
         {/* Brand */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-700">
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-cafe-border">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/api/logo?size=72"
             alt={tenantName}
-            className="w-9 h-9 rounded-lg object-cover shrink-0"
+            className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border"
           />
           <div>
-            <p className="text-white font-bold text-sm font-serif leading-tight">{tenantName}</p>
-            <p className="text-gray-400 text-xs">Administración</p>
+            <p className="text-cafe-text font-medium text-base font-display leading-tight">{tenantName}</p>
+            <p className="text-cafe-gold text-[11px] font-semibold uppercase tracking-[0.2em] mt-0.5">Administración</p>
           </div>
         </div>
 
@@ -166,19 +167,21 @@ export default function AdminSidebar() {
       </aside>
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900 border-b border-gray-700 flex items-center justify-between px-4 h-14">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-cafe-bg/95 backdrop-blur-md border-b border-cafe-border flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/api/logo?size=56"
             alt={tenantName}
-            className="w-7 h-7 rounded-lg object-cover"
+            className="w-8 h-8 rounded-lg object-cover ring-1 ring-cafe-border"
           />
-          <span className="text-white font-bold text-sm font-serif">{tenantName} Admin</span>
+          <span className="text-cafe-text font-medium text-sm font-display">{tenantName} Admin</span>
         </div>
         <button
           onClick={() => setMobileOpen((v) => !v)}
-          className="text-gray-400 hover:text-white p-1"
+          aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={mobileOpen}
+          className="text-cafe-muted hover:text-cafe-text p-2 -mr-1 rounded-lg"
         >
           {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -186,9 +189,9 @@ export default function AdminSidebar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/50" onClick={() => setMobileOpen(false)}>
+        <div className="md:hidden fixed inset-0 z-30 bg-black/60" onClick={() => setMobileOpen(false)}>
           <div
-            className="absolute top-14 left-0 bottom-0 w-64 bg-gray-900 flex flex-col"
+            className="absolute top-14 left-0 bottom-0 w-64 bg-cafe-soft border-r border-cafe-border flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <NavLinks onClose={() => setMobileOpen(false)} />

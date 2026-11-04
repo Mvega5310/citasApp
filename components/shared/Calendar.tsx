@@ -66,24 +66,24 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
         <button
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
           className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 touch-manipulation"
-          style={{ border: '1px solid #2C3E36', color: '#9FB0A2' }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#E84B85')}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#2C3E36')}
+          style={{ border: '1px solid #403328', color: '#B8AA99' }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C69B62')}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#403328')}
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
         <h2
           className="text-base font-semibold capitalize font-display"
-          style={{ color: '#F1EDE3' }}
+          style={{ color: '#F4EEE5' }}
         >
           {format(currentMonth, 'MMMM yyyy', { locale: es })}
         </h2>
         <button
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
           className="w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 touch-manipulation"
-          style={{ border: '1px solid #2C3E36', color: '#9FB0A2' }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#E84B85')}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#2C3E36')}
+          style={{ border: '1px solid #403328', color: '#B8AA99' }}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#C69B62')}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#403328')}
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -95,7 +95,7 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
           <div
             key={day}
             className="text-center text-xs font-medium py-2"
-            style={{ color: '#7C8F81' }}
+            style={{ color: '#A39583' }}
           >
             {day}
           </div>
@@ -121,7 +121,7 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
               onClick={() => handleDateClick(day)}
               disabled={!isAvailable || isPastDate}
               className={`calendar-day ${!isCurrentMonth ? 'opacity-20' : ''} ${isPastDate ? 'disabled' : ''} ${isSelected ? 'selected' : ''}`}
-              style={isTodayDate && !isSelected ? { boxShadow: '0 0 0 2px #E84B85' } : undefined}
+              style={isTodayDate && !isSelected ? { boxShadow: '0 0 0 2px #C69B62' } : undefined}
             >
               {format(day, 'd')}
             </button>
@@ -130,13 +130,13 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
       </div>
 
       {/* Legend */}
-      <div className="mt-5 flex items-center justify-center gap-5 text-xs" style={{ color: '#7C8F81' }}>
+      <div className="mt-5 flex items-center justify-center gap-5 text-xs" style={{ color: '#A39583' }}>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full" style={{ background: '#E84B85' }} />
+          <span className="w-3 h-3 rounded-full" style={{ background: '#C69B62' }} />
           Disponible
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full" style={{ background: '#2C3E36' }} />
+          <span className="w-3 h-3 rounded-full" style={{ background: '#403328' }} />
           No disponible
         </div>
       </div>
