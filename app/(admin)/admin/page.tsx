@@ -31,11 +31,18 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-green-100 text-green-800',
-  completed: 'bg-blue-100 text-blue-800',
-  cancelled: 'bg-red-100 text-red-800',
+  pending: 'bg-amber-400/10 text-amber-300 ring-1 ring-inset ring-amber-400/30',
+  confirmed: 'bg-emerald-400/10 text-emerald-300 ring-1 ring-inset ring-emerald-400/30',
+  completed: 'bg-sky-400/10 text-sky-300 ring-1 ring-inset ring-sky-400/30',
+  cancelled: 'bg-red-400/10 text-red-300 ring-1 ring-inset ring-red-400/30',
 };
+const STATUS_FALLBACK = 'bg-cafe-soft text-cafe-muted ring-1 ring-inset ring-cafe-border';
+
+// Estilos reutilizados en la vista (solo presentación)
+const selectCls =
+  'text-xs bg-cafe-soft text-cafe-text border border-cafe-border rounded-lg px-2 py-1.5 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cafe-gold/50';
+const checkboxCls = 'w-4 h-4 rounded accent-cafe-gold cursor-pointer';
+const iconBtnCls = 'p-1.5 rounded-lg transition-colors';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -165,28 +172,32 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 pb-14 md:pb-0">
+    <div className="flex min-h-screen bg-cafe-bg text-cafe-text pb-14 md:pb-0">
       <AdminSidebar />
       <AdminBottomNav />
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 md:flex items-center justify-between hidden">
+        <div className="bg-cafe-bg/90 backdrop-blur-md border-b border-cafe-border px-6 lg:px-8 py-5 md:flex items-center justify-between hidden">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 font-serif">Panel</h1>
-            <p className="text-sm text-gray-500">{total} cita{total !== 1 ? 's' : ''} registradas</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-cafe-gold mb-1">
+              Administración
+            </p>
+            <h1 className="text-2xl font-medium text-cafe-text font-display">Panel</h1>
+            <p className="text-sm text-cafe-muted mt-0.5">{total} cita{total !== 1 ? 's' : ''} registradas</p>
           </div>
           <div className="flex items-center gap-3">
             {/* Notification bell */}
             <button
               onClick={() => setFilterStatus('pending')}
               title="Ver citas pendientes"
-              className="relative p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition"
+              aria-label="Ver citas pendientes"
+              className="relative p-2.5 rounded-xl border border-cafe-border bg-cafe-card text-cafe-muted hover:text-cafe-goldlight hover:border-cafe-gold/60 transition"
             >
               <Bell className="w-5 h-5" />
               {stats.pending > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-cafe-gold text-cafe-bg text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow">
                   {stats.pending > 99 ? '99+' : stats.pending}
                 </span>
               )}
@@ -195,40 +206,40 @@ export default function AdminPage() {
             <button
               onClick={() => fetchAppointments(true)}
               disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 text-gray-700 transition"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-full border border-cafe-border bg-cafe-card text-cafe-text hover:border-cafe-gold/60 transition disabled:opacity-60"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-cafe-gold ${refreshing ? 'animate-spin' : ''}`} />
               Actualizar
             </button>
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-6 mt-14 md:mt-0">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 mt-14 md:mt-0">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500 mx-auto" />
-                <p className="mt-3 text-gray-500 text-sm">Cargando citas...</p>
+                <div className="animate-spin rounded-full h-10 w-10 border-2 border-cafe-border border-t-cafe-gold mx-auto" />
+                <p className="mt-3 text-cafe-muted text-sm">Cargando citas...</p>
               </div>
             </div>
           ) : (
             <>
               {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
                 {[
-                  { label: 'Total', value: stats.total, icon: Calendar, color: 'blue' },
-                  { label: 'Pendientes', value: stats.pending, icon: Clock, color: 'yellow' },
-                  { label: 'Confirmadas', value: stats.confirmed, icon: CheckCircle, color: 'green' },
-                  { label: 'Completadas', value: stats.completed, icon: User, color: 'purple' },
-                ].map(({ label, value, icon: Icon, color }) => (
-                  <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 bg-${color}-100 rounded-lg`}>
-                        <Icon className={`w-5 h-5 text-${color}-600`} />
-                      </div>
+                  { label: 'Total', value: stats.total, icon: Calendar, tone: 'bg-cafe-gold/10 text-cafe-gold' },
+                  { label: 'Pendientes', value: stats.pending, icon: Clock, tone: 'bg-amber-400/10 text-amber-300' },
+                  { label: 'Confirmadas', value: stats.confirmed, icon: CheckCircle, tone: 'bg-emerald-400/10 text-emerald-300' },
+                  { label: 'Completadas', value: stats.completed, icon: User, tone: 'bg-sky-400/10 text-sky-300' },
+                ].map(({ label, value, icon: Icon, tone }) => (
+                  <div key={label} className="bg-cafe-card rounded-2xl border border-cafe-border p-4 md:p-5">
+                    <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs text-gray-500">{label}</p>
-                        <p className="text-2xl font-bold text-gray-900">{value}</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-cafe-muted">{label}</p>
+                        <p className="text-3xl font-display font-medium text-cafe-text mt-2">{value}</p>
+                      </div>
+                      <div className={`p-2.5 rounded-xl ${tone}`}>
+                        <Icon className="w-5 h-5" />
                       </div>
                     </div>
                   </div>
@@ -236,17 +247,17 @@ export default function AdminPage() {
               </div>
 
               {/* Filters */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-4">
+              <div className="bg-cafe-card rounded-2xl border border-cafe-border p-4 mb-4">
                 <div className="flex flex-wrap gap-2 items-center">
-                  <Filter className="w-4 h-4 text-gray-400 shrink-0" />
+                  <Filter className="w-4 h-4 text-cafe-subtle shrink-0" />
                   {(['all', 'pending', 'confirmed', 'completed', 'cancelled'] as FilterStatus[]).map((s) => (
                     <button
                       key={s}
                       onClick={() => setFilterStatus(s)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
+                      className={`px-3.5 py-2 rounded-full text-xs font-semibold transition ${
                         filterStatus === s
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-cafe-gold text-cafe-bg'
+                          : 'bg-cafe-soft text-cafe-muted border border-cafe-border hover:text-cafe-text hover:border-cafe-gold/60'
                       }`}
                     >
                       {s === 'all' ? 'Todas' : STATUS_LABELS[s]}
@@ -257,10 +268,15 @@ export default function AdminPage() {
                       type="date"
                       value={filterDate}
                       onChange={(e) => setFilterDate(e.target.value)}
-                      className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                      aria-label="Filtrar por fecha"
+                      className={selectCls}
                     />
                     {filterDate && (
-                      <button onClick={() => setFilterDate('')} className="text-gray-400 hover:text-gray-600">
+                      <button
+                        onClick={() => setFilterDate('')}
+                        aria-label="Quitar filtro de fecha"
+                        className={`${iconBtnCls} text-cafe-subtle hover:text-cafe-text hover:bg-cafe-hover`}
+                      >
                         <X className="w-4 h-4" />
                       </button>
                     )}
@@ -270,21 +286,21 @@ export default function AdminPage() {
 
               {/* Bulk action bar */}
               {selectedIds.size > 0 && (
-                <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium text-red-700">
+                <div className="bg-red-500/10 border border-red-500/25 rounded-2xl px-4 py-3 mb-4 flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium text-red-300">
                     {selectedIds.size} cita{selectedIds.size !== 1 ? 's' : ''} seleccionada{selectedIds.size !== 1 ? 's' : ''}
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setSelectedIds(new Set())}
-                      className="text-xs text-red-500 hover:underline"
+                      className="text-xs text-red-300/80 hover:text-red-200 hover:underline px-2 py-1.5"
                     >
                       Deseleccionar
                     </button>
                     <button
                       onClick={handleBulkDelete}
                       disabled={bulkDeleting}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition disabled:opacity-60"
+                      className="flex items-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-full transition disabled:opacity-60"
                     >
                       {bulkDeleting ? (
                         <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -298,16 +314,16 @@ export default function AdminPage() {
               )}
 
               {/* Table */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-                  <h2 className="font-semibold text-gray-800 text-sm">Citas</h2>
-                  <span className="text-xs text-gray-400">{appointments.length} resultado{appointments.length !== 1 ? 's' : ''}</span>
+              <div className="bg-cafe-card rounded-2xl border border-cafe-border overflow-hidden">
+                <div className="px-5 py-4 border-b border-cafe-border flex items-center justify-between">
+                  <h2 className="font-display font-medium text-cafe-text text-lg">Citas</h2>
+                  <span className="text-xs text-cafe-muted">{appointments.length} resultado{appointments.length !== 1 ? 's' : ''}</span>
                 </div>
 
                 {appointments.length === 0 ? (
                   <div className="py-16 text-center">
-                    <Calendar className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium text-sm">
+                    <Calendar className="w-10 h-10 text-cafe-border mx-auto mb-3" />
+                    <p className="text-cafe-muted font-medium text-sm">
                       {allAppointments.length === 0
                         ? 'Aún no hay citas registradas'
                         : 'Ninguna cita coincide con los filtros aplicados'}
@@ -315,7 +331,7 @@ export default function AdminPage() {
                     {allAppointments.length > 0 && (filterStatus !== 'all' || filterDate) && (
                       <button
                         onClick={() => { setFilterStatus('all'); setFilterDate(''); }}
-                        className="mt-3 text-xs text-primary-500 hover:underline"
+                        className="mt-3 text-xs font-semibold text-cafe-goldlight hover:underline"
                       >
                         Limpiar filtros
                       </button>
@@ -324,38 +340,40 @@ export default function AdminPage() {
                 ) : (
                   <>
                     {/* Mobile cards */}
-                    <div className="md:hidden divide-y divide-gray-100">
+                    <div className="md:hidden divide-y divide-cafe-border">
                       {/* Mobile select-all header */}
-                      <div className="px-4 py-2 bg-gray-50 flex items-center gap-3">
+                      <div className="px-4 py-2.5 bg-cafe-soft flex items-center gap-3">
                         <input
                           type="checkbox"
                           checked={allSelected}
                           ref={(el) => { if (el) el.indeterminate = someSelected; }}
                           onChange={toggleSelectAll}
-                          className="w-4 h-4 rounded accent-primary-500 cursor-pointer"
+                          aria-label="Seleccionar todas"
+                          className={checkboxCls}
                         />
-                        <span className="text-xs text-gray-500 font-medium">Seleccionar todas</span>
+                        <span className="text-xs text-cafe-muted font-medium">Seleccionar todas</span>
                       </div>
 
                       {appointments.map((apt) => (
                         <div
                           key={apt.id}
-                          className={`p-4 space-y-3 transition-colors ${selectedIds.has(apt.id) ? 'bg-primary-50/60' : ''}`}
+                          className={`p-4 space-y-3 transition-colors ${selectedIds.has(apt.id) ? 'bg-cafe-gold/[0.07]' : ''}`}
                         >
                           <div className="flex items-start gap-3">
                             <input
                               type="checkbox"
                               checked={selectedIds.has(apt.id)}
                               onChange={() => toggleSelect(apt.id)}
-                              className="w-4 h-4 mt-0.5 rounded accent-primary-500 cursor-pointer shrink-0"
+                              aria-label={`Seleccionar cita de ${apt.clientName}`}
+                              className={`${checkboxCls} mt-0.5 shrink-0`}
                             />
                             <div className="flex-1 flex items-start justify-between gap-2 min-w-0">
                               <div className="min-w-0">
-                                <p className="font-semibold text-gray-900">{apt.clientName}</p>
-                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                                  <Mail className="w-3 h-3 shrink-0" /> {apt.clientEmail}
+                                <p className="font-semibold text-cafe-text">{apt.clientName}</p>
+                                <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5 min-w-0">
+                                  <Mail className="w-3 h-3 shrink-0" /> <span className="truncate">{apt.clientEmail}</span>
                                 </p>
-                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
                                   <Phone className="w-3 h-3 shrink-0" /> {apt.clientWhatsApp}
                                 </p>
                               </div>
@@ -364,21 +382,30 @@ export default function AdminPage() {
                                   <select
                                     value={editStatus}
                                     onChange={(e) => setEditStatus(e.target.value)}
-                                    className="text-xs bg-white text-gray-900 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                    aria-label="Nuevo estado"
+                                    className={selectCls}
                                   >
                                     {Object.entries(STATUS_LABELS).map(([val, label]) => (
                                       <option key={val} value={val}>{label}</option>
                                     ))}
                                   </select>
-                                  <button onClick={() => handleStatusSave(apt.id)} className="text-green-600">
+                                  <button
+                                    onClick={() => handleStatusSave(apt.id)}
+                                    aria-label="Guardar estado"
+                                    className={`${iconBtnCls} text-emerald-400 hover:bg-emerald-400/10`}
+                                  >
                                     <CheckCircle className="w-4 h-4" />
                                   </button>
-                                  <button onClick={() => setEditingId(null)} className="text-gray-400">
+                                  <button
+                                    onClick={() => setEditingId(null)}
+                                    aria-label="Cancelar edición"
+                                    className={`${iconBtnCls} text-cafe-subtle hover:bg-cafe-hover`}
+                                  >
                                     <X className="w-4 h-4" />
                                   </button>
                                 </div>
                               ) : (
-                                <span className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status] ?? 'bg-gray-100 text-gray-800'}`}>
+                                <span className={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status] ?? STATUS_FALLBACK}`}>
                                   {STATUS_LABELS[apt.status] ?? apt.status}
                                 </span>
                               )}
@@ -386,11 +413,11 @@ export default function AdminPage() {
                           </div>
 
                           <div className="flex items-center justify-between pl-7">
-                            <div className="flex items-center gap-3 text-sm text-gray-700">
-                              <span className="bg-primary-50 text-primary-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                            <div className="flex items-center gap-3 text-sm min-w-0">
+                              <span className="bg-cafe-gold/10 text-cafe-goldlight px-2 py-0.5 rounded-md text-xs font-medium truncate">
                                 {apt.serviceName}
                               </span>
-                              <span className="flex items-center gap-1 text-xs text-gray-500">
+                              <span className="flex items-center gap-1 text-xs text-cafe-muted shrink-0">
                                 <Calendar className="w-3 h-3" />
                                 {new Date(
                                   typeof apt.date === 'string' ? apt.date + 'T12:00:00' : apt.date
@@ -398,16 +425,18 @@ export default function AdminPage() {
                                 {' · '}{apt.time}
                               </span>
                             </div>
-                            <div className="flex gap-3 shrink-0">
+                            <div className="flex gap-1 shrink-0">
                               <button
                                 onClick={() => { setEditingId(apt.id); setEditStatus(apt.status); }}
-                                className="text-primary-600 hover:text-primary-800"
+                                aria-label="Editar estado"
+                                className={`${iconBtnCls} text-cafe-goldlight hover:bg-cafe-hover`}
                               >
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDelete(apt.id, apt.clientName)}
-                                className="text-red-500 hover:text-red-700"
+                                aria-label="Eliminar cita"
+                                className={`${iconBtnCls} text-red-400 hover:bg-red-400/10`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -419,8 +448,8 @@ export default function AdminPage() {
 
                     {/* Desktop table */}
                     <div className="hidden md:block overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-50">
-                        <thead className="bg-gray-50">
+                      <table className="min-w-full divide-y divide-cafe-border">
+                        <thead className="bg-cafe-soft">
                           <tr>
                             <th className="pl-5 pr-2 py-3 w-10">
                               <input
@@ -428,88 +457,101 @@ export default function AdminPage() {
                                 checked={allSelected}
                                 ref={(el) => { if (el) el.indeterminate = someSelected; }}
                                 onChange={toggleSelectAll}
-                                className="w-4 h-4 rounded accent-primary-500 cursor-pointer"
+                                aria-label="Seleccionar todas"
+                                className={checkboxCls}
                               />
                             </th>
                             {['Cliente', 'Servicio', 'Fecha y Hora', 'Estado', 'Acciones'].map((h) => (
-                              <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                              <th key={h} className="px-5 py-3 text-left text-[11px] font-semibold text-cafe-muted uppercase tracking-wider">
                                 {h}
                               </th>
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-cafe-border">
                           {appointments.map((apt) => (
                             <tr
                               key={apt.id}
-                              className={`transition-colors ${selectedIds.has(apt.id) ? 'bg-primary-50/60' : 'hover:bg-gray-50'}`}
+                              className={`transition-colors ${selectedIds.has(apt.id) ? 'bg-cafe-gold/[0.07]' : 'hover:bg-cafe-hover/60'}`}
                             >
                               <td className="pl-5 pr-2 py-4">
                                 <input
                                   type="checkbox"
                                   checked={selectedIds.has(apt.id)}
                                   onChange={() => toggleSelect(apt.id)}
-                                  className="w-4 h-4 rounded accent-primary-500 cursor-pointer"
+                                  aria-label={`Seleccionar cita de ${apt.clientName}`}
+                                  className={checkboxCls}
                                 />
                               </td>
                               <td className="px-5 py-4">
-                                <p className="text-sm font-semibold text-gray-900">{apt.clientName}</p>
-                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                <p className="text-sm font-semibold text-cafe-text">{apt.clientName}</p>
+                                <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
                                   <Mail className="w-3 h-3" /> {apt.clientEmail}
                                 </p>
-                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
                                   <Phone className="w-3 h-3" /> {apt.clientWhatsApp}
                                 </p>
                               </td>
                               <td className="px-5 py-4">
-                                <span className="text-sm text-gray-800">{apt.serviceName}</span>
+                                <span className="text-sm text-cafe-text">{apt.serviceName}</span>
                               </td>
                               <td className="px-5 py-4">
-                                <p className="text-sm text-gray-800">
+                                <p className="text-sm text-cafe-text capitalize">
                                   {new Date(
                                     typeof apt.date === 'string' ? apt.date + 'T12:00:00' : apt.date
                                   ).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-0.5">{apt.time}</p>
+                                <p className="text-xs text-cafe-muted mt-0.5">{apt.time}</p>
                               </td>
                               <td className="px-5 py-4">
                                 {editingId === apt.id ? (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1">
                                     <select
                                       value={editStatus}
                                       onChange={(e) => setEditStatus(e.target.value)}
-                                      className="text-xs bg-white text-gray-900 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                                      aria-label="Nuevo estado"
+                                      className={selectCls}
                                     >
                                       {Object.entries(STATUS_LABELS).map(([val, label]) => (
                                         <option key={val} value={val}>{label}</option>
                                       ))}
                                     </select>
-                                    <button onClick={() => handleStatusSave(apt.id)} className="text-green-600 hover:text-green-800">
+                                    <button
+                                      onClick={() => handleStatusSave(apt.id)}
+                                      aria-label="Guardar estado"
+                                      className={`${iconBtnCls} text-emerald-400 hover:bg-emerald-400/10`}
+                                    >
                                       <CheckCircle className="w-4 h-4" />
                                     </button>
-                                    <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                                    <button
+                                      onClick={() => setEditingId(null)}
+                                      aria-label="Cancelar edición"
+                                      className={`${iconBtnCls} text-cafe-subtle hover:text-cafe-text hover:bg-cafe-hover`}
+                                    >
                                       <X className="w-4 h-4" />
                                     </button>
                                   </div>
                                 ) : (
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status] ?? 'bg-gray-100 text-gray-800'}`}>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[apt.status] ?? STATUS_FALLBACK}`}>
                                     {STATUS_LABELS[apt.status] ?? apt.status}
                                   </span>
                                 )}
                               </td>
                               <td className="px-5 py-4">
-                                <div className="flex gap-3">
+                                <div className="flex gap-1">
                                   <button
                                     onClick={() => { setEditingId(apt.id); setEditStatus(apt.status); }}
                                     title="Editar estado"
-                                    className="text-primary-600 hover:text-primary-800 transition-colors"
+                                    aria-label="Editar estado"
+                                    className={`${iconBtnCls} text-cafe-goldlight hover:bg-cafe-hover`}
                                   >
                                     <Edit className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => handleDelete(apt.id, apt.clientName)}
                                     title="Eliminar cita"
-                                    className="text-red-500 hover:text-red-700 transition-colors"
+                                    aria-label="Eliminar cita"
+                                    className={`${iconBtnCls} text-red-400 hover:bg-red-400/10`}
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
