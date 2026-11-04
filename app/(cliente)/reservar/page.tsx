@@ -18,7 +18,8 @@ import Header from '@/components/cliente/Header';
 import Calendar from '@/components/shared/Calendar';
 import ServiceIcon from '@/components/shared/ServiceIcon';
 import BottomNav from '@/components/cliente/BottomNav';
-import { getAvailableHoursForDate, services } from '@/lib/shared/services';
+import { getAvailableHoursForDate } from '@/lib/shared/services';
+import { useCatalog } from '@/lib/shared/useCatalog';
 import { normalizeBookingPayload, validateBookingPayload } from '@/lib/server/booking';
 import { logger } from '@/lib/server/logger';
 import { Service } from '@/types';
@@ -257,6 +258,9 @@ function Tirilla({
 // ── Main page ──────────────────────────────────────────────────────────────
 export default function BookingPage() {
   const searchParams = useSearchParams();
+  // Servicios y horario de la barbería actual
+  const { catalog, loading: catalogLoading } = useCatalog();
+  const services = catalog?.services ?? [];
 
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -278,17 +282,17 @@ export default function BookingPage() {
   useEffect(() => {
     const serviceId = searchParams.get('service');
     if (!serviceId) return;
-    const found = services.find((s) => s.id === serviceId);
+    const found = catalog?.services.find((s) => s.id === serviceId);
     if (!found) return;
     setSelectedService(found);
     setSelectedDate('');
     setSelectedTime('');
     setStep(2);
-  }, [searchParams]);
+  }, [searchParams, catalog]);
 
   const timeSlots =
-    selectedService && selectedDate
-      ? getAvailableHoursForDate(selectedDate, selectedService.duration)
+    selectedService && selectedDate && catalog
+      ? getAvailableHoursForDate(selectedDate, selectedService.duration, catalog.schedule)
       : [];
 
   const freeSlots = timeSlots.filter(
@@ -350,7 +354,7 @@ export default function BookingPage() {
       habeasDataAccepted: data.acceptsDataPolicy,
       notificationsAccepted: data.acceptsNotifications,
     });
-    const validation = validateBookingPayload(payload);
+    const validation = validateBookingPayload(payload, catalog ?? undefined);
     if (!validation.ok) throw new Error(validation.error);
     return validation.data;
   };
@@ -420,6 +424,22 @@ export default function BookingPage() {
             <p className="text-sm mb-6" style={{ color: '#A39583' }}>
               Selecciona el servicio que deseas reservar
             </p>
+            {catalogLoading && (
+              <div className="flex items-center justify-center gap-2 py-10 text-sm" style={{ color: '#A39583' }}>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Cargando servicios...
+              </div>
+            )}
+            {!catalogLoading && services.length === 0 && (
+              <div
+                className="rounded-[18px] p-6 text-center text-sm"
+                style={{ background: '#201A15', border: '1px solid #403328', color: '#B8AA99' }}
+              >
+                {catalog
+                  ? 'Esta barbería todavía no tiene servicios disponibles para reservar.'
+                  : 'No pudimos cargar los servicios. Recarga la página para intentarlo de nuevo.'}
+              </div>
+            )}
             <div className="flex flex-col gap-3">
               {services.map((service) => (
                 <button
@@ -475,7 +495,7 @@ export default function BookingPage() {
               className="rounded-[22px] p-5"
               style={{ background: '#201A15', border: '1px solid #403328' }}
             >
-              <Calendar onDateSelect={handleDateSelect} selectedDate={selectedDate} />
+              <Calendar onDateSelect={handleDateSelect} selectedDate={selectedDate} schedule={catalog?.schedule} />
             </div>
           </div>
         )}

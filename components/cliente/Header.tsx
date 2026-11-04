@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Clock } from 'lucide-react';
-import { workingSchedule } from '@/lib/shared/services';
+import type { WeekSchedule } from '@/lib/shared/services';
+import { useCatalog } from '@/lib/shared/useCatalog';
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'Marcos BarberShop';
 
@@ -13,15 +14,16 @@ const navLinks = [
   { href: '/contacto', label: 'Contacto', exact: false },
 ];
 
-function getScheduleChip(): string {
+function getScheduleChip(schedule: WeekSchedule): string {
   const day = new Date().getDay();
-  const rule = workingSchedule[day];
+  const rule = schedule[day];
   if (!rule || rule.closed) return 'Cerrado hoy';
   return `Hoy · ${rule.start}–${rule.end}`;
 }
 
 export default function Header() {
   const pathname = usePathname();
+  const { catalog } = useCatalog();
 
   const isActive = (href: string, exact: boolean) =>
     exact ? pathname === href : pathname.startsWith(href);
@@ -47,10 +49,12 @@ export default function Header() {
 
           {/* Horario + navegación de escritorio */}
           <div className="flex items-center gap-4">
+{catalog && (
             <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-cafe-card/70 border border-cafe-border text-cafe-muted">
               <Clock className="w-3.5 h-3.5 text-cafe-gold" width={14} height={14} aria-hidden="true" />
-              {getScheduleChip()}
+              {getScheduleChip(catalog.schedule)}
             </span>
+            )}
 
             <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
               {navLinks.map(({ href, label, exact }) => {

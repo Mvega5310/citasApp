@@ -27,10 +27,23 @@ async function main() {
   const me = await imp('app/api/admin/me/route.ts');
   const seed = await imp('app/api/admin/seed/route.ts');
   const settings = await imp('app/api/admin/settings/route.ts');
+  const catalogRoute = await imp('app/api/catalog/route.ts');
+  const bookings = await imp('app/api/bookings/route.ts');
 
   const db = adminDb();
   // Datos de prueba
-  await db.collection('tenants').doc('norte').set({ name: 'Barbería Norte', active: true });
+  const closedDay = { open: '00:00', close: '00:00', closed: true };
+  await db.collection('tenants').doc('norte').set({
+    name: 'Barbería Norte', active: true,
+    services: [
+      { id: 'fade', name: 'Fade', description: '', duration: 40, price: 20000, icon: '' },
+      { id: 'oculto', name: 'Oculto', description: '', duration: 30, price: 1, icon: '', active: false },
+      { id: 'roto', name: '', duration: 'x', price: 1 },
+    ],
+    workingHours: { domingo: closedDay, lunes: { open: '10:00', close: '18:00', closed: false }, martes: closedDay,
+      miercoles: closedDay, jueves: closedDay, viernes: closedDay, sabado: closedDay },
+  });
+  await db.collection('tenants').doc('nuevo').set({ name: 'Barbería Nueva', active: true });
   await db.collection('tenants').doc('sur').set({ name: 'Barbería Sur', active: false });
   const appt = { clientName: 'X', status: 'pending', createdAt: new Date().toISOString() };
   await db.collection('tenants').doc('demo').collection('appointments').doc('d1').set(appt);
@@ -107,6 +120,20 @@ async function main() {
   await check('Admin norte NO edita la config de demo', settings.PATCH(req('PATCH', '/x', 'demo', norte, { salonName: 'Hackeado' })), 403);
   await check('Tipo inválido → 400', settings.PATCH(req('PATCH', '/x', 'demo', legacyDemo, { notifyClient: 'si' })), 400);
   await check('Campo desconocido se ignora (no se guarda)', settings.PATCH(req('PATCH', '/x', 'demo', legacyDemo, { role: 'superadmin' })), 200, (j) => !('role' in (j?.settings ?? {})));
+
+  // ── Catálogo (servicios + horario) por barbería ──
+  const svcIds = (j: any) => (j?.services ?? []).map((x: any) => x.id).join(',');
+  await check('Catálogo demo (sin ficha) = catálogo original', catalogRoute.GET(req('GET', '/api/catalog', 'demo')), 200, (j) => svcIds(j) === 'corte-cabello,corte-barba,cejas,solo-barba');
+  await check('Catálogo norte = sus servicios (ignora desactivados y mal formados)', catalogRoute.GET(req('GET', '/api/catalog', 'norte')), 200, (j) => svcIds(j) === 'fade' && j.schedule['1'].start === '10:00' && j.schedule['2'].closed === true);
+  await check('Barbería nueva sin configurar: sin servicios y cerrada', catalogRoute.GET(req('GET', '/api/catalog', 'nuevo')), 200, (j) => svcIds(j) === '' && Object.values(j.schedule).every((d: any) => d.closed));
+  await check('Catálogo de barbería suspendida → 403', catalogRoute.GET(req('GET', '/api/catalog', 'sur')), 403);
+  const booking = (serviceId: string, serviceName: string, date: string, time: string) => ({
+    serviceId, serviceName, clientName: 'Ana', clientEmail: 'ana@test.co', clientWhatsApp: '3001234567', date, time, habeasDataAccepted: true,
+  });
+  await check('Norte rechaza un servicio de demo', bookings.POST(req('POST', '/api/bookings', 'norte', undefined, booking('corte-cabello', 'Corte de Cabello', '2027-03-01', '10:00'))), 400, (j) => /no existe/.test(j?.error));
+  await check('Norte rechaza su servicio en un día cerrado (martes)', bookings.POST(req('POST', '/api/bookings', 'norte', undefined, booking('fade', 'Fade', '2027-03-02', '10:00'))), 400, (j) => /fuera del horario/.test(j?.error));
+  await check('Norte rechaza hora antes de abrir (09:00)', bookings.POST(req('POST', '/api/bookings', 'norte', undefined, booking('fade', 'Fade', '2027-03-01', '09:00'))), 400, (j) => /fuera del horario/.test(j?.error));
+  await check('Demo rechaza un servicio de norte', bookings.POST(req('POST', '/api/bookings', 'demo', undefined, booking('fade', 'Fade', '2027-03-01', '10:00'))), 400, (j) => /no existe/.test(j?.error));
 
   console.log(fails === 0 ? '\nTODAS LAS PRUEBAS PASARON' : `\n${fails} PRUEBA(S) FALLARON`);
   process.exit(fails === 0 ? 0 : 1);

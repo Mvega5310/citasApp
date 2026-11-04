@@ -1,13 +1,13 @@
-import { getServiceById, workingSchedule } from '../shared/services';
+import { defaultCatalog, type Catalog, type WeekSchedule } from '../shared/services';
 
 const toMin = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
 };
 
-function isValidScheduleSlot(dateStr: string, time: string, duration: number): boolean {
+function isValidScheduleSlot(dateStr: string, time: string, duration: number, schedule: WeekSchedule): boolean {
   const d = new Date(`${dateStr}T00:00:00`);
-  const rule = workingSchedule[d.getDay()];
+  const rule = schedule[d.getDay()];
   if (!rule || rule.closed) return false;
   const slotMin = toMin(time);
   const startMin = toMin(rule.start);
@@ -54,7 +54,11 @@ export function normalizeBookingPayload(payload: Partial<NormalizedBookingPayloa
   };
 }
 
-export function validateBookingPayload(payload: Partial<NormalizedBookingPayload>): ValidationResult {
+/** Valida una reserva contra el catálogo de la barbería (por defecto, el catálogo original). */
+export function validateBookingPayload(
+  payload: Partial<NormalizedBookingPayload>,
+  catalog: Catalog = defaultCatalog
+): ValidationResult {
   const data = normalizeBookingPayload(payload);
 
   if (!data.serviceId || !data.serviceName || !data.clientName || !data.clientEmail || !data.clientWhatsApp || !data.date || !data.time) {
@@ -65,7 +69,7 @@ export function validateBookingPayload(payload: Partial<NormalizedBookingPayload
     return { ok: false, error: 'Debes aceptar la política de tratamiento de datos personales (Ley 1581 de 2012).' };
   }
 
-  const service = getServiceById(data.serviceId);
+  const service = catalog.services.find((s) => s.id === data.serviceId);
   if (!service) {
     return { ok: false, error: 'El servicio seleccionado no existe.' };
   }
@@ -94,7 +98,7 @@ export function validateBookingPayload(payload: Partial<NormalizedBookingPayload
     return { ok: false, error: 'La hora seleccionada no es válida.' };
   }
 
-  if (!isValidScheduleSlot(data.date, data.time, service.duration)) {
+  if (!isValidScheduleSlot(data.date, data.time, service.duration, catalog.schedule)) {
     return { ok: false, error: 'La hora elegida está fuera del horario de atención.' };
   }
 

@@ -6,6 +6,7 @@ import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { logger } from '@/lib/server/logger';
 import { generateCancelToken } from '@/lib/server/cancelToken';
 import { resolveRequestTenant } from '@/lib/server/tenant';
+import { catalogFor } from '@/lib/server/catalog';
 
 function appointmentsCol(db: FirebaseFirestore.Firestore, tenantSlug: string) {
   return tenantSlug
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const validation = validateBookingPayload(body);
+    const validation = validateBookingPayload(body, catalogFor(tenantResult.tenant));
 
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });

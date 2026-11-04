@@ -65,31 +65,30 @@ export type RequestTenant = {
   config: TenantConfig | null;
 };
 
-type ResolveResult = { ok: true; tenant: RequestTenant } | { ok: false; response: NextResponse };
-
-const deny = (error: string, status: number): ResolveResult => ({
-  ok: false,
-  response: NextResponse.json({ error }, { status }),
-});
+export type TenantResolution =
+  | { ok: true; tenant: RequestTenant }
+  | { ok: false; status: number; error: string };
 
 /**
- * Resolutor único de la barbería de una petición.
+ * Resolutor único de la barbería.
  *
  * El slug viene del header `x-tenant-slug`, que el middleware siempre
  * sobrescribe a partir del host (el navegador no puede imponerlo).
  * - Barbería por defecto: permitida aunque no tenga documento; solo se bloquea si está marcada inactiva.
  * - Cualquier otra: debe existir en `tenants/` y no estar inactiva.
  */
-export async function resolveRequestTenant(request: Request): Promise<ResolveResult> {
-  const raw = (request.headers.get('x-tenant-slug') ?? '').trim().toLowerCase();
+export async function resolveTenant(rawSlug: string | null | undefined): Promise<TenantResolution> {
+  const raw = (rawSlug ?? '').trim().toLowerCase();
   const slug = !raw || RESERVED_SLUGS.has(raw) ? DEFAULT_TENANT_SLUG : raw;
 
-  if (!SLUG_RE.test(slug)) return deny('Barbería no encontrada', 404);
+  if (!SLUG_RE.test(slug)) return { ok: false, status: 404, error: 'Barbería no encontrada' };
 
   const lookup = await lookupTenant(slug);
 
   if (lookup.status === 'found') {
-    if (lookup.config.active === false) return deny('Esta barbería no está disponible por el momento', 403);
+    if (lookup.config.active === false) {
+      return { ok: false, status: 403, error: 'Esta barbería no está disponible por el momento' };
+    }
     return { ok: true, tenant: { slug, config: lookup.config } };
   }
 
@@ -97,6 +96,20 @@ export async function resolveRequestTenant(request: Request): Promise<ResolveRes
     return { ok: true, tenant: { slug, config: null } };
   }
 
-  if (lookup.status === 'missing') return deny('Barbería no encontrada', 404);
-  return deny('Servicio no disponible, intenta de nuevo en unos segundos', 503);
+  if (lookup.status === 'missing') return { ok: false, status: 404, error: 'Barbería no encontrada' };
+  return { ok: false, status: 503, error: 'Servicio no disponible, intenta de nuevo en unos segundos' };
+}
+
+type ResolveResult = { ok: true; tenant: RequestTenant } | { ok: false; response: NextResponse };
+
+/** Igual que resolveTenant, pero para rutas API: devuelve la respuesta de error lista. */
+export async function resolveRequestTenant(request: Request): Promise<ResolveResult> {
+  const result = await resolveTenant(request.headers.get('x-tenant-slug'));
+  if (result.ok) return result;
+  return { ok: false, response: NextResponse.json({ error: result.error }, { status: result.status }) };
+}
+
+/** Olvida la barbería en caché (tras editar su ficha en este mismo servidor). */
+export function invalidateTenantCache(slug: string): void {
+  cache.delete(slug);
 }

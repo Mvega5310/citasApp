@@ -15,14 +15,16 @@ import {
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { isOpenDay } from '@/lib/shared/services';
+import { isOpenDay, type WeekSchedule } from '@/lib/shared/services';
 
 interface CalendarProps {
   onDateSelect: (date: string) => void;
   selectedDate: string;
+  /** Horario de la barbería; si no se pasa, se usa el horario original. */
+  schedule?: WeekSchedule;
 }
 
-export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) {
+export default function Calendar({ onDateSelect, selectedDate, schedule }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [availableDates, setAvailableDates] = useState<string[]>([]);
 
@@ -33,13 +35,13 @@ export default function Calendar({ onDateSelect, selectedDate }: CalendarProps) 
     for (let i = 0; i < 30; i += 1) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      if (isOpenDay(date)) {
+      if (isOpenDay(date, schedule)) {
         dates.push(format(date, 'yyyy-MM-dd'));
       }
     }
 
     setAvailableDates(dates);
-  }, []);
+  }, [schedule]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);

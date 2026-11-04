@@ -6,9 +6,11 @@ import Footer from '@/components/cliente/Footer';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
 import BottomNav from '@/components/cliente/BottomNav';
 import ServiceIcon from '@/components/shared/ServiceIcon';
-import { services } from '@/lib/shared/services';
+import { getPageCatalog } from '@/lib/server/pageTenant';
 
-export default function ServicesPage() {
+export default async function ServicesPage() {
+  const { services } = await getPageCatalog();
+
   return (
     <div className="min-h-screen pb-16 md:pb-0 bg-cafe-bg text-cafe-text">
       <Header />
@@ -47,6 +49,11 @@ export default function ServicesPage() {
       <main className="px-5 py-12 sm:py-16">
         <div className="max-w-6xl mx-auto">
           {/* Lista de servicios */}
+          {services.length === 0 && (
+            <p className="rounded-[20px] p-8 text-center text-cafe-muted bg-cafe-card border border-cafe-border">
+              Muy pronto publicaremos nuestros servicios. Escríbenos para reservar.
+            </p>
+          )}
           <div className="grid gap-4 md:grid-cols-2">
             {services.map((service) => (
               <article

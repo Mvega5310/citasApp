@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { getAvailableHoursForDate } from '@/lib/shared/services';
+import { useCatalog } from '@/lib/shared/useCatalog';
 
 const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const MONTHS_ES = [
@@ -39,7 +40,8 @@ export default function HorariosPage() {
   const [saving, setSaving] = useState<string | null>(null);
 
   // All 30-min slots for the selected day (respects workingSchedule)
-  const allSlots = getAvailableHoursForDate(date, 30);
+  const { catalog } = useCatalog();
+  const allSlots = catalog ? getAvailableHoursForDate(date, 30, catalog.schedule) : [];
 
   const loadSlots = useCallback(async () => {
     setLoading(true);

@@ -80,8 +80,15 @@ export const getServiceDuration = (id: string): number => {
   return service?.duration || 0;
 };
 
+// Horario de un día y de la semana (0=Domingo...6=Sábado)
+export type DaySchedule = { start: string; end: string; closed?: boolean };
+export type WeekSchedule = Record<number, DaySchedule>;
+
+/** Catálogo de una barbería: servicios activos y horario general. */
+export type Catalog = { services: Service[]; schedule: WeekSchedule };
+
 // Horarios por día de la semana (0=Domingo...6=Sábado)
-export const workingSchedule: Record<number, { start: string; end: string; closed?: boolean }> = {
+export const workingSchedule: WeekSchedule = {
   0: { start: '09:00', end: '17:00' },
   1: { start: '09:00', end: '19:00' },
   2: { start: '09:00', end: '19:00' },
@@ -102,11 +109,15 @@ const toHHMM = (minutes: number) => {
   return `${h}:${m}`;
 };
 
-export const getAvailableHoursForDate = (dateStr: string, serviceDuration = 30): string[] => {
+export const getAvailableHoursForDate = (
+  dateStr: string,
+  serviceDuration = 30,
+  schedule: WeekSchedule = workingSchedule
+): string[] => {
   const date = new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(date.getTime())) return [];
 
-  const rule = workingSchedule[date.getDay()];
+  const rule = schedule[date.getDay()];
   if (!rule || rule.closed) return [];
 
   const start = toMinutes(rule.start);
@@ -129,7 +140,10 @@ export const getAvailableHoursForDate = (dateStr: string, serviceDuration = 30):
   return slots;
 };
 
-export const isOpenDay = (date: Date): boolean => {
-  const rule = workingSchedule[date.getDay()];
+export const isOpenDay = (date: Date, schedule: WeekSchedule = workingSchedule): boolean => {
+  const rule = schedule[date.getDay()];
   return !!(rule && !rule.closed);
 };
+
+/** Catálogo de la barbería por defecto (el que existía antes del multi-tenant). */
+export const defaultCatalog: Catalog = { services, schedule: workingSchedule };

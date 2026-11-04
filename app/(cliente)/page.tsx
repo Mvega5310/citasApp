@@ -6,7 +6,7 @@ import Header from '@/components/cliente/Header';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
 import BottomNav from '@/components/cliente/BottomNav';
 import ServiceIcon from '@/components/shared/ServiceIcon';
-import { services } from '@/lib/shared/services';
+import { getPageCatalog } from '@/lib/server/pageTenant';
 
 const testimonial = {
   name: 'Carlos M.',
@@ -19,7 +19,8 @@ const testimonial = {
 const WHATSAPP = '573024075828';
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'Marcos BarberShop';
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { services } = await getPageCatalog();
   const featured = services.slice(0, 3);
 
   return (

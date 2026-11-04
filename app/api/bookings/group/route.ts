@@ -7,11 +7,13 @@ import { sendGroupBookingNotification } from '@/lib/server/email';
 import { logger } from '@/lib/server/logger';
 import { generateGroupCancelToken } from '@/lib/server/cancelToken';
 import { resolveRequestTenant } from '@/lib/server/tenant';
+import { catalogFor } from '@/lib/server/catalog';
 
 export async function POST(request: NextRequest) {
   const tenantResult = await resolveRequestTenant(request);
   if (!tenantResult.ok) return tenantResult.response;
   const tenantSlug = tenantResult.tenant.slug;
+  const catalog = catalogFor(tenantResult.tenant);
 
   if (!isFirebaseConfigured) {
     return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const validated: NormalizedBookingPayload[] = [];
     for (const raw of rawBookings) {
-      const validation = validateBookingPayload(raw as Partial<NormalizedBookingPayload>);
+      const validation = validateBookingPayload(raw as Partial<NormalizedBookingPayload>, catalog);
       if (!validation.ok) {
         return NextResponse.json({ error: validation.error }, { status: 400 });
       }
