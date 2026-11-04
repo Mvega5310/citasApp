@@ -13,6 +13,7 @@ import {
   ChevronUp,
   Users,
   Clock,
+  Scissors,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -21,6 +22,7 @@ type AdminProfile = { name: string; email: string; role?: string };
 const navItems = [
   { href: '/admin', label: 'Panel', icon: LayoutDashboard, roles: ['admin', 'viewer'] },
   { href: '/admin/horarios', label: 'Horarios', icon: Clock, roles: ['admin'] },
+  { href: '/admin/servicios', label: 'Servicios', icon: Scissors, roles: ['admin'] },
   { href: '/admin/equipo', label: 'Equipo', icon: Users, roles: ['admin'] },
 ];
 

@@ -1,6 +1,6 @@
 import type { Service } from '../../types/index';
 
-type ServiceEntry = Service & { active?: boolean };
+export type ServiceEntry = Service & { active?: boolean };
 
 const allServices: ServiceEntry[] = [
   {
@@ -65,6 +65,9 @@ const allServices: ServiceEntry[] = [
 ];
 
 export const services: Service[] = allServices.filter((s) => s.active !== false);
+
+/** Lista original completa (incluye los servicios desactivados), para el editor del admin. */
+export const defaultServiceEntries: ServiceEntry[] = allServices;
 
 export const getServiceById = (id: string): Service | undefined => {
   return services.find((service) => service.id === id);

@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Clock, Users } from 'lucide-react';
+import { LayoutDashboard, Clock, Scissors, Users } from 'lucide-react';
 
 const items = [
   { href: '/admin', label: 'Panel', icon: LayoutDashboard },
   { href: '/admin/horarios', label: 'Horarios', icon: Clock },
+  { href: '/admin/servicios', label: 'Servicios', icon: Scissors },
   { href: '/admin/equipo', label: 'Equipo', icon: Users },
 ];
 

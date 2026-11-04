@@ -29,6 +29,7 @@ async function main() {
   const settings = await imp('app/api/admin/settings/route.ts');
   const catalogRoute = await imp('app/api/catalog/route.ts');
   const bookings = await imp('app/api/bookings/route.ts');
+  const adminCatalog = await imp('app/api/admin/catalog/route.ts');
 
   const db = adminDb();
   // Datos de prueba
@@ -44,6 +45,7 @@ async function main() {
       miercoles: closedDay, jueves: closedDay, viernes: closedDay, sabado: closedDay },
   });
   await db.collection('tenants').doc('nuevo').set({ name: 'Barbería Nueva', active: true });
+  await db.collection('tenants').doc('demo').delete(); // demo sin ficha, como en producción
   await db.collection('tenants').doc('sur').set({ name: 'Barbería Sur', active: false });
   const appt = { clientName: 'X', status: 'pending', createdAt: new Date().toISOString() };
   await db.collection('tenants').doc('demo').collection('appointments').doc('d1').set(appt);
@@ -134,6 +136,23 @@ async function main() {
   await check('Norte rechaza su servicio en un día cerrado (martes)', bookings.POST(req('POST', '/api/bookings', 'norte', undefined, booking('fade', 'Fade', '2027-03-02', '10:00'))), 400, (j) => /fuera del horario/.test(j?.error));
   await check('Norte rechaza hora antes de abrir (09:00)', bookings.POST(req('POST', '/api/bookings', 'norte', undefined, booking('fade', 'Fade', '2027-03-01', '09:00'))), 400, (j) => /fuera del horario/.test(j?.error));
   await check('Demo rechaza un servicio de norte', bookings.POST(req('POST', '/api/bookings', 'demo', undefined, booking('fade', 'Fade', '2027-03-01', '10:00'))), 400, (j) => /no existe/.test(j?.error));
+
+  // ── Editor de catálogo (admin) ──
+  await check('Editor demo muestra también los servicios inactivos', adminCatalog.GET(req('GET', '/x', 'demo', legacyDemo)), 200, (j) => j?.services?.length === 7 && j.services.filter((x: any) => !x.active).length === 3 && j.workingHours?.lunes?.open === '09:00');
+  const hoursAll = (open: string, close: string) => Object.fromEntries(['domingo','lunes','martes','miercoles','jueves','viernes','sabado'].map((k) => [k, { open, close, closed: k === 'domingo' }]));
+  const norteCatalog = { services: [{ id: 'fade', name: 'Fade Premium', description: 'Degradado', duration: 45, price: 25000, active: true }], workingHours: hoursAll('08:00', '17:00') };
+  await check('Viewer no puede guardar el catálogo', adminCatalog.PUT(req('PUT', '/x', 'demo', viewerDemo, norteCatalog)), 403);
+  await check('Admin norte no puede guardar el catálogo de demo', adminCatalog.PUT(req('PUT', '/x', 'demo', norte, norteCatalog)), 403);
+  await check('Duración inválida → 400', adminCatalog.PUT(req('PUT', '/x', 'norte', norte, { ...norteCatalog, services: [{ ...norteCatalog.services[0], duration: 7 }] })), 400, (j) => /duración/.test(j?.error));
+  await check('Cierre antes de apertura → 400', adminCatalog.PUT(req('PUT', '/x', 'norte', norte, { ...norteCatalog, workingHours: hoursAll('17:00', '08:00') })), 400, (j) => /cierre/.test(j?.error));
+  await check('Ids repetidos → 400', adminCatalog.PUT(req('PUT', '/x', 'norte', norte, { ...norteCatalog, services: [norteCatalog.services[0], norteCatalog.services[0]] })), 400, (j) => /repetido/.test(j?.error));
+  await check('Admin norte guarda su catálogo', adminCatalog.PUT(req('PUT', '/x', 'norte', norte, norteCatalog)), 200);
+  await check('El catálogo público de norte refleja el cambio al instante', catalogRoute.GET(req('GET', '/api/catalog', 'norte')), 200, (j) => j?.services?.[0]?.name === 'Fade Premium' && j.schedule['1'].start === '08:00' && j.schedule['0'].closed === true);
+  await check('El catálogo de demo no cambió', catalogRoute.GET(req('GET', '/api/catalog', 'demo')), 200, (j) => svcIds(j) === 'corte-cabello,corte-barba,cejas,solo-barba');
+  const demoCatalog = { services: [{ id: 'corte-cabello', name: 'Corte de Cabello', description: '', duration: 30, price: 14000, active: true }], workingHours: hoursAll('09:00', '19:00') };
+  await check('Admin demo guarda su catálogo (crea su ficha)', adminCatalog.PUT(req('PUT', '/x', 'demo', legacyDemo, demoCatalog)), 200);
+  await check('Demo con ficha sigue funcionando y usa su nuevo precio', catalogRoute.GET(req('GET', '/api/catalog', 'demo')), 200, (j) => svcIds(j) === 'corte-cabello' && j.services[0].price === 14000);
+  await check('La config de demo conserva su nombre tras crear la ficha', settings.GET(req('GET', '/x', 'demo', legacyDemo)), 200, (j) => j?.salonName === 'Nombre Legacy');
 
   console.log(fails === 0 ? '\nTODAS LAS PRUEBAS PASARON' : `\n${fails} PRUEBA(S) FALLARON`);
   process.exit(fails === 0 ? 0 : 1);

@@ -40,7 +40,7 @@ const MAX_TEXT_LENGTH = 200;
 // Valores iniciales de una barbería: los de su ficha en tenants/, si existe.
 function defaultsFor(tenant: RequestTenant): SalonSettings {
   const c = tenant.config;
-  if (!c) return DEFAULTS;
+  if (!c || tenant.slug === DEFAULT_TENANT_SLUG) return DEFAULTS;
   return {
     salonName: c.name ?? '',
     phone: c.phone ?? '',
