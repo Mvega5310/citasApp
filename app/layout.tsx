@@ -37,9 +37,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: '#0E1713',
+  // Sin maximumScale ni userScalable: el usuario debe poder ampliar el contenido
+  themeColor: '#100E0C',
 };
 
 export default function RootLayout({
@@ -56,7 +55,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Marcos BarberShop" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-TileColor" content="#0E1713" />
+        <meta name="msapplication-TileColor" content="#100E0C" />
         <meta name="msapplication-tap-highlight" content="no" />
       </head>
       <body>
@@ -68,17 +67,17 @@ export default function RootLayout({
           toastOptions={{
             duration: 4000,
             style: {
-              background: '#17231D',
-              color: '#F1EDE3',
-              border: '1px solid #2C3E36',
+              background: '#201A15',
+              color: '#F4EEE5',
+              border: '1px solid #403328',
             },
             success: {
               duration: 3000,
-              iconTheme: { primary: '#1FA97C', secondary: '#F1EDE3' },
+              iconTheme: { primary: '#24845E', secondary: '#F4EEE5' },
             },
             error: {
               duration: 4000,
-              iconTheme: { primary: '#FF7A66', secondary: '#F1EDE3' },
+              iconTheme: { primary: '#FF7A66', secondary: '#F4EEE5' },
             },
           }}
         />
