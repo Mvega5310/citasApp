@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Tenants: solo lectura pública, escritura solo admin
+    match /tenants/{tenantId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // Citas: lectura/escritura pública (la API del servidor valida)
+    match /tenants/{tenantId}/appointments/{appointmentId} {
+      allow read, write: if false; // solo acceso desde servidor (Admin SDK)
+    }
+    // Admins: solo desde servidor
+    match /admins/{userId} {
+      allow read, write: if false;
+    }
+  }
+}
