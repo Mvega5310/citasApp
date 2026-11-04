@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Header from '@/components/cliente/Header';
 import Footer from '@/components/cliente/Footer';
 import BottomNav from '@/components/cliente/BottomNav';
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
 
 const WHATSAPP = '573024075828';
@@ -90,7 +90,7 @@ export default function ContactPage() {
             <p className="font-semibold text-base">Escribir por WhatsApp</p>
             <p className="text-sm opacity-80">Respuesta rápida garantizada</p>
           </div>
-          <span className="text-xl opacity-70">→</span>
+          <ArrowRight className="w-5 h-5 opacity-70 shrink-0" width={20} height={20} aria-hidden="true" />
         </a>
 
         {/* Info cards */}
@@ -152,10 +152,11 @@ export default function ContactPage() {
             href={MAPS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-medium transition-colors duration-200"
+            className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium transition-colors duration-200"
             style={{ color: '#C69B62' }}
           >
-            Ver en Google Maps →
+            Ver en Google Maps
+            <ArrowUpRight className="w-4 h-4" width={16} height={16} aria-hidden="true" />
           </a>
         </div>
 

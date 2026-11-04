@@ -3,9 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { ChevronLeft, Loader2, Plus, X, Users, CalendarCheck } from 'lucide-react';
+import {
+  CalendarCheck,
+  CalendarPlus,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  Loader2,
+  Plus,
+  Users,
+  X,
+} from 'lucide-react';
 import Header from '@/components/cliente/Header';
 import Calendar from '@/components/shared/Calendar';
+import ServiceIcon from '@/components/shared/ServiceIcon';
 import BottomNav from '@/components/cliente/BottomNav';
 import { getAvailableHoursForDate, services } from '@/lib/shared/services';
 import { normalizeBookingPayload, validateBookingPayload } from '@/lib/server/booking';
@@ -63,7 +74,7 @@ function ProgressBar({ step }: { step: number }) {
                     color: done || active ? '#100E0C' : '#857767',
                   }}
                 >
-                  {done ? '✓' : num}
+                  {done ? <Check className="w-3.5 h-3.5" width={14} height={14} aria-label="Completado" /> : num}
                 </div>
                 <span
                   className="text-[10px] font-medium"
@@ -136,8 +147,9 @@ function Tirilla({
             MB
           </div>
           <p className="text-white font-semibold text-lg font-display">Marcos BarberShop</p>
-          <p className="text-cafe-goldlight text-sm mt-0.5">
-            {isGroup ? `${allTimes.length} Turnos Confirmados ✓` : 'Turno Confirmado ✓'}
+          <p className="text-cafe-goldlight text-sm mt-0.5 inline-flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4" width={16} height={16} aria-hidden="true" />
+            {isGroup ? `${allTimes.length} Turnos Confirmados` : 'Turno Confirmado'}
           </p>
         </div>
 
@@ -223,8 +235,9 @@ function Tirilla({
               </svg>
               Compartir por WhatsApp
             </a>
-            <button className="btn-outline w-full text-sm" onClick={() => {}}>
-              + Agregar al calendario
+            <button className="btn-outline w-full text-sm gap-2" onClick={() => {}}>
+              <CalendarPlus className="w-4 h-4" width={16} height={16} aria-hidden="true" />
+              Agregar al calendario
             </button>
           </div>
         </div>
@@ -416,10 +429,10 @@ export default function BookingPage() {
                   style={{ background: '#201A15', border: '1.5px solid #403328' }}
                 >
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                    style={{ background: '#191511' }}
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: '#191511', color: '#C69B62' }}
                   >
-                    {service.icon}
+                    <ServiceIcon serviceId={service.id} />
                   </div>
                   <div className="flex-1 min-w-0 text-left">
                     <p className="font-semibold text-sm mb-0.5" style={{ color: '#F4EEE5' }}>
@@ -544,10 +557,10 @@ export default function BookingPage() {
               style={{ background: '#201A15', border: '1px solid #403328' }}
             >
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                style={{ background: '#191511' }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: '#191511', color: '#C69B62' }}
               >
-                {selectedService.icon}
+                <ServiceIcon serviceId={selectedService.id} size={20} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm" style={{ color: '#F4EEE5' }}>

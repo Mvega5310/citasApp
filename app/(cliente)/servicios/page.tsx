@@ -5,6 +5,7 @@ import Header from '@/components/cliente/Header';
 import Footer from '@/components/cliente/Footer';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
 import BottomNav from '@/components/cliente/BottomNav';
+import ServiceIcon from '@/components/shared/ServiceIcon';
 import { services } from '@/lib/shared/services';
 
 export default function ServicesPage() {
@@ -53,11 +54,8 @@ export default function ServicesPage() {
                 className="flex flex-col gap-5 rounded-[20px] p-6 bg-cafe-card border border-cafe-border transition-colors duration-300 hover:border-cafe-gold/70"
               >
                 <div className="flex items-start gap-4">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 bg-cafe-soft border border-cafe-border"
-                    aria-hidden="true"
-                  >
-                    {service.icon}
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-cafe-soft border border-cafe-border text-cafe-gold">
+                    <ServiceIcon serviceId={service.id} size={24} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h2 className="font-display text-xl sm:text-2xl font-medium leading-snug text-cafe-text">

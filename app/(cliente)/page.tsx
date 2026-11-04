@@ -5,6 +5,7 @@ import Footer from '@/components/cliente/Footer';
 import Header from '@/components/cliente/Header';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
 import BottomNav from '@/components/cliente/BottomNav';
+import ServiceIcon from '@/components/shared/ServiceIcon';
 import { services } from '@/lib/shared/services';
 
 const testimonial = {
@@ -113,11 +114,8 @@ export default function HomePage() {
                 className="group flex flex-col gap-5 rounded-[20px] p-6 bg-cafe-card border border-cafe-border transition-all duration-300 hover:bg-cafe-hover hover:border-cafe-gold hover:-translate-y-0.5"
               >
                 <div className="flex items-start justify-between">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl bg-cafe-soft border border-cafe-border"
-                    aria-hidden="true"
-                  >
-                    {service.icon}
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-cafe-soft border border-cafe-border text-cafe-gold">
+                    <ServiceIcon serviceId={service.id} />
                   </div>
                   <span className="inline-flex items-center gap-1 text-xs text-cafe-muted">
                     <Clock className="w-3.5 h-3.5" width={14} height={14} aria-hidden="true" />

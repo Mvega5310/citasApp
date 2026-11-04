@@ -41,7 +41,7 @@ export default function BottomNav() {
                   className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-cafe-gold"
                 />
               )}
-              <Icon className="w-5 h-5" width={20} height={20} strokeWidth={active ? 2.3 : 1.8} aria-hidden="true" />
+              <Icon className="w-5 h-5" width={20} height={20} aria-hidden="true" />
               <span>{label}</span>
             </Link>
           );
