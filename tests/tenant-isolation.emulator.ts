@@ -26,6 +26,7 @@ async function main() {
   const blocked = await imp('app/api/admin/blocked-slots/route.ts');
   const me = await imp('app/api/admin/me/route.ts');
   const seed = await imp('app/api/admin/seed/route.ts');
+  const settings = await imp('app/api/admin/settings/route.ts');
 
   const db = adminDb();
   // Datos de prueba
@@ -34,6 +35,9 @@ async function main() {
   const appt = { clientName: 'X', status: 'pending', createdAt: new Date().toISOString() };
   await db.collection('tenants').doc('demo').collection('appointments').doc('d1').set(appt);
   await db.collection('tenants').doc('norte').collection('appointments').doc('n1').set(appt);
+  await db.collection('settings').doc('salon').set({ salonName: 'Nombre Legacy', phone: '111' }); // documento global anterior
+  await db.collection('tenants').doc('demo').collection('settings').doc('salon').delete();
+  await db.collection('tenants').doc('norte').collection('settings').doc('salon').delete();
   await db.collection('admins').doc('a-demo').set({ name: 'Admin Demo', role: 'admin', createdAt: new Date() }); // sin barbería = demo
   await db.collection('admins').doc('v-demo').set({ name: 'Viewer Demo', role: 'viewer', createdAt: new Date() });
   await db.collection('admins').doc('a-norte').set({ name: 'Admin Norte', role: 'admin', tenantSlug: 'norte', createdAt: new Date() });
@@ -88,6 +92,21 @@ async function main() {
   await check('Perfil (me) de demo con sesión antigua', me.GET(req('GET', '/api/admin/me', 'demo', legacyDemo)), 200, (j) => j?.uid === 'a-demo');
   await check('Perfil (me) de demo con sesión de norte → 403', me.GET(req('GET', '/api/admin/me', 'demo', norte)), 403);
   await check('Seed en norte (ya tiene admin) → 409', seed.POST(req('POST', '/x', 'norte', undefined, { setupKey: process.env.ADMIN_SECRET, email: 'n@x.co', password: 'secreto123', name: 'N' })), 409);
+
+  // ── Configuración por barbería ──
+  await check('Config demo sin doc propio lee el documento global anterior', settings.GET(req('GET', '/x', 'demo', legacyDemo)), 200, (j) => j?.salonName === 'Nombre Legacy');
+  await check('Config norte usa los datos de su ficha, no los de demo', settings.GET(req('GET', '/x', 'norte', norte)), 200, (j) => j?.salonName === 'Barbería Norte');
+  await check('Admin demo guarda su teléfono', settings.PATCH(req('PATCH', '/x', 'demo', legacyDemo, { phone: '222' })), 200);
+  const demoCfg = (await db.collection('tenants').doc('demo').collection('settings').doc('salon').get()).data();
+  const legacyCfg = (await db.collection('settings').doc('salon').get()).data();
+  const migrated = demoCfg?.salonName === 'Nombre Legacy' && demoCfg?.phone === '222' && legacyCfg?.phone === '111';
+  console.log(`${migrated ? 'PASS' : 'FAIL'}  Al guardar, demo conserva los datos anteriores y el doc global no se toca`);
+  if (!migrated) fails++;
+  await check('Admin norte cambia su nombre', settings.PATCH(req('PATCH', '/x', 'norte', norte, { salonName: 'Norte Premium' })), 200);
+  await check('El cambio de norte no afecta a demo', settings.GET(req('GET', '/x', 'demo', legacyDemo)), 200, (j) => j?.salonName === 'Nombre Legacy' && j?.phone === '222');
+  await check('Admin norte NO edita la config de demo', settings.PATCH(req('PATCH', '/x', 'demo', norte, { salonName: 'Hackeado' })), 403);
+  await check('Tipo inválido → 400', settings.PATCH(req('PATCH', '/x', 'demo', legacyDemo, { notifyClient: 'si' })), 400);
+  await check('Campo desconocido se ignora (no se guarda)', settings.PATCH(req('PATCH', '/x', 'demo', legacyDemo, { role: 'superadmin' })), 200, (j) => !('role' in (j?.settings ?? {})));
 
   console.log(fails === 0 ? '\nTODAS LAS PRUEBAS PASARON' : `\n${fails} PRUEBA(S) FALLARON`);
   process.exit(fails === 0 ? 0 : 1);
