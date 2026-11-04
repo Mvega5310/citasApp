@@ -3,7 +3,7 @@ import { cleanText, cleanOptionalText, isValidEmail, isValidPhone } from '@/lib/
 import { sendContactMessage } from '@/lib/server/email';
 import { logger } from '@/lib/server/logger';
 import { resolveRequestTenant } from '@/lib/server/tenant';
-import { businessEmailFor } from '@/lib/server/settings';
+import { emailContextFor } from '@/lib/server/settings';
 
 const VALID_SUBJECTS = ['reserva', 'servicios', 'precios', 'horarios', 'otro'] as const;
 
@@ -40,9 +40,9 @@ export async function POST(request: Request) {
     }
 
     // Siempre al correo de esta barbería (nunca al de otra)
-    const businessEmail = await businessEmailFor(tenantResult.tenant);
+    const { businessEmail, brand } = await emailContextFor(tenantResult.tenant);
     const sent = businessEmail
-      ? await sendContactMessage({ name, email, phone, subject, message }, { admin: businessEmail, client: false })
+      ? await sendContactMessage({ name, email, phone, subject, message, brand }, { admin: businessEmail, client: false })
       : false;
 
     logger.info('contact_message_received', { name, email, subject, sent });

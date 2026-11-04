@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { adminTenantOf, authorizeAdmin } from '@/lib/server/authorization';
 import { sendAdminInvitation } from '@/lib/server/email';
+import { emailContextFor } from '@/lib/server/settings';
 import admin from 'firebase-admin';
 import crypto from 'crypto';
 
@@ -89,6 +90,7 @@ export async function POST(request: Request) {
       inviterName: session.name,
       role,
       setupLink,
+      brand: (await emailContextFor(auth.tenant)).brand,
     });
 
     return NextResponse.json({ ok: true, uid: user.uid, emailSent });

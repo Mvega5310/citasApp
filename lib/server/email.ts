@@ -44,6 +44,47 @@ function clientAllowed(recipients?: NotifyRecipients): boolean {
   return recipients ? recipients.client : true;
 }
 
+/** Identidad de la barbería en los correos. */
+export type EmailBrand = { name: string; address: string; phone: string };
+
+/** Marca de la barbería por defecto: los datos que ya mostraban los correos. */
+export const DEFAULT_BRAND: EmailBrand = {
+  name: 'Marcos BarberShop',
+  address: 'Bella vista, Colombia',
+  phone: '+57 3024075828',
+};
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Copia del payload con todos los textos escapados, para insertarlos en HTML. */
+function esc<T>(value: T): T {
+  if (typeof value === 'string') return escapeHtml(value) as T;
+  if (Array.isArray(value)) return value.map(esc) as T;
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, esc(v)])) as T;
+  }
+  return value;
+}
+
+function brandOf(payload: { brand?: EmailBrand }): EmailBrand {
+  return payload.brand ?? DEFAULT_BRAND;
+}
+
+/** Líneas de dirección y teléfono; omite las que la barbería no configuró. */
+function contactLines(b: EmailBrand): string {
+  return [
+    b.address ? `📍 <strong>Dirección:</strong> ${b.address}<br/>` : '',
+    b.phone ? `📞 <strong>Teléfono:</strong> ${b.phone}<br/>` : '',
+  ].join('');
+}
+
 const baseStyle = `
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #f9fafb;
@@ -112,6 +153,7 @@ function buildRow(label: string, value: string) {
 }
 
 function buildAdminBookingEmail(payload: {
+  brand?: EmailBrand;
   serviceName: string;
   clientName: string;
   clientEmail: string;
@@ -119,6 +161,7 @@ function buildAdminBookingEmail(payload: {
   date: string;
   time: string;
 }) {
+  const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
     weekday: 'long',
     year: 'numeric',
@@ -132,7 +175,7 @@ function buildAdminBookingEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">📅</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Nueva Reserva</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:15px;">
@@ -151,7 +194,7 @@ function buildAdminBookingEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -159,12 +202,14 @@ function buildAdminBookingEmail(payload: {
 }
 
 function buildClientConfirmationEmail(payload: {
+  brand?: EmailBrand;
   serviceName: string;
   clientName: string;
   date: string;
   time: string;
   cancelUrl?: string;
 }) {
+  const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
     weekday: 'long',
     year: 'numeric',
@@ -190,7 +235,7 @@ function buildClientConfirmationEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">✨</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Cita Confirmada!</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:16px;">
@@ -201,15 +246,14 @@ function buildClientConfirmationEmail(payload: {
           ${buildRow('Hora', payload.time)}
           <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
             <p style="margin:0; font-size:13px; color:#9d174d;">
-              📍 <strong>Dirección:</strong> Bella vista, Colombia<br/>
-              📞 <strong>Teléfono:</strong> +57 3024075828<br/>
+              ${contactLines(b)}
               ⏰ Llega 10 minutos antes de tu cita.
             </p>
           </div>
           ${cancelBlock}
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -218,11 +262,13 @@ function buildClientConfirmationEmail(payload: {
 }
 
 function buildCancellationClientEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   serviceName: string;
   date: string;
   time: string;
 }) {
+  const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
     weekday: 'long',
     year: 'numeric',
@@ -236,7 +282,7 @@ function buildCancellationClientEmail(payload: {
         <div style="background:linear-gradient(135deg,#6b7280,#4b5563); padding:32px 40px; text-align:center;">
           <div style="font-size:32px; margin-bottom:8px;">❌</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Cita Cancelada</h1>
-          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:16px;">
@@ -252,7 +298,7 @@ function buildCancellationClientEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -261,11 +307,13 @@ function buildCancellationClientEmail(payload: {
 }
 
 function buildLateCancellationAdminEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   serviceName: string;
   date: string;
   time: string;
 }) {
+  const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
     weekday: 'long',
     year: 'numeric',
@@ -291,7 +339,7 @@ function buildLateCancellationAdminEmail(payload: {
           ${buildRow('Hora', payload.time)}
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -299,19 +347,21 @@ function buildLateCancellationAdminEmail(payload: {
 }
 
 function buildContactEmail(payload: {
+  brand?: EmailBrand;
   name: string;
   email: string;
   phone?: string;
   subject: string;
   message: string;
 }) {
+  const b = brandOf(payload);
   return `
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">💬</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Nuevo Mensaje</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Formulario de Contacto · Marcos BarberShop</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Formulario de Contacto · ${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:15px;">
@@ -332,7 +382,7 @@ function buildContactEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · ${new Date().getFullYear()}
+          ${b.name} · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -340,6 +390,7 @@ function buildContactEmail(payload: {
 }
 
 export async function sendCancellationEmails(payload: {
+  brand?: EmailBrand;
   clientName: string;
   clientEmail: string;
   serviceName: string;
@@ -363,7 +414,7 @@ export async function sendCancellationEmails(payload: {
             from,
             to: payload.clientEmail,
             subject: `Cancelación de tu cita — ${payload.serviceName}`,
-            html: buildCancellationClientEmail(payload),
+            html: buildCancellationClientEmail(esc(payload)),
           })
           .catch(() => {})
       : Promise.resolve(),
@@ -373,7 +424,7 @@ export async function sendCancellationEmails(payload: {
             from,
             to: toDefault,
             subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.serviceName}`,
-            html: buildLateCancellationAdminEmail(payload),
+            html: buildLateCancellationAdminEmail(esc(payload)),
           })
           .catch(() => {})
       : Promise.resolve(),
@@ -381,6 +432,7 @@ export async function sendCancellationEmails(payload: {
 }
 
 export async function sendBookingNotification(payload: {
+  brand?: EmailBrand;
   serviceName: string;
   clientName: string;
   clientEmail: string;
@@ -404,7 +456,7 @@ export async function sendBookingNotification(payload: {
   const [sentToDefault, sentToClient] = await Promise.all([
     toDefault
       ? transporter
-          .sendMail({ from, to: toDefault, subject, html: buildAdminBookingEmail(payload) })
+          .sendMail({ from, to: toDefault, subject, html: buildAdminBookingEmail(esc(payload)) })
           .then(() => true)
           .catch(() => false)
       : Promise.resolve(false),
@@ -414,7 +466,7 @@ export async function sendBookingNotification(payload: {
             from,
             to: payload.clientEmail,
             subject: `✅ Confirmación de tu cita — ${payload.serviceName}`,
-            html: buildClientConfirmationEmail(payload),
+            html: buildClientConfirmationEmail(esc(payload)),
           })
           .then(() => true)
           .catch(() => false)
@@ -450,18 +502,20 @@ function buildGroupAppointmentList(appointments: GroupAppointmentInfo[]) {
 }
 
 function buildGroupBookingAdminEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   clientEmail: string;
   clientWhatsApp: string;
   appointments: GroupAppointmentInfo[];
 }) {
+  const b = brandOf(payload);
   return `
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">📅</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Nuevas Reservas</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 20px; font-size:15px;">
@@ -475,7 +529,7 @@ function buildGroupBookingAdminEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -483,10 +537,12 @@ function buildGroupBookingAdminEmail(payload: {
 }
 
 function buildGroupBookingClientEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   appointments: GroupAppointmentInfo[];
   cancelUrl?: string;
 }) {
+  const b = brandOf(payload);
   const cancelBlock = payload.cancelUrl
     ? `<div style="text-align:center; margin-top:24px;">
         <a href="${payload.cancelUrl}"
@@ -505,7 +561,7 @@ function buildGroupBookingClientEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">✨</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Citas Confirmadas!</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 20px; font-size:16px;">
@@ -514,15 +570,14 @@ function buildGroupBookingClientEmail(payload: {
           ${buildGroupAppointmentList(payload.appointments)}
           <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
             <p style="margin:0; font-size:13px; color:#9d174d;">
-              📍 <strong>Dirección:</strong> Bella vista, Colombia<br/>
-              📞 <strong>Teléfono:</strong> +57 3024075828<br/>
+              ${contactLines(b)}
               ⏰ Llega 10 minutos antes de cada cita.
             </p>
           </div>
           ${cancelBlock}
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -531,6 +586,7 @@ function buildGroupBookingClientEmail(payload: {
 }
 
 export async function sendGroupBookingNotification(payload: {
+  brand?: EmailBrand;
   clientName: string;
   clientEmail: string;
   clientWhatsApp: string;
@@ -550,7 +606,7 @@ export async function sendGroupBookingNotification(payload: {
   const [sentToDefault, sentToClient] = await Promise.all([
     toDefault
       ? transporter
-          .sendMail({ from, to: toDefault, subject, html: buildGroupBookingAdminEmail(payload) })
+          .sendMail({ from, to: toDefault, subject, html: buildGroupBookingAdminEmail(esc(payload)) })
           .then(() => true)
           .catch(() => false)
       : Promise.resolve(false),
@@ -560,7 +616,7 @@ export async function sendGroupBookingNotification(payload: {
             from,
             to: payload.clientEmail,
             subject: `✅ Confirmación de tus ${payload.appointments.length} citas`,
-            html: buildGroupBookingClientEmail(payload),
+            html: buildGroupBookingClientEmail(esc(payload)),
           })
           .then(() => true)
           .catch(() => false)
@@ -571,10 +627,12 @@ export async function sendGroupBookingNotification(payload: {
 }
 
 function buildGroupCancellationClientEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   cancelled: GroupAppointmentInfo[];
   stillActive: GroupAppointmentInfo[];
 }) {
+  const b = brandOf(payload);
   const stillActiveBlock = payload.stillActive.length
     ? `<div style="margin-top:20px;">
         <p style="${labelStyle}">Citas que siguen activas</p>
@@ -588,7 +646,7 @@ function buildGroupCancellationClientEmail(payload: {
         <div style="background:linear-gradient(135deg,#6b7280,#4b5563); padding:32px 40px; text-align:center;">
           <div style="font-size:32px; margin-bottom:8px;">❌</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Citas Canceladas</h1>
-          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+          <p style="color:#e5e7eb; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 20px; font-size:16px;">
@@ -603,7 +661,7 @@ function buildGroupCancellationClientEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -612,9 +670,11 @@ function buildGroupCancellationClientEmail(payload: {
 }
 
 function buildGroupLateCancellationAdminEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   cancelled: GroupAppointmentInfo[];
 }) {
+  const b = brandOf(payload);
   return `
     <div style="${baseStyle}">
       <div style="${cardStyle}">
@@ -630,7 +690,7 @@ function buildGroupLateCancellationAdminEmail(payload: {
           ${buildGroupAppointmentList(payload.cancelled)}
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}
         </div>
       </div>
     </div>
@@ -638,6 +698,7 @@ function buildGroupLateCancellationAdminEmail(payload: {
 }
 
 export async function sendGroupCancellationEmails(payload: {
+  brand?: EmailBrand;
   clientName: string;
   clientEmail: string;
   cancelled: GroupAppointmentInfo[];
@@ -657,7 +718,7 @@ export async function sendGroupCancellationEmails(payload: {
             from,
             to: payload.clientEmail,
             subject: `Cancelación de ${payload.cancelled.length} cita(s)`,
-            html: buildGroupCancellationClientEmail(payload),
+            html: buildGroupCancellationClientEmail(esc(payload)),
           })
           .catch(() => {})
       : Promise.resolve(),
@@ -667,7 +728,7 @@ export async function sendGroupCancellationEmails(payload: {
             from,
             to: toDefault,
             subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.cancelled.length} cita(s)`,
-            html: buildGroupLateCancellationAdminEmail(payload),
+            html: buildGroupLateCancellationAdminEmail(esc(payload)),
           })
           .catch(() => {})
       : Promise.resolve(),
@@ -675,11 +736,13 @@ export async function sendGroupCancellationEmails(payload: {
 }
 
 function buildAdminInvitationEmail(payload: {
+  brand?: EmailBrand;
   inviteeName: string;
   inviterName: string;
   role: string;
   setupLink: string;
 }) {
+  const b = brandOf(payload);
   const roleLabel = payload.role === 'admin' ? 'Administrador' : 'Solo lectura';
   return `
     <div style="${baseStyle}">
@@ -687,7 +750,7 @@ function buildAdminInvitationEmail(payload: {
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">🔐</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Invitación al Panel</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop · Administración</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name} · Administración</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 20px; font-size:16px;">
@@ -695,7 +758,7 @@ function buildAdminInvitationEmail(payload: {
           </p>
           <p style="color:#374151; margin:0 0 20px; font-size:15px; line-height:1.6;">
             <strong>${payload.inviterName}</strong> te ha invitado a unirte como
-            <strong>${roleLabel}</strong> del panel de administración de Marcos BarberShop.
+            <strong>${roleLabel}</strong> del panel de administración de ${b.name}.
           </p>
           <p style="color:#374151; margin:0 0 28px; font-size:15px; line-height:1.6;">
             Haz clic en el botón para crear tu contraseña y activar tu cuenta:
@@ -713,7 +776,7 @@ function buildAdminInvitationEmail(payload: {
           </div>
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · ${new Date().getFullYear()}<br/>
+          ${b.name} · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -722,6 +785,7 @@ function buildAdminInvitationEmail(payload: {
 }
 
 export async function sendAdminInvitation(payload: {
+  brand?: EmailBrand;
   inviteeName: string;
   inviteeEmail: string;
   inviterName: string;
@@ -735,8 +799,8 @@ export async function sendAdminInvitation(payload: {
     await transporter.sendMail({
       from,
       to: payload.inviteeEmail,
-      subject: `Invitación al panel de administración — Marcos BarberShop`,
-      html: buildAdminInvitationEmail(payload),
+      subject: `Invitación al panel de administración — ${brandOf(payload).name}`,
+      html: buildAdminInvitationEmail(esc(payload)),
     });
     return true;
   } catch {
@@ -745,17 +809,19 @@ export async function sendAdminInvitation(payload: {
 }
 
 function buildReminderEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   serviceName: string;
   time: string;
 }) {
+  const b = brandOf(payload);
   return `
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
           <div style="font-size:32px; margin-bottom:8px;">⏰</div>
           <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Tu cita es en 10 minutos!</h1>
-          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">Marcos BarberShop</p>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:16px;">
@@ -765,13 +831,13 @@ function buildReminderEmail(payload: {
           ${buildRow('Hora', payload.time)}
           <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
             <p style="margin:0; font-size:13px; color:#9d174d; line-height:1.6;">
-              📍 <strong>Dirección:</strong> Calle 123 #45-67, Bogotá, Colombia<br/>
+              ${contactLines(b)}
               👟 ¡Estamos listos para recibirte!
             </p>
           </div>
         </div>
         <div style="${footerStyle}">
-          Marcos BarberShop · Sistema de Reservas · ${new Date().getFullYear()}<br/>
+          ${b.name} · Sistema de Reservas · ${new Date().getFullYear()}<br/>
           <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
         </div>
       </div>
@@ -780,6 +846,7 @@ function buildReminderEmail(payload: {
 }
 
 export async function sendReminderEmail(payload: {
+  brand?: EmailBrand;
   clientName: string;
   clientEmail: string;
   serviceName: string;
@@ -793,7 +860,7 @@ export async function sendReminderEmail(payload: {
       from,
       to: payload.clientEmail,
       subject: `⏰ Tu cita de ${payload.serviceName} comienza en 10 minutos`,
-      html: buildReminderEmail(payload),
+      html: buildReminderEmail(esc(payload)),
     });
     return true;
   } catch {
@@ -802,6 +869,7 @@ export async function sendReminderEmail(payload: {
 }
 
 export async function sendContactMessage(payload: {
+  brand?: EmailBrand;
   name: string;
   email: string;
   phone?: string;
@@ -819,7 +887,7 @@ export async function sendContactMessage(payload: {
       to: toDefault,
       replyTo: payload.email,
       subject: `[Contacto] ${payload.subject} — ${payload.name}`,
-      html: buildContactEmail(payload),
+      html: buildContactEmail(esc(payload)),
     });
     return true;
   } catch {

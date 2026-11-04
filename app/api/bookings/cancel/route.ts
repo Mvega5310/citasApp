@@ -3,7 +3,7 @@ import { verifyCancelToken, msUntilAppointment, CANCEL_WINDOW_MS } from '@/lib/s
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { appointmentsCol } from '@/lib/server/appointments';
 import { sendCancellationEmails, sendGroupCancellationEmails } from '@/lib/server/email';
-import { recipientsFor, tenantFromSlug } from '@/lib/server/settings';
+import { emailContextFor, tenantFromSlug } from '@/lib/server/settings';
 
 export async function POST(request: NextRequest) {
   try {
@@ -74,13 +74,15 @@ export async function POST(request: NextRequest) {
         .filter((d) => d.status !== 'cancelled')
         .map((d) => ({ serviceName: d.serviceName, date: d.date, time: d.time }));
 
+      const emailCtx = await emailContextFor(await tenantFromSlug(tenantSlug));
       await sendGroupCancellationEmails({
         clientName,
         clientEmail,
         cancelled,
         stillActive,
         anyLate,
-      }, await recipientsFor(await tenantFromSlug(tenantSlug)));
+        brand: emailCtx.brand,
+      }, emailCtx.recipients);
 
       return NextResponse.json({ ok: true, cancelledCount: cancelled.length, anyLate });
     }
@@ -107,6 +109,7 @@ export async function POST(request: NextRequest) {
       lateCancel: isLate,
     });
 
+    const emailCtx = await emailContextFor(await tenantFromSlug(tenantSlug));
     await sendCancellationEmails({
       clientName,
       clientEmail: data.clientEmail,
@@ -114,7 +117,8 @@ export async function POST(request: NextRequest) {
       date,
       time,
       isLate,
-    }, await recipientsFor(await tenantFromSlug(tenantSlug)));
+      brand: emailCtx.brand,
+    }, emailCtx.recipients);
 
     return NextResponse.json({ ok: true, isLate });
   } catch {

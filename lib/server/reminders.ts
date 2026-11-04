@@ -3,7 +3,8 @@ import { getPool } from './db';
 import { sendReminderEmail } from './email';
 import { logger } from './logger';
 import { DEFAULT_TENANT_SLUG } from './tenant';
-import { recipientsFor, tenantFromSlug } from './settings';
+import { emailContextFor, tenantFromSlug } from './settings';
+import type { EmailBrand } from './email';
 
 // Se avisa a las citas que empiezan dentro de esta ventana (en minutos).
 // Una ventana —en vez del minuto exacto— hace que el aviso no se pierda si el
@@ -187,16 +188,17 @@ export async function runReminders(nowMs: number = Date.now()): Promise<{
   }
 
   // Configuración de notificaciones de cada barbería (una consulta por barbería)
-  const notifyClient = new Map<string, boolean>();
+  const contexts = new Map<string, { client: boolean; brand: EmailBrand }>();
   let sent = 0;
   let skipped = 0;
   for (const appt of appointments) {
     if (!appt.clientEmail) continue;
-    if (!notifyClient.has(appt.tenantSlug)) {
-      const recipients = await recipientsFor(await tenantFromSlug(appt.tenantSlug));
-      notifyClient.set(appt.tenantSlug, recipients.client);
+    if (!contexts.has(appt.tenantSlug)) {
+      const ctx = await emailContextFor(await tenantFromSlug(appt.tenantSlug));
+      contexts.set(appt.tenantSlug, { client: ctx.recipients.client, brand: ctx.brand });
     }
-    if (!notifyClient.get(appt.tenantSlug)) {
+    const ctx = contexts.get(appt.tenantSlug)!;
+    if (!ctx.client) {
       skipped++;
       continue;
     }
@@ -205,6 +207,7 @@ export async function runReminders(nowMs: number = Date.now()): Promise<{
       clientEmail: appt.clientEmail,
       serviceName: appt.serviceName,
       time: appt.time,
+      brand: ctx.brand,
     });
     if (ok) {
       await markReminderSent(appt);

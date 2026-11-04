@@ -1,6 +1,6 @@
 import { adminDb, isFirebaseConfigured } from './firebaseAdmin';
 import { DEFAULT_TENANT_SLUG, getTenantConfig, type RequestTenant } from './tenant';
-import type { NotifyRecipients } from './email';
+import { DEFAULT_BRAND, type EmailBrand, type NotifyRecipients } from './email';
 import { logger } from './logger';
 
 export type SalonSettings = {
@@ -110,11 +110,46 @@ export async function tenantFromSlug(slug: string | undefined): Promise<RequestT
   return { slug: s, config: await getTenantConfig(s) };
 }
 
-export async function recipientsFor(tenant: RequestTenant): Promise<NotifyRecipients> {
-  const settings = await getSettingsSafe(tenant);
+/**
+ * Marca de la barbería para los correos, desde su Configuración.
+ * En la barbería por defecto, los valores de ejemplo que nunca se cambiaron
+ * (dirección y teléfono iniciales) se reemplazan por los datos reales que ya
+ * mostraban sus correos.
+ */
+function brandFrom(tenant: RequestTenant, settings: SalonSettings): EmailBrand {
+  const isDefault = tenant.slug === DEFAULT_TENANT_SLUG;
+  const address = [settings.address, settings.city].filter(Boolean).join(', ');
+  if (!isDefault) {
+    return { name: settings.salonName || tenant.slug, address, phone: settings.phone };
+  }
+  return {
+    name: settings.salonName || DEFAULT_BRAND.name,
+    address: settings.address && settings.address !== DEFAULTS.address ? address : DEFAULT_BRAND.address,
+    phone: settings.phone && settings.phone !== DEFAULTS.phone ? settings.phone : DEFAULT_BRAND.phone,
+  };
+}
+
+function recipientsFrom(tenant: RequestTenant, settings: SalonSettings): NotifyRecipients {
   const businessEmail = businessEmailFrom(tenant, settings);
   return {
     admin: settings.notifyAdmin && EMAIL_RE.test(businessEmail ?? '') ? businessEmail : null,
     client: settings.notifyClient,
   };
+}
+
+/** Todo lo que necesita un correo de esta barbería, con una sola lectura de su Configuración. */
+export async function emailContextFor(
+  tenant: RequestTenant
+): Promise<{ recipients: NotifyRecipients; brand: EmailBrand; businessEmail: string | null }> {
+  const settings = await getSettingsSafe(tenant);
+  const businessEmail = businessEmailFrom(tenant, settings);
+  return {
+    recipients: recipientsFrom(tenant, settings),
+    brand: brandFrom(tenant, settings),
+    businessEmail: EMAIL_RE.test(businessEmail ?? '') ? businessEmail : null,
+  };
+}
+
+export async function recipientsFor(tenant: RequestTenant): Promise<NotifyRecipients> {
+  return recipientsFrom(tenant, await getSettingsSafe(tenant));
 }

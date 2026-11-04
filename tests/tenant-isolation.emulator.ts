@@ -35,6 +35,7 @@ async function main() {
   const adminCatalog = await imp('app/api/admin/catalog/route.ts');
   const settingsLib = await imp('lib/server/settings.ts');
   const reminders = await imp('lib/server/reminders.ts');
+  const contact = await imp('app/api/contact/route.ts');
 
   const db = adminDb();
   // Datos de prueba
@@ -190,6 +191,39 @@ async function main() {
   await eq('Norte (sin aviso al cliente) se omite; sin SMTP no se marca nada', { sent: run.sent, skipped: run.skipped }, { sent: 0, skipped: 1 });
   const r1 = (await db.collection('tenants').doc('demo').collection('appointments').doc('r1').get()).data();
   await eq('Una cita no queda marcada si el correo no salió', r1?.reminderSent ?? false, false);
+
+  // ── Marca de cada barbería en los correos + escape de HTML ──
+  await eq('Marca de demo: su nombre, y dirección real en vez de la de ejemplo',
+    (await settingsLib.emailContextFor(await T('demo'))).brand, { name: 'Nombre Legacy', address: 'Bella vista, Colombia', phone: '222' });
+  await eq('Marca de norte: solo sus propios datos', (await settingsLib.emailContextFor(await T('norte'))).brand, { name: 'Norte Premium', address: '', phone: '' });
+
+  // Transporte de correo falso: captura los mensajes, no envía nada
+  const { createRequire } = await import('node:module');
+  const nodemailer = createRequire(`${ROOT}/package.json`)('nodemailer');
+  const outbox: any[] = [];
+  nodemailer.createTransport = () => ({ sendMail: async (m: any) => { outbox.push(m); return {}; } });
+  process.env.EMAIL_SERVER_HOST = 'smtp.fake'; process.env.EMAIL_SERVER_USER = 'u'; process.env.EMAIL_SERVER_PASSWORD = 'p';
+
+  await check('Contacto en norte con HTML en el mensaje', contact.POST(req('POST', '/api/contact', 'norte', undefined, {
+    name: '<b>Ana</b>', email: 'ana@test.co', subject: 'otro', message: 'Hola <a href="http://malo.test">clic aquí</a> gracias',
+  })), 201, (j) => j?.sent === true);
+  const contactMail = outbox.find((m) => m.to === 'norte@barberia.test');
+  await eq('El mensaje de contacto llega a norte', !!contactMail, true);
+  await eq('El HTML del cliente llega escapado (sin enlaces inyectados)',
+    { escaped: contactMail?.html.includes('&lt;a href=&quot;http://malo.test&quot;&gt;'), raw: contactMail?.html.includes('<a href="http://malo.test"') }, { escaped: true, raw: false });
+  await eq('El correo de norte lleva su marca y no la de demo',
+    { norte: contactMail?.html.includes('Norte Premium'), marcos: contactMail?.html.includes('Marcos BarberShop') || contactMail?.html.includes('Nombre Legacy') }, { norte: true, marcos: false });
+
+  outbox.length = 0;
+  const run2 = await reminders.runReminders(nowMs);
+  await eq('Recordatorios con SMTP: salen los de demo, norte se omite', { sent: run2.sent, skipped: run2.skipped }, { sent: 2, skipped: 1 });
+  const reminderHtml = outbox.map((m) => m.html).join('');
+  await eq('El recordatorio de demo lleva su marca y la dirección real (no "Calle 123")',
+    { name: reminderHtml.includes('Nombre Legacy'), addr: reminderHtml.includes('Bella vista, Colombia'), fake: reminderHtml.includes('Calle 123') }, { name: true, addr: true, fake: false });
+  const r1after = (await db.collection('tenants').doc('demo').collection('appointments').doc('r1').get()).data();
+  await eq('La cita queda marcada tras enviar el recordatorio', r1after?.reminderSent, true);
+  const run3 = await reminders.runReminders(nowMs);
+  await eq('Una segunda pasada no repite recordatorios', run3.sent, 0);
 
   console.log(fails === 0 ? '\nTODAS LAS PRUEBAS PASARON' : `\n${fails} PRUEBA(S) FALLARON`);
   process.exit(fails === 0 ? 0 : 1);

@@ -7,7 +7,7 @@ import { logger } from '@/lib/server/logger';
 import { generateCancelToken } from '@/lib/server/cancelToken';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
-import { recipientsFor } from '@/lib/server/settings';
+import { emailContextFor } from '@/lib/server/settings';
 
 function appointmentsCol(db: FirebaseFirestore.Firestore, tenantSlug: string) {
   return tenantSlug
@@ -170,6 +170,7 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
+    const emailCtx = await emailContextFor(tenantResult.tenant);
     let emailSent = { sentToDefault: false, sentToClient: false };
     try {
       emailSent = await sendBookingNotification({
@@ -180,7 +181,8 @@ export async function POST(request: NextRequest) {
         date: booking.date,
         time: booking.time,
         cancelUrl,
-      }, await recipientsFor(tenantResult.tenant));
+        brand: emailCtx.brand,
+      }, emailCtx.recipients);
     } catch (error) {
       logger.warn('booking_email_failed', {
         bookingId: id,
