@@ -15,7 +15,7 @@ export default function AdminBottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-gray-900 border-t border-gray-700 flex"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-cafe-bg/95 backdrop-blur-md border-t border-cafe-border flex"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {items.map(({ href, label, icon: Icon }) => {
@@ -24,11 +24,12 @@ export default function AdminBottomNav() {
           <Link
             key={href}
             href={href}
+            aria-current={active ? 'page' : undefined}
             className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-xs font-medium transition-colors ${
-              active ? 'text-primary-400' : 'text-gray-400 hover:text-gray-200'
+              active ? 'text-cafe-goldlight' : 'text-cafe-muted hover:text-cafe-text'
             }`}
           >
-            <div className={`p-1.5 rounded-lg transition-colors ${active ? 'bg-primary-600/30' : ''}`}>
+            <div className={`p-1.5 rounded-lg transition-colors ${active ? 'bg-cafe-gold/15' : ''}`}>
               <Icon className="w-5 h-5" />
             </div>
             {label}
