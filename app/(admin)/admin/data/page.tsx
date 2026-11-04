@@ -43,21 +43,21 @@ export default function AdminDataPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-cafe-bg text-cafe-text p-6">
       <div className="max-w-6xl mx-auto space-y-8">
         <h1 className="text-2xl font-bold">Datos (Neon)</h1>
-        {loading && <div className="text-gray-600">Cargando...</div>}
-        {error && <div className="text-red-600">{error}</div>}
+        {loading && <div className="text-cafe-muted">Cargando...</div>}
+        {error && <div className="text-red-400">{error}</div>}
 
         {/* Users */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-cafe-card rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Usuarios</h2>
-            <span className="text-sm text-gray-500">{users.length} registros</span>
+            <span className="text-sm text-cafe-muted">{users.length} registros</span>
           </div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-cafe-soft">
                 <tr>
                   <th className="px-4 py-2 text-left">Email</th>
                   <th className="px-4 py-2 text-left">Nombre</th>
@@ -80,14 +80,14 @@ export default function AdminDataPage() {
         </div>
 
         {/* Clients */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-cafe-card rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Clientes</h2>
-            <span className="text-sm text-gray-500">{clients.length} registros</span>
+            <span className="text-sm text-cafe-muted">{clients.length} registros</span>
           </div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-cafe-soft">
                 <tr>
                   <th className="px-4 py-2 text-left">Nombre</th>
                   <th className="px-4 py-2 text-left">Email</th>
@@ -110,14 +110,14 @@ export default function AdminDataPage() {
         </div>
 
         {/* Payments */}
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-cafe-card rounded-xl shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Pagos</h2>
-            <span className="text-sm text-gray-500">{payments.length} registros</span>
+            <span className="text-sm text-cafe-muted">{payments.length} registros</span>
           </div>
           <div className="overflow-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-cafe-soft">
                 <tr>
                   <th className="px-4 py-2 text-left">Proveedor</th>
                   <th className="px-4 py-2 text-left">Status</th>

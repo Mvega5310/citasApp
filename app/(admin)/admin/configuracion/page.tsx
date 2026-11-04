@@ -48,18 +48,18 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-cafe-text mb-1.5">{label}</label>
       <div className="relative">
-        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cafe-subtle" />
         <input
           type={type}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full border border-gray-300 rounded-lg pl-10 pr-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent transition"
+          className="w-full bg-cafe-soft border border-cafe-border rounded-lg pl-10 pr-4 py-2.5 text-cafe-text focus:outline-none focus:ring-2 focus:ring-cafe-gold/50 focus:border-transparent transition"
         />
       </div>
-      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-cafe-subtle">{hint}</p>}
     </div>
   );
 }
@@ -75,16 +75,16 @@ function Toggle({
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-sm font-medium text-gray-800">{label}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{description}</p>
+        <p className="text-sm font-medium text-cafe-text">{label}</p>
+        <p className="text-xs text-cafe-muted mt-0.5">{description}</p>
       </div>
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${checked ? 'bg-primary-500' : 'bg-gray-300'}`}
+        className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${checked ? 'bg-cafe-gold' : 'bg-cafe-border'}`}
       >
         <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-5' : ''}`}
+          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-cafe-card rounded-full shadow transition-transform ${checked ? 'translate-x-5' : ''}`}
         />
       </button>
     </div>
@@ -133,33 +133,33 @@ export default function ConfiguracionPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50 pb-14 md:pb-0">
+    <div className="flex min-h-screen bg-cafe-bg text-cafe-text pb-14 md:pb-0">
       <AdminSidebar />
       <AdminBottomNav />
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar — sticky para que no desaparezca al hacer scroll */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
-          <div className="w-9 h-9 bg-primary-100 rounded-lg flex items-center justify-center shrink-0">
-            <Settings className="w-5 h-5 text-primary-500" />
+        <div className="bg-cafe-bg/90 backdrop-blur-md border-b border-cafe-border px-4 md:px-6 py-4 flex items-center gap-3 sticky top-14 md:top-0 z-10 mt-14 md:mt-0">
+          <div className="w-9 h-9 bg-cafe-gold/15 rounded-lg flex items-center justify-center shrink-0">
+            <Settings className="w-5 h-5 text-cafe-goldlight" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-gray-900 leading-tight">Configuración</h1>
-            <p className="text-xs text-gray-400">Personaliza la información de tu salón</p>
+            <h1 className="text-lg font-display font-medium text-cafe-text leading-tight">Configuración</h1>
+            <p className="text-xs text-cafe-subtle">Personaliza la información de tu salón</p>
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-8 mt-14 md:mt-0 max-w-2xl">
+        <div className="flex-1 p-4 md:p-8 max-w-2xl">
           {loading ? (
             <div className="flex items-center justify-center h-48">
-              <div className="w-8 h-8 border-2 border-primary-300 border-t-primary-500 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 border-cafe-border border-t-cafe-gold rounded-full animate-spin" />
             </div>
           ) : (
             <form onSubmit={handleSave} className="space-y-6">
               {/* Información general */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-                <h2 className="text-base font-semibold text-gray-800 mb-5 flex items-center gap-2">
-                  <Store className="w-4 h-4 text-primary-500" />
+              <div className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
+                <h2 className="text-base font-semibold text-cafe-text mb-5 flex items-center gap-2">
+                  <Store className="w-4 h-4 text-cafe-goldlight" />
                   Información del salón
                 </h2>
                 <div className="space-y-4">
@@ -205,9 +205,9 @@ export default function ConfiguracionPage() {
               </div>
 
               {/* Redes sociales */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-                <h2 className="text-base font-semibold text-gray-800 mb-5 flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-primary-500" />
+              <div className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
+                <h2 className="text-base font-semibold text-cafe-text mb-5 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-cafe-goldlight" />
                   Redes sociales
                 </h2>
                 <div className="space-y-4">
@@ -238,9 +238,9 @@ export default function ConfiguracionPage() {
               </div>
 
               {/* Notificaciones */}
-              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-                <h2 className="text-base font-semibold text-gray-800 mb-5 flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-primary-500" />
+              <div className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
+                <h2 className="text-base font-semibold text-cafe-text mb-5 flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-cafe-goldlight" />
                   Notificaciones por email
                 </h2>
                 <div className="space-y-5">
@@ -250,7 +250,7 @@ export default function ConfiguracionPage() {
                     checked={settings.notifyClient}
                     onChange={(v) => set('notifyClient', v)}
                   />
-                  <div className="border-t border-gray-100" />
+                  <div className="border-t border-cafe-border" />
                   <Toggle
                     label="Notificar al administrador"
                     description="Envía email al admin con los detalles de cada nueva reserva"
@@ -265,12 +265,12 @@ export default function ConfiguracionPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-cafe-gold hover:bg-cafe-goldlight text-cafe-bg text-sm font-semibold rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
                 >
                   {saved ? (
                     <><CheckCircle className="w-4 h-4" /> Guardado</>
                   ) : saving ? (
-                    <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Guardando...</>
+                    <><div className="w-4 h-4 border-2 border-cafe-bg/30 border-t-cafe-bg rounded-full animate-spin" /> Guardando...</>
                   ) : (
                     <><Save className="w-4 h-4" /> Guardar configuración</>
                   )}

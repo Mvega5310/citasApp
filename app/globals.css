@@ -26,6 +26,9 @@
   /* Texto sobre fondos dorados (el blanco no tiene contraste suficiente) */
   --bt-on-gold: #100e0c;
 
+  /* Controles nativos (calendario de <input type="date">, selects, scrollbars) en oscuro */
+  color-scheme: dark;
+
   --bt-font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --bt-font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }

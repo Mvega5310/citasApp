@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Coffee, Lock, Unlock, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import AdminSidebar from '@/components/admin/AdminSidebar';
+import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { getAvailableHoursForDate } from '@/lib/shared/services';
 
 const DAYS_ES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -158,172 +160,180 @@ export default function HorariosPage() {
     allSlots.filter((s) => getStatus(s) === status).length;
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Gestión de Horarios</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Bloquea o habilita horas para controlar la disponibilidad de citas
-        </p>
-      </div>
+    <div className="flex min-h-screen bg-cafe-bg text-cafe-text pb-14 md:pb-0">
+      <AdminSidebar />
+      <AdminBottomNav />
 
-      {/* Date navigation */}
-      <div className="flex items-center justify-between bg-white rounded-xl border border-gray-200 px-4 py-3 mb-4 shadow-sm">
-        <button
-          onClick={() => setDate(offsetDate(date, -1))}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
-          aria-label="Día anterior"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
+      <div className="flex-1 min-w-0">
+          <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto mt-14 md:mt-0">
+            {/* Header */}
+            <div className="mb-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-cafe-gold mb-1">Administración</p>
+              <h1 className="text-2xl font-display font-medium text-cafe-text">Gestión de Horarios</h1>
+              <p className="text-sm text-cafe-muted mt-1">
+                Bloquea o habilita horas para controlar la disponibilidad de citas
+              </p>
+            </div>
 
-        <div className="text-center">
-          <p className="font-semibold text-gray-900 text-sm sm:text-base">{formatDateLabel(date)}</p>
-          {date !== todayStr() && (
-            <button
-              onClick={() => setDate(todayStr())}
-              className="text-xs text-primary-600 hover:underline mt-0.5"
-            >
-              Ir a hoy
-            </button>
-          )}
-        </div>
+            {/* Date navigation */}
+            <div className="flex items-center justify-between bg-cafe-card rounded-xl border border-cafe-border px-4 py-3 mb-4 shadow-sm">
+              <button
+                onClick={() => setDate(offsetDate(date, -1))}
+                className="p-2 rounded-lg hover:bg-cafe-soft text-cafe-muted transition-colors"
+                aria-label="Día anterior"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
 
-        <button
-          onClick={() => setDate(offsetDate(date, 1))}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
-          aria-label="Día siguiente"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        <button
-          onClick={blockLunch}
-          disabled={!!saving}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Coffee className="w-4 h-4" />
-          Bloquear almuerzo (12–14h)
-        </button>
-        <button
-          onClick={blockAll}
-          disabled={!!saving}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Lock className="w-4 h-4" />
-          Bloquear todo el día
-        </button>
-        <button
-          onClick={unblockAll}
-          disabled={!!saving}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Unlock className="w-4 h-4" />
-          Desbloquear todo
-        </button>
-        <button
-          onClick={loadSlots}
-          disabled={loading}
-          className="ml-auto flex items-center gap-1.5 px-3 py-2 text-sm bg-gray-50 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-          aria-label="Recargar"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
-
-      {/* Slot grid */}
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : allSlots.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-200 text-gray-500">
-          Este día no tiene horario de atención configurado
-        </div>
-      ) : (
-        <>
-          {/* Legend */}
-          <div className="flex flex-wrap gap-4 mb-3 text-xs text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-green-400 inline-block" />
-              Disponible (clic para bloquear)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" />
-              Bloqueado (clic para habilitar)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block" />
-              Con cita
-            </span>
-          </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-            {allSlots.map((slot) => {
-              const status = getStatus(slot);
-              const isSaving = saving === slot;
-
-              return (
-                <button
-                  key={slot}
-                  onClick={() => toggleSlot(slot)}
-                  disabled={status === 'booked' || !!saving}
-                  title={
-                    status === 'booked'
-                      ? 'Este horario tiene una cita'
-                      : status === 'blocked'
-                      ? 'Clic para habilitar'
-                      : 'Clic para bloquear'
-                  }
-                  className={[
-                    'relative flex flex-col items-center justify-center py-3 rounded-xl border-2 text-sm font-medium transition-all select-none',
-                    status === 'available'
-                      ? 'border-green-300 bg-green-50 text-green-800 hover:bg-green-100 hover:border-green-400 cursor-pointer'
-                      : '',
-                    status === 'blocked'
-                      ? 'border-red-300 bg-red-50 text-red-800 hover:bg-red-100 hover:border-red-400 cursor-pointer'
-                      : '',
-                    status === 'booked'
-                      ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
-                      : '',
-                    saving && saving !== slot ? 'opacity-60' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
-                  {isSaving ? (
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span className="font-bold tracking-wide">{slot}</span>
-                      <span className="text-[10px] opacity-60 mt-0.5 font-normal">
-                        {status === 'available' ? 'Libre' : status === 'blocked' ? 'Bloqueado' : 'Con cita'}
-                      </span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Stats */}
-          <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-            {[
-              { label: 'Disponibles', count: countByStatus('available'), bg: 'bg-green-50', text: 'text-green-700' },
-              { label: 'Bloqueadas', count: countByStatus('blocked'), bg: 'bg-red-50', text: 'text-red-700' },
-              { label: 'Con cita', count: countByStatus('booked'), bg: 'bg-gray-50', text: 'text-gray-700' },
-            ].map(({ label, count, bg, text }) => (
-              <div key={label} className={`rounded-xl p-3 ${bg}`}>
-                <p className={`text-2xl font-bold ${text}`}>{count}</p>
-                <p className={`text-xs mt-0.5 ${text} opacity-80`}>{label}</p>
+              <div className="text-center">
+                <p className="font-semibold text-cafe-text text-sm sm:text-base">{formatDateLabel(date)}</p>
+                {date !== todayStr() && (
+                  <button
+                    onClick={() => setDate(todayStr())}
+                    className="text-xs text-cafe-goldlight hover:underline mt-0.5"
+                  >
+                    Ir a hoy
+                  </button>
+                )}
               </div>
-            ))}
+
+              <button
+                onClick={() => setDate(offsetDate(date, 1))}
+                className="p-2 rounded-lg hover:bg-cafe-soft text-cafe-muted transition-colors"
+                aria-label="Día siguiente"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick actions */}
+            <div className="flex flex-wrap gap-2 mb-5">
+              <button
+                onClick={blockLunch}
+                disabled={!!saving}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-lg hover:bg-amber-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Coffee className="w-4 h-4" />
+                Bloquear almuerzo (12–14h)
+              </button>
+              <button
+                onClick={blockAll}
+                disabled={!!saving}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-red-500/10 text-red-300 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Lock className="w-4 h-4" />
+                Bloquear todo el día
+              </button>
+              <button
+                onClick={unblockAll}
+                disabled={!!saving}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 rounded-lg hover:bg-emerald-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Unlock className="w-4 h-4" />
+                Desbloquear todo
+              </button>
+              <button
+                onClick={loadSlots}
+                disabled={loading}
+                className="ml-auto flex items-center gap-1.5 px-3 py-2 text-sm bg-cafe-soft text-cafe-muted border border-cafe-border rounded-lg hover:bg-cafe-soft transition-colors disabled:opacity-50"
+                aria-label="Recargar"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            {/* Slot grid */}
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-4 border-cafe-gold border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : allSlots.length === 0 ? (
+              <div className="text-center py-12 bg-cafe-card rounded-xl border border-cafe-border text-cafe-muted">
+                Este día no tiene horario de atención configurado
+              </div>
+            ) : (
+              <>
+                {/* Legend */}
+                <div className="flex flex-wrap gap-4 mb-3 text-xs text-cafe-muted">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+                    Disponible (clic para bloquear)
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block" />
+                    Bloqueado (clic para habilitar)
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-cafe-border inline-block" />
+                    Con cita
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {allSlots.map((slot) => {
+                    const status = getStatus(slot);
+                    const isSaving = saving === slot;
+
+                    return (
+                      <button
+                        key={slot}
+                        onClick={() => toggleSlot(slot)}
+                        disabled={status === 'booked' || !!saving}
+                        title={
+                          status === 'booked'
+                            ? 'Este horario tiene una cita'
+                            : status === 'blocked'
+                            ? 'Clic para habilitar'
+                            : 'Clic para bloquear'
+                        }
+                        className={[
+                          'relative flex flex-col items-center justify-center py-3 rounded-xl border-2 text-sm font-medium transition-all select-none',
+                          status === 'available'
+                            ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 hover:border-emerald-400 cursor-pointer'
+                            : '',
+                          status === 'blocked'
+                            ? 'border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:border-red-400 cursor-pointer'
+                            : '',
+                          status === 'booked'
+                            ? 'border-cafe-border bg-cafe-soft text-cafe-subtle cursor-not-allowed'
+                            : '',
+                          saving && saving !== slot ? 'opacity-60' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        {isSaving ? (
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <span className="font-bold tracking-wide">{slot}</span>
+                            <span className="text-[10px] opacity-60 mt-0.5 font-normal">
+                              {status === 'available' ? 'Libre' : status === 'blocked' ? 'Bloqueado' : 'Con cita'}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Stats */}
+                <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+                  {[
+                    { label: 'Disponibles', count: countByStatus('available'), bg: 'bg-emerald-500/10', text: 'text-emerald-300' },
+                    { label: 'Bloqueadas', count: countByStatus('blocked'), bg: 'bg-red-500/10', text: 'text-red-300' },
+                    { label: 'Con cita', count: countByStatus('booked'), bg: 'bg-cafe-soft', text: 'text-cafe-text' },
+                  ].map(({ label, count, bg, text }) => (
+                    <div key={label} className={`rounded-xl p-3 ${bg}`}>
+                      <p className={`text-2xl font-bold ${text}`}>{count}</p>
+                      <p className={`text-xs mt-0.5 ${text} opacity-80`}>{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-        </>
-      )}
+      </div>
     </div>
   );
 }
