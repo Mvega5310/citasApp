@@ -103,6 +103,8 @@ export default function ServiciosAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
+  // Servicio recién agregado: se lleva a la vista y se enfoca su nombre
+  const [justAdded, setJustAdded] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -139,11 +141,27 @@ export default function ServiciosAdminPage() {
   const updateService = (key: string, patch: Partial<EditableService>) =>
     setServices((prev) => prev.map((s) => (s.key === key ? { ...s, ...patch } : s)));
 
-  const addService = () =>
+  const addService = () => {
+    const key = nextKey();
     setServices((prev) => [
       ...prev,
-      { key: nextKey(), id: '', name: '', description: '', duration: 30, price: 0, active: true, isNew: true },
+      { key, id: '', name: '', description: '', duration: 30, price: 0, active: true, isNew: true },
     ]);
+    setJustAdded(key);
+  };
+
+  useEffect(() => {
+    if (!justAdded) return;
+    const frame = requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document
+        .getElementById(`svc-${justAdded}`)
+        ?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      (document.getElementById(`svc-name-${justAdded}`) as HTMLInputElement | null)?.focus({ preventScroll: true });
+      setJustAdded(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [justAdded]);
 
   const removeService = (svc: EditableService) => {
     if (!svc.isNew && !confirm(`¿Quitar "${svc.name}" del catálogo? Las citas ya reservadas no se borran. Si solo quieres dejar de ofrecerlo por un tiempo, desactívalo.`)) {
@@ -267,10 +285,20 @@ export default function ServiciosAdminPage() {
                   {services.map((svc) => (
                     <div
                       key={svc.key}
-                      className={`rounded-2xl border p-4 transition-colors ${
-                        svc.active ? 'bg-cafe-card border-cafe-border' : 'bg-cafe-soft border-cafe-border/60'
+                      id={`svc-${svc.key}`}
+                      className={`relative rounded-2xl border p-4 transition-colors scroll-mt-32 ${
+                        svc.isNew
+                          ? 'bg-cafe-card border-cafe-gold/70 ring-2 ring-cafe-gold/20'
+                          : svc.active
+                            ? 'bg-cafe-card border-cafe-border'
+                            : 'bg-cafe-soft border-cafe-border/60'
                       }`}
                     >
+                      {svc.isNew && (
+                        <span className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-cafe-gold text-cafe-bg text-[10px] font-bold uppercase tracking-wider">
+                          Nuevo
+                        </span>
+                      )}
                       <div className="flex items-start gap-3">
                         <div
                           className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-cafe-soft border border-cafe-border ${
@@ -283,6 +311,7 @@ export default function ServiciosAdminPage() {
                         <div className="flex-1 min-w-0 grid gap-3 sm:grid-cols-[1fr_110px_140px]">
                           <div className="sm:col-span-3 grid gap-2 sm:grid-cols-2">
                             <input
+                              id={`svc-name-${svc.key}`}
                               value={svc.name}
                               onChange={(e) => updateService(svc.key, { name: e.target.value })}
                               placeholder="Nombre del servicio"
