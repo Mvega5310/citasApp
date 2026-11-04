@@ -47,6 +47,21 @@ module.exports = {
         },
         // Fondo crema global
         cream: '#F5F1E8',
+        // Paleta editorial café + dorado (misma que las variables --bt-* de globals.css)
+        cafe: {
+          bg:        '#100E0C',
+          soft:      '#191511',
+          card:      '#201A15',
+          hover:     '#292119',
+          border:    '#403328',
+          text:      '#F4EEE5',
+          muted:     '#B8AA99',
+          subtle:    '#857767',
+          gold:      '#C69B62',
+          goldlight: '#DFBD8B',
+          golddark:  '#A77B45',
+          green:     '#24845E',
+        },
         bt: {
           body:     '#0A1210',
           noche:    '#0E1713',
@@ -65,8 +80,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans:    ['Figtree', 'Inter', 'sans-serif'],
-        display: ['Bricolage Grotesque', 'sans-serif'],
+        sans:    ['Manrope', 'system-ui', 'sans-serif'],
+        display: ['Playfair Display', 'Georgia', 'serif'],
         serif:   ['Playfair Display', 'serif'],
       },
       backgroundImage: {
