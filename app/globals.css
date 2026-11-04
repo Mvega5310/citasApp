@@ -203,6 +203,12 @@
     background: var(--bt-gold);
     color: var(--bt-on-gold);
   }
+  /* Días sin atención (cerrado o fuera del rango de reserva) */
+  .calendar-day:disabled {
+    color: var(--bt-text-subtle);
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
   .calendar-day.disabled {
     color: var(--bt-text-subtle);
     cursor: not-allowed;

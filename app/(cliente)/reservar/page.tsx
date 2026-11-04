@@ -58,16 +58,16 @@ function ProgressBar({ step }: { step: number }) {
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200"
                   style={{
-                    background: done || active ? '#E84B85' : '#17231D',
-                    border: `2px solid ${done || active ? '#E84B85' : '#2C3E36'}`,
-                    color: done || active ? 'white' : '#5D7065',
+                    background: done || active ? '#C69B62' : '#201A15',
+                    border: `2px solid ${done || active ? '#C69B62' : '#403328'}`,
+                    color: done || active ? '#100E0C' : '#857767',
                   }}
                 >
                   {done ? '✓' : num}
                 </div>
                 <span
                   className="text-[10px] font-medium"
-                  style={{ color: active ? '#E84B85' : '#5D7065' }}
+                  style={{ color: active ? '#C69B62' : '#857767' }}
                 >
                   {label}
                 </span>
@@ -75,7 +75,7 @@ function ProgressBar({ step }: { step: number }) {
               {i < STEP_LABELS.length - 1 && (
                 <div
                   className="w-10 h-0.5 mb-4 mx-1 transition-all duration-300"
-                  style={{ background: step > num ? '#E84B85' : '#2C3E36' }}
+                  style={{ background: step > num ? '#C69B62' : '#403328' }}
                 />
               )}
             </div>
@@ -122,57 +122,60 @@ function Tirilla({
     <div className="animate-bt-pop max-w-sm mx-auto">
       <div
         className="rounded-[22px] overflow-hidden"
-        style={{ background: '#17231D', border: '1.5px solid #2C3E36' }}
+        style={{ background: '#201A15', border: '1.5px solid #403328' }}
       >
         {/* Header */}
         <div
           className="px-6 pt-6 pb-5 text-center"
-          style={{ background: 'linear-gradient(135deg, #E84B85 0%, #C93870 100%)' }}
+          style={{
+            background: 'linear-gradient(135deg, #2E241B 0%, #191511 100%)',
+            borderBottom: '1px solid #403328',
+          }}
         >
-          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mx-auto mb-3 font-bold text-white font-display text-sm">
+          <div className="w-10 h-10 rounded-xl bg-cafe-gold/15 ring-1 ring-cafe-gold/40 flex items-center justify-center mx-auto mb-3 font-bold text-cafe-goldlight font-display text-sm">
             MB
           </div>
           <p className="text-white font-semibold text-lg font-display">Marcos BarberShop</p>
-          <p className="text-white/80 text-sm mt-0.5">
+          <p className="text-cafe-goldlight text-sm mt-0.5">
             {isGroup ? `${allTimes.length} Turnos Confirmados ✓` : 'Turno Confirmado ✓'}
           </p>
         </div>
 
         {/* Perforated divider top */}
         <div className="relative flex items-center px-4">
-          <div className="absolute -left-3 w-6 h-6 rounded-full" style={{ background: '#0A1210' }} />
-          <div className="flex-1 border-t-2 border-dashed" style={{ borderColor: '#2C3E36' }} />
-          <div className="absolute -right-3 w-6 h-6 rounded-full" style={{ background: '#0A1210' }} />
+          <div className="absolute -left-3 w-6 h-6 rounded-full" style={{ background: '#100E0C' }} />
+          <div className="flex-1 border-t-2 border-dashed" style={{ borderColor: '#403328' }} />
+          <div className="absolute -right-3 w-6 h-6 rounded-full" style={{ background: '#100E0C' }} />
         </div>
 
         {/* Details */}
         <div className="px-6 py-5">
           <div className="grid grid-cols-2 gap-4 mb-5">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#5D7065' }}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#857767' }}>
                 Servicio
               </p>
-              <p className="text-sm font-semibold" style={{ color: '#F1EDE3' }}>{service.name}</p>
+              <p className="text-sm font-semibold" style={{ color: '#F4EEE5' }}>{service.name}</p>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#5D7065' }}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#857767' }}>
                 Precio
               </p>
-              <p className="text-sm font-bold" style={{ color: '#E84B85' }}>
+              <p className="text-sm font-bold" style={{ color: '#C69B62' }}>
                 ${service.price.toLocaleString('es-CO')}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#5D7065' }}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#857767' }}>
                 Fecha
               </p>
-              <p className="text-sm font-semibold capitalize" style={{ color: '#F1EDE3' }}>{dateLabel}</p>
+              <p className="text-sm font-semibold capitalize" style={{ color: '#F4EEE5' }}>{dateLabel}</p>
             </div>
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#5D7065' }}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: '#857767' }}>
                 {isGroup ? 'Horas' : 'Hora'}
               </p>
-              <p className="text-sm font-semibold" style={{ color: '#F1EDE3' }}>
+              <p className="text-sm font-semibold" style={{ color: '#F4EEE5' }}>
                 {isGroup ? timesLabel : time}
               </p>
             </div>
@@ -183,28 +186,28 @@ function Tirilla({
             className="w-full h-10 rounded-lg mb-2"
             style={{
               background:
-                'repeating-linear-gradient(90deg, #2C3E36 0px, #2C3E36 2px, transparent 2px, transparent 6px)',
+                'repeating-linear-gradient(90deg, #403328 0px, #403328 2px, transparent 2px, transparent 6px)',
             }}
           />
-          <p className="text-center font-mono font-bold text-base" style={{ color: '#F1EDE3' }}>
+          <p className="text-center font-mono font-bold text-base" style={{ color: '#F4EEE5' }}>
             {code}
           </p>
         </div>
 
         {/* Perforated divider bottom */}
         <div className="relative flex items-center px-4">
-          <div className="absolute -left-3 w-6 h-6 rounded-full" style={{ background: '#0A1210' }} />
-          <div className="flex-1 border-t-2 border-dashed" style={{ borderColor: '#2C3E36' }} />
-          <div className="absolute -right-3 w-6 h-6 rounded-full" style={{ background: '#0A1210' }} />
+          <div className="absolute -left-3 w-6 h-6 rounded-full" style={{ background: '#100E0C' }} />
+          <div className="flex-1 border-t-2 border-dashed" style={{ borderColor: '#403328' }} />
+          <div className="absolute -right-3 w-6 h-6 rounded-full" style={{ background: '#100E0C' }} />
         </div>
 
         {/* Footer */}
         <div className="px-6 py-5">
           <div className="flex items-center gap-2 mb-4">
-            <CalendarCheck className="w-4 h-4 shrink-0" style={{ color: '#1FA97C' }} />
-            <p className="text-xs" style={{ color: '#9FB0A2' }}>
+            <CalendarCheck className="w-4 h-4 shrink-0" style={{ color: '#24845E' }} />
+            <p className="text-xs" style={{ color: '#B8AA99' }}>
               Confirmación enviada a{' '}
-              <span style={{ color: '#F1EDE3' }}>{email}</span>
+              <span style={{ color: '#F4EEE5' }}>{email}</span>
             </p>
           </div>
 
@@ -230,7 +233,7 @@ function Tirilla({
       <button
         onClick={onReset}
         className="w-full mt-4 text-sm font-medium py-3 touch-manipulation"
-        style={{ color: '#7C8F81' }}
+        style={{ color: '#A39583' }}
       >
         Hacer otra reserva
       </button>
@@ -389,7 +392,7 @@ export default function BookingPage() {
   };
 
   return (
-    <div className="min-h-screen pb-20 md:pb-0" style={{ background: '#0A1210' }}>
+    <div className="min-h-screen pb-20 md:pb-0" style={{ background: '#100E0C' }}>
       {step < 5 && <Header />}
 
       <div className="max-w-lg mx-auto px-5 py-6">
@@ -398,10 +401,10 @@ export default function BookingPage() {
         {/* Step 1: Service selection */}
         {step === 1 && (
           <div className="animate-bt-up">
-            <h1 className="text-2xl font-bold font-display mb-1" style={{ color: '#F1EDE3' }}>
+            <h1 className="text-2xl font-bold font-display mb-1" style={{ color: '#F4EEE5' }}>
               Elige tu servicio
             </h1>
-            <p className="text-sm mb-6" style={{ color: '#7C8F81' }}>
+            <p className="text-sm mb-6" style={{ color: '#A39583' }}>
               Selecciona el servicio que deseas reservar
             </p>
             <div className="flex flex-col gap-3">
@@ -410,23 +413,23 @@ export default function BookingPage() {
                   key={service.id}
                   onClick={() => handleServiceSelect(service)}
                   className="flex items-center gap-4 rounded-[18px] p-4 text-left transition-all duration-200 touch-manipulation active:scale-[0.98] w-full"
-                  style={{ background: '#17231D', border: '1.5px solid #2C3E36' }}
+                  style={{ background: '#201A15', border: '1.5px solid #403328' }}
                 >
                   <div
                     className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
-                    style={{ background: '#22322A' }}
+                    style={{ background: '#191511' }}
                   >
                     {service.icon}
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="font-semibold text-sm mb-0.5" style={{ color: '#F1EDE3' }}>
+                    <p className="font-semibold text-sm mb-0.5" style={{ color: '#F4EEE5' }}>
                       {service.name}
                     </p>
-                    <p className="text-xs" style={{ color: '#7C8F81' }}>
+                    <p className="text-xs" style={{ color: '#A39583' }}>
                       {service.duration} min
                     </p>
                   </div>
-                  <p className="font-bold text-base shrink-0" style={{ color: '#E84B85' }}>
+                  <p className="font-bold text-base shrink-0" style={{ color: '#C69B62' }}>
                     ${service.price.toLocaleString('es-CO')}
                   </p>
                 </button>
@@ -442,22 +445,22 @@ export default function BookingPage() {
               <button
                 onClick={handleBack}
                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors duration-200 touch-manipulation shrink-0"
-                style={{ border: '1px solid #2C3E36', color: '#9FB0A2' }}
+                style={{ border: '1px solid #403328', color: '#B8AA99' }}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div>
-                <h1 className="text-xl font-bold font-display" style={{ color: '#F1EDE3' }}>
+                <h1 className="text-xl font-bold font-display" style={{ color: '#F4EEE5' }}>
                   Selecciona una fecha
                 </h1>
-                <p className="text-xs" style={{ color: '#7C8F81' }}>
+                <p className="text-xs" style={{ color: '#A39583' }}>
                   {selectedService.name} · ${selectedService.price.toLocaleString('es-CO')}
                 </p>
               </div>
             </div>
             <div
               className="rounded-[22px] p-5"
-              style={{ background: '#17231D', border: '1px solid #2C3E36' }}
+              style={{ background: '#201A15', border: '1px solid #403328' }}
             >
               <Calendar onDateSelect={handleDateSelect} selectedDate={selectedDate} />
             </div>
@@ -471,15 +474,15 @@ export default function BookingPage() {
               <button
                 onClick={handleBack}
                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors duration-200 touch-manipulation shrink-0"
-                style={{ border: '1px solid #2C3E36', color: '#9FB0A2' }}
+                style={{ border: '1px solid #403328', color: '#B8AA99' }}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div>
-                <h1 className="text-xl font-bold font-display" style={{ color: '#F1EDE3' }}>
+                <h1 className="text-xl font-bold font-display" style={{ color: '#F4EEE5' }}>
                   Selecciona un horario
                 </h1>
-                <p className="text-xs capitalize" style={{ color: '#7C8F81' }}>
+                <p className="text-xs capitalize" style={{ color: '#A39583' }}>
                   {formatDateLabel(selectedDate)}
                 </p>
               </div>
@@ -504,9 +507,9 @@ export default function BookingPage() {
             ) : (
               <div
                 className="rounded-[18px] p-6 text-center"
-                style={{ background: '#17231D', border: '1px solid #2C3E36' }}
+                style={{ background: '#201A15', border: '1px solid #403328' }}
               >
-                <p className="text-sm" style={{ color: '#9FB0A2' }}>
+                <p className="text-sm" style={{ color: '#B8AA99' }}>
                   No hay horarios disponibles para este servicio en la fecha seleccionada.
                 </p>
               </div>
@@ -521,15 +524,15 @@ export default function BookingPage() {
               <button
                 onClick={handleBack}
                 className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors duration-200 touch-manipulation shrink-0"
-                style={{ border: '1px solid #2C3E36', color: '#9FB0A2' }}
+                style={{ border: '1px solid #403328', color: '#B8AA99' }}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div>
-                <h1 className="text-xl font-bold font-display" style={{ color: '#F1EDE3' }}>
+                <h1 className="text-xl font-bold font-display" style={{ color: '#F4EEE5' }}>
                   Tus datos
                 </h1>
-                <p className="text-xs" style={{ color: '#7C8F81' }}>
+                <p className="text-xs" style={{ color: '#A39583' }}>
                   {selectedService.name} · {formatDateLabel(selectedDate)} · {selectedTime}
                 </p>
               </div>
@@ -538,23 +541,23 @@ export default function BookingPage() {
             {/* Summary chip */}
             <div
               className="rounded-[14px] p-4 mb-5 flex items-center gap-3"
-              style={{ background: '#17231D', border: '1px solid #2C3E36' }}
+              style={{ background: '#201A15', border: '1px solid #403328' }}
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                style={{ background: '#22322A' }}
+                style={{ background: '#191511' }}
               >
                 {selectedService.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm" style={{ color: '#F1EDE3' }}>
+                <p className="font-semibold text-sm" style={{ color: '#F4EEE5' }}>
                   {selectedService.name}
                 </p>
-                <p className="text-xs capitalize" style={{ color: '#7C8F81' }}>
+                <p className="text-xs capitalize" style={{ color: '#A39583' }}>
                   {formatDateLabel(selectedDate)} · {selectedTime}
                 </p>
               </div>
-              <p className="font-bold text-base shrink-0" style={{ color: '#E84B85' }}>
+              <p className="font-bold text-base shrink-0" style={{ color: '#C69B62' }}>
                 ${selectedService.price.toLocaleString('es-CO')}
               </p>
             </div>
@@ -562,7 +565,7 @@ export default function BookingPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               {/* Name */}
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                   Nombre completo *
                 </label>
                 <input
@@ -581,7 +584,7 @@ export default function BookingPage() {
 
               {/* Email */}
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                   Correo electrónico *
                 </label>
                 <input
@@ -603,7 +606,7 @@ export default function BookingPage() {
 
               {/* WhatsApp */}
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                   Número de WhatsApp *
                 </label>
                 <input
@@ -625,7 +628,7 @@ export default function BookingPage() {
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-medium mb-1.5" style={{ color: '#9FB0A2' }}>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                   Notas adicionales (opcional)
                 </label>
                 <textarea
@@ -640,15 +643,15 @@ export default function BookingPage() {
               {timeSlots.length > 1 && (
                 <div
                   className="rounded-[14px] p-4"
-                  style={{ border: '1px solid #2C3E36' }}
+                  style={{ border: '1px solid #403328' }}
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4" style={{ color: '#9FB0A2' }} />
-                    <p className="text-sm font-semibold" style={{ color: '#F1EDE3' }}>
+                    <Users className="w-4 h-4" style={{ color: '#B8AA99' }} />
+                    <p className="text-sm font-semibold" style={{ color: '#F4EEE5' }}>
                       ¿Reservar para familiares?
                     </p>
                   </div>
-                  <p className="text-xs mb-3" style={{ color: '#5D7065' }}>
+                  <p className="text-xs mb-3" style={{ color: '#857767' }}>
                     Agrega hasta 2 horarios adicionales (mismo día y servicio).
                   </p>
 
@@ -661,7 +664,7 @@ export default function BookingPage() {
                     );
                     return (
                       <div key={index} className="flex items-center gap-2 mb-2">
-                        <span className="text-xs shrink-0" style={{ color: '#7C8F81', minWidth: '72px' }}>
+                        <span className="text-xs shrink-0" style={{ color: '#A39583', minWidth: '72px' }}>
                           Familiar {index + 2}:
                         </span>
                         <select
@@ -683,7 +686,7 @@ export default function BookingPage() {
                             setAdditionalTimes((prev) => prev.filter((_, i) => i !== index))
                           }
                           className="p-1 touch-manipulation"
-                          style={{ color: '#5D7065' }}
+                          style={{ color: '#857767' }}
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -696,7 +699,7 @@ export default function BookingPage() {
                       type="button"
                       onClick={() => setAdditionalTimes((prev) => [...prev, freeSlots[0]])}
                       className="flex items-center gap-1 text-sm font-medium transition-colors touch-manipulation mt-1"
-                      style={{ color: '#E84B85' }}
+                      style={{ color: '#C69B62' }}
                     >
                       <Plus className="w-4 h-4" />
                       Agregar horario para familiar
@@ -707,7 +710,7 @@ export default function BookingPage() {
 
               {/* Habeas data */}
               <div className="space-y-3 pt-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#5D7065' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#857767' }}>
                   Autorización de datos personales
                 </p>
 
@@ -719,16 +722,16 @@ export default function BookingPage() {
                       required: 'Debes aceptar el tratamiento de tus datos personales.',
                     })}
                     className="mt-0.5 h-4 w-4 shrink-0 rounded"
-                    style={{ accentColor: '#E84B85' }}
+                    style={{ accentColor: '#C69B62' }}
                   />
                   <label
                     htmlFor="acceptsDataPolicy"
                     className="text-xs leading-relaxed cursor-pointer"
-                    style={{ color: '#7C8F81' }}
+                    style={{ color: '#A39583' }}
                   >
                     <span style={{ color: '#FF7A66' }}>*</span>{' '}
                     Autorizo el tratamiento de mis datos personales (nombre, correo y WhatsApp) con el fin exclusivo de gestionar mi cita, de conformidad con la{' '}
-                    <strong style={{ color: '#9FB0A2' }}>Ley 1581 de 2012</strong>.
+                    <strong style={{ color: '#B8AA99' }}>Ley 1581 de 2012</strong>.
                   </label>
                 </div>
                 {errors.acceptsDataPolicy && (
@@ -743,12 +746,12 @@ export default function BookingPage() {
                       required: 'Debes autorizar el envío de notificaciones.',
                     })}
                     className="mt-0.5 h-4 w-4 shrink-0 rounded"
-                    style={{ accentColor: '#E84B85' }}
+                    style={{ accentColor: '#C69B62' }}
                   />
                   <label
                     htmlFor="acceptsNotifications"
                     className="text-xs leading-relaxed cursor-pointer"
-                    style={{ color: '#7C8F81' }}
+                    style={{ color: '#A39583' }}
                   >
                     <span style={{ color: '#FF7A66' }}>*</span>{' '}
                     Autorizo el envío de notificaciones y recordatorios por correo y WhatsApp.
