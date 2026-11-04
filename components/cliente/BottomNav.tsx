@@ -19,12 +19,9 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50"
-      style={{
-        background: '#0E1713',
-        borderTop: '1px solid #2C3E36',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-      }}
+      aria-label="Navegación inferior"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-cafe-bg/95 backdrop-blur-md border-t border-cafe-border"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="grid grid-cols-4 h-16">
         {navItems.map(({ href, label, icon: Icon, exact }) => {
@@ -33,17 +30,19 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
-              className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors duration-200 touch-manipulation"
-              style={{ color: active ? '#E84B85' : '#7C8F81' }}
+              aria-current={active ? 'page' : undefined}
+              className={`relative flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition-colors duration-200 touch-manipulation ${
+                active ? 'text-cafe-goldlight' : 'text-cafe-muted hover:text-cafe-text'
+              }`}
             >
-              <Icon className="w-5 h-5" strokeWidth={active ? 2.5 : 1.8} />
-              <span>{label}</span>
               {active && (
                 <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: '#E84B85' }}
+                  aria-hidden="true"
+                  className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-cafe-gold"
                 />
               )}
+              <Icon className="w-5 h-5" width={20} height={20} strokeWidth={active ? 2.3 : 1.8} aria-hidden="true" />
+              <span>{label}</span>
             </Link>
           );
         })}
