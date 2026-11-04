@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
+import { resolveRequestTenant } from '@/lib/server/tenant';
 
 async function fetchBlockedSlots(
   db: FirebaseFirestore.Firestore,
@@ -21,7 +22,9 @@ async function fetchBlockedSlots(
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get('date');
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 });

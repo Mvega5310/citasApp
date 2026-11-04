@@ -5,6 +5,7 @@ import { sendBookingNotification } from '@/lib/server/email';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { logger } from '@/lib/server/logger';
 import { generateCancelToken } from '@/lib/server/cancelToken';
+import { resolveRequestTenant } from '@/lib/server/tenant';
 
 function appointmentsCol(db: FirebaseFirestore.Firestore, tenantSlug: string) {
   return tenantSlug
@@ -57,7 +58,9 @@ async function isSlotTaken(date: string, time: string, tenantSlug: string): Prom
 }
 
 export async function POST(request: NextRequest) {
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
 
   try {
     const body = await request.json();

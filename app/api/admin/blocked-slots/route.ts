@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { resolveRequestTenant } from '@/lib/server/tenant';
 
 function blockedSlotDoc(db: FirebaseFirestore.Firestore, tenantSlug: string, date: string) {
   const base = tenantSlug
@@ -11,7 +12,9 @@ function blockedSlotDoc(db: FirebaseFirestore.Firestore, tenantSlug: string, dat
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get('date');
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 });
@@ -32,7 +35,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
 
   try {
     const { date, slots, action } = (await request.json()) as {

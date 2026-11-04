@@ -3,6 +3,7 @@ import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
 import { getSessionUser } from '@/lib/server/session';
+import { resolveRequestTenant } from '@/lib/server/tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,9 @@ export async function PATCH(
   const session = await getSessionUser(request);
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
   const { id } = params;
   let body: { status?: string };
 
@@ -78,7 +81,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
   const { id } = params;
 
   if (isFirebaseConfigured) {

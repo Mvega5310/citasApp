@@ -6,9 +6,12 @@ import { appointmentsCol, isSlotBlocked, isSlotTaken } from '@/lib/server/appoin
 import { sendGroupBookingNotification } from '@/lib/server/email';
 import { logger } from '@/lib/server/logger';
 import { generateGroupCancelToken } from '@/lib/server/cancelToken';
+import { resolveRequestTenant } from '@/lib/server/tenant';
 
 export async function POST(request: NextRequest) {
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
 
   if (!isFirebaseConfigured) {
     return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });

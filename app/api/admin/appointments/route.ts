@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
+import { resolveRequestTenant } from '@/lib/server/tenant';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const tenantSlug = request.headers.get('x-tenant-slug') ?? '';
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
 
   if (isFirebaseConfigured) {
     try {
