@@ -28,6 +28,22 @@ function getToDefault() {
   return process.env.EMAIL_TO_DEFAULT || '';
 }
 
+/**
+ * Destinatarios de una notificación, según la barbería:
+ * - admin: correo del negocio que recibe los avisos (null = no enviar al negocio)
+ * - client: si se envía copia al cliente
+ * Si no se indica, se mantiene el comportamiento original (EMAIL_TO_DEFAULT + cliente).
+ */
+export type NotifyRecipients = { admin: string | null; client: boolean };
+
+function adminRecipient(recipients?: NotifyRecipients): string {
+  return recipients ? recipients.admin ?? '' : getToDefault();
+}
+
+function clientAllowed(recipients?: NotifyRecipients): boolean {
+  return recipients ? recipients.client : true;
+}
+
 const baseStyle = `
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #f9fafb;
@@ -330,10 +346,10 @@ export async function sendCancellationEmails(payload: {
   date: string;
   time: string;
   isLate: boolean;
-}): Promise<void> {
+}, recipients?: NotifyRecipients): Promise<void> {
   const transporter = getTransporter();
   const from = getSender();
-  const toDefault = getToDefault();
+  const toDefault = adminRecipient(recipients);
 
   if (!transporter) return;
 
@@ -341,7 +357,7 @@ export async function sendCancellationEmails(payload: {
   // control: en un entorno serverless, una promesa "suelta" que sigue
   // corriendo después de responder al cliente puede quedar cortada a medias.
   await Promise.all([
-    payload.clientEmail
+    payload.clientEmail && clientAllowed(recipients)
       ? transporter
           .sendMail({
             from,
@@ -372,10 +388,10 @@ export async function sendBookingNotification(payload: {
   date: string;
   time: string;
   cancelUrl?: string;
-}): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
+}, recipients?: NotifyRecipients): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
   const transporter = getTransporter();
   const from = getSender();
-  const toDefault = getToDefault();
+  const toDefault = adminRecipient(recipients);
 
   if (!transporter) {
     return { sentToDefault: false, sentToClient: false };
@@ -392,7 +408,7 @@ export async function sendBookingNotification(payload: {
           .then(() => true)
           .catch(() => false)
       : Promise.resolve(false),
-    payload.clientEmail
+    payload.clientEmail && clientAllowed(recipients)
       ? transporter
           .sendMail({
             from,
@@ -520,10 +536,10 @@ export async function sendGroupBookingNotification(payload: {
   clientWhatsApp: string;
   appointments: GroupAppointmentInfo[];
   cancelUrl?: string;
-}): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
+}, recipients?: NotifyRecipients): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
   const transporter = getTransporter();
   const from = getSender();
-  const toDefault = getToDefault();
+  const toDefault = adminRecipient(recipients);
 
   if (!transporter) {
     return { sentToDefault: false, sentToClient: false };
@@ -538,7 +554,7 @@ export async function sendGroupBookingNotification(payload: {
           .then(() => true)
           .catch(() => false)
       : Promise.resolve(false),
-    payload.clientEmail
+    payload.clientEmail && clientAllowed(recipients)
       ? transporter
           .sendMail({
             from,
@@ -627,15 +643,15 @@ export async function sendGroupCancellationEmails(payload: {
   cancelled: GroupAppointmentInfo[];
   stillActive: GroupAppointmentInfo[];
   anyLate: boolean;
-}): Promise<void> {
+}, recipients?: NotifyRecipients): Promise<void> {
   const transporter = getTransporter();
   const from = getSender();
-  const toDefault = getToDefault();
+  const toDefault = adminRecipient(recipients);
 
   if (!transporter) return;
 
   await Promise.all([
-    payload.clientEmail
+    payload.clientEmail && clientAllowed(recipients)
       ? transporter
           .sendMail({
             from,
@@ -791,10 +807,10 @@ export async function sendContactMessage(payload: {
   phone?: string;
   subject: string;
   message: string;
-}): Promise<boolean> {
+}, recipients?: NotifyRecipients): Promise<boolean> {
   const transporter = getTransporter();
   const from = getSender();
-  const toDefault = getToDefault();
+  const toDefault = adminRecipient(recipients);
   if (!transporter || !toDefault) return false;
 
   try {

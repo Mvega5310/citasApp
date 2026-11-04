@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import { cleanText, cleanOptionalText, isValidEmail, isValidPhone } from '@/lib/server/api';
 import { sendContactMessage } from '@/lib/server/email';
 import { logger } from '@/lib/server/logger';
+import { resolveRequestTenant } from '@/lib/server/tenant';
+import { businessEmailFor } from '@/lib/server/settings';
 
 const VALID_SUBJECTS = ['reserva', 'servicios', 'precios', 'horarios', 'otro'] as const;
 
 export async function POST(request: Request) {
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+
   try {
     const body = await request.json();
 
@@ -34,7 +39,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Número de teléfono inválido' }, { status: 400 });
     }
 
-    const sent = await sendContactMessage({ name, email, phone, subject, message });
+    // Siempre al correo de esta barbería (nunca al de otra)
+    const businessEmail = await businessEmailFor(tenantResult.tenant);
+    const sent = businessEmail
+      ? await sendContactMessage({ name, email, phone, subject, message }, { admin: businessEmail, client: false })
+      : false;
 
     logger.info('contact_message_received', { name, email, subject, sent });
 

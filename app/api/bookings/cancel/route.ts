@@ -3,6 +3,7 @@ import { verifyCancelToken, msUntilAppointment, CANCEL_WINDOW_MS } from '@/lib/s
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { appointmentsCol } from '@/lib/server/appointments';
 import { sendCancellationEmails, sendGroupCancellationEmails } from '@/lib/server/email';
+import { recipientsFor, tenantFromSlug } from '@/lib/server/settings';
 
 export async function POST(request: NextRequest) {
   try {
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
         cancelled,
         stillActive,
         anyLate,
-      });
+      }, await recipientsFor(await tenantFromSlug(tenantSlug)));
 
       return NextResponse.json({ ok: true, cancelledCount: cancelled.length, anyLate });
     }
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       date,
       time,
       isLate,
-    });
+    }, await recipientsFor(await tenantFromSlug(tenantSlug)));
 
     return NextResponse.json({ ok: true, isLate });
   } catch {

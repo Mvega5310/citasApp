@@ -10,6 +10,9 @@ process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 process.env.ADMIN_SECRET = 'clave-de-prueba-solo-emulador';
 process.env.NEXT_PUBLIC_DEFAULT_TENANT = 'demo';
 delete process.env.DATABASE_URL;
+// Sin SMTP: ningún correo sale de la prueba
+delete process.env.EMAIL_SERVER_HOST;
+process.env.EMAIL_TO_DEFAULT = 'duenio@marcos.test';
 
 const ROOT = process.cwd().replace(/\\/g, '/');
 
@@ -30,6 +33,8 @@ async function main() {
   const catalogRoute = await imp('app/api/catalog/route.ts');
   const bookings = await imp('app/api/bookings/route.ts');
   const adminCatalog = await imp('app/api/admin/catalog/route.ts');
+  const settingsLib = await imp('lib/server/settings.ts');
+  const reminders = await imp('lib/server/reminders.ts');
 
   const db = adminDb();
   // Datos de prueba
@@ -153,6 +158,38 @@ async function main() {
   await check('Admin demo guarda su catálogo (crea su ficha)', adminCatalog.PUT(req('PUT', '/x', 'demo', legacyDemo, demoCatalog)), 200);
   await check('Demo con ficha sigue funcionando y usa su nuevo precio', catalogRoute.GET(req('GET', '/api/catalog', 'demo')), 200, (j) => svcIds(j) === 'corte-cabello' && j.services[0].price === 14000);
   await check('La config de demo conserva su nombre tras crear la ficha', settings.GET(req('GET', '/x', 'demo', legacyDemo)), 200, (j) => j?.salonName === 'Nombre Legacy');
+
+  // ── Destinatarios de correos por barbería ──
+  const eq = async (name: string, actual: unknown, expected: unknown) => {
+    const ok = JSON.stringify(actual) === JSON.stringify(expected);
+    if (!ok) fails++;
+    console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${JSON.stringify(actual)} (esperado ${JSON.stringify(expected)})`}`);
+  };
+  await check('Norte configura su correo y desactiva avisos al cliente', settings.PATCH(req('PATCH', '/x', 'norte', norte, { contactEmail: 'norte@barberia.test', notifyClient: false })), 200);
+  const T = (slug: string) => settingsLib.tenantFromSlug(slug);
+  await eq('Demo: avisos al dueño (EMAIL_TO_DEFAULT) y al cliente', await settingsLib.recipientsFor(await T('demo')), { admin: 'duenio@marcos.test', client: true });
+  await eq('Norte: avisos a SU correo, sin copia al cliente', await settingsLib.recipientsFor(await T('norte')), { admin: 'norte@barberia.test', client: false });
+  await eq('Barbería sin correo: nadie recibe sus avisos (nunca el dueño de demo)', await settingsLib.recipientsFor(await T('nuevo')), { admin: null, client: true });
+  await eq('Contacto de norte va a norte', await settingsLib.businessEmailFor(await T('norte')), 'norte@barberia.test');
+  await eq('Contacto de una barbería sin correo no va a nadie', await settingsLib.businessEmailFor(await T('nuevo')), null);
+
+  // ── Recordatorios: todas las barberías, ventana de 10 min ──
+  const day = '2027-03-01';
+  const nowMs = Date.UTC(2027, 2, 1, 15, 0); // 10:00 en Colombia
+  const appt2 = (time: string, status = 'pending', extra = {}) => ({ clientName: 'C', clientEmail: 'c@test.co', serviceName: 'S', date: day, time, status, ...extra });
+  await db.collection('tenants').doc('demo').collection('appointments').doc('r1').set(appt2('10:00'));
+  await db.collection('appointments').doc('r2').set(appt2('10:10', 'confirmed')); // colección antigua
+  await db.collection('tenants').doc('norte').collection('appointments').doc('r3').set(appt2('10:05'));
+  await db.collection('tenants').doc('norte').collection('appointments').doc('r4').set(appt2('10:30'));
+  await db.collection('tenants').doc('norte').collection('appointments').doc('r5').set(appt2('10:00', 'cancelled'));
+  await db.collection('tenants').doc('demo').collection('appointments').doc('r6').set(appt2('10:00', 'pending', { reminderSent: true }));
+  const hits = await reminders.findUpcomingAppointments({ date: day, time: '10:00' }, { date: day, time: '10:10' });
+  await eq('Recordatorio encuentra citas de todas las barberías dentro de la ventana',
+    hits.map((h: any) => `${h.tenantSlug}/${h.id}`).sort(), ['demo/r1', 'demo/r2', 'norte/r3']);
+  const run = await reminders.runReminders(nowMs);
+  await eq('Norte (sin aviso al cliente) se omite; sin SMTP no se marca nada', { sent: run.sent, skipped: run.skipped }, { sent: 0, skipped: 1 });
+  const r1 = (await db.collection('tenants').doc('demo').collection('appointments').doc('r1').get()).data();
+  await eq('Una cita no queda marcada si el correo no salió', r1?.reminderSent ?? false, false);
 
   console.log(fails === 0 ? '\nTODAS LAS PRUEBAS PASARON' : `\n${fails} PRUEBA(S) FALLARON`);
   process.exit(fails === 0 ? 0 : 1);

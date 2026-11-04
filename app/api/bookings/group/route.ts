@@ -8,6 +8,7 @@ import { logger } from '@/lib/server/logger';
 import { generateGroupCancelToken } from '@/lib/server/cancelToken';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
+import { recipientsFor } from '@/lib/server/settings';
 
 export async function POST(request: NextRequest) {
   const tenantResult = await resolveRequestTenant(request);
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
           time: b.time,
         })),
         cancelUrl,
-      });
+      }, await recipientsFor(tenantResult.tenant));
     } catch (error) {
       logger.warn('group_booking_email_failed', {
         groupId,
