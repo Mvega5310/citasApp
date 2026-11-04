@@ -25,7 +25,9 @@ declare global {
 globalThis._tenantCache ??= new Map();
 const cache = globalThis._tenantCache;
 const TTL_MS = 60_000;
-const LOOKUP_TIMEOUT_MS = 800;
+// Margen amplio: este resultado decide si la petición se acepta, y Firestore
+// puede tardar más en la primera consulta (arranque en frío).
+const LOOKUP_TIMEOUT_MS = 3000;
 
 // Distingue "no existe" de "no se pudo consultar" para no rechazar una barbería
 // real solo porque Firestore tardó en responder.

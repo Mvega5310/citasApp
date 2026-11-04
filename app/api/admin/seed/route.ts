@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import admin from 'firebase-admin';
+import { resolveRequestTenant } from '@/lib/server/tenant';
+import { adminTenantOf } from '@/lib/server/authorization';
 
 // One-time endpoint to create the first admin account.
 // Protected by ADMIN_SECRET so only someone with server access can use it.
 export async function POST(request: Request) {
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+  const tenantSlug = tenantResult.tenant.slug;
+
   try {
     const { email, password, name, setupKey } = await request.json();
 
@@ -20,9 +26,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
     }
 
-    // Check if any admin already exists
-    const existing = await adminDb().collection('admins').limit(1).get();
-    if (!existing.empty) {
+    // ¿Ya existe algún admin en esta barbería?
+    const existing = await adminDb().collection('admins').get();
+    if (existing.docs.some((doc) => adminTenantOf(doc.data()) === tenantSlug)) {
       return NextResponse.json(
         { error: 'Ya existe al menos un administrador. Usa la página de Equipo para agregar más.' },
         { status: 409 }
@@ -43,6 +49,7 @@ export async function POST(request: Request) {
       email,
       name,
       role: 'admin',
+      tenantSlug,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 

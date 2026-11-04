@@ -1,15 +1,21 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { getSessionUser } from '@/lib/server/session';
+import { adminTenantOf, authorizeAdmin } from '@/lib/server/authorization';
 
 export async function PATCH(request: Request, { params }: { params: { uid: string } }) {
-  const session = await getSessionUser(request);
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+  const auth = await authorizeAdmin(request, { role: 'admin' });
+  if (!auth.ok) return auth.response;
+  const { session } = auth;
+  const tenantSlug = auth.tenant.slug;
 
   if (!isFirebaseConfigured) return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
 
   try {
+    const target = await adminDb().collection('admins').doc(params.uid).get();
+    if (!target.exists || adminTenantOf(target.data()) !== tenantSlug) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+
     const { name, role } = await request.json();
     const update: Record<string, string> = {};
 
@@ -43,9 +49,10 @@ export async function PATCH(request: Request, { params }: { params: { uid: strin
 }
 
 export async function DELETE(request: Request, { params }: { params: { uid: string } }) {
-  const session = await getSessionUser(request);
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+  const auth = await authorizeAdmin(request, { role: 'admin' });
+  if (!auth.ok) return auth.response;
+  const { session } = auth;
+  const tenantSlug = auth.tenant.slug;
 
   if (params.uid === session.uid) {
     return NextResponse.json({ error: 'No puedes eliminarte a ti mismo' }, { status: 400 });
@@ -54,6 +61,11 @@ export async function DELETE(request: Request, { params }: { params: { uid: stri
   if (!isFirebaseConfigured) return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
 
   try {
+    const target = await adminDb().collection('admins').doc(params.uid).get();
+    if (!target.exists || adminTenantOf(target.data()) !== tenantSlug) {
+      return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
+    }
+
     await adminAuth().deleteUser(params.uid);
     await adminDb().collection('admins').doc(params.uid).delete();
     return NextResponse.json({ ok: true });

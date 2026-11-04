@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { logger } from '@/lib/server/logger';
+import { authorizeAdmin } from '@/lib/server/authorization';
 
 export type SalonSettings = {
   salonName: string;
@@ -28,7 +29,10 @@ const DEFAULTS: SalonSettings = {
   notifyAdmin: true,
 };
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+
   if (isFirebaseConfigured) {
     try {
       const doc = await adminDb().collection('settings').doc('salon').get();
@@ -42,6 +46,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await request.json();
 

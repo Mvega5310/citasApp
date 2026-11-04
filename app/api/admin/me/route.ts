@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { getSessionUser } from '@/lib/server/session';
+import { authorizeAdmin } from '@/lib/server/authorization';
 
 export async function GET(request: Request) {
-  const session = await getSessionUser(request);
-  if (!session) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+  const { session } = auth;
 
   if (isFirebaseConfigured) {
     try {
@@ -32,10 +31,9 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const session = await getSessionUser(request);
-  if (!session) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  }
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+  const { session } = auth;
 
   try {
     const { name } = await request.json();

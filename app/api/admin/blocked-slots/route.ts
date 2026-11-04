@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { resolveRequestTenant } from '@/lib/server/tenant';
+import { authorizeAdmin } from '@/lib/server/authorization';
 
 function blockedSlotDoc(db: FirebaseFirestore.Firestore, tenantSlug: string, date: string) {
   const base = tenantSlug
@@ -12,9 +12,9 @@ function blockedSlotDoc(db: FirebaseFirestore.Firestore, tenantSlug: string, dat
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get('date');
-  const tenantResult = await resolveRequestTenant(request);
-  if (!tenantResult.ok) return tenantResult.response;
-  const tenantSlug = tenantResult.tenant.slug;
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+  const tenantSlug = auth.tenant.slug;
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 });
@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const tenantResult = await resolveRequestTenant(request);
-  if (!tenantResult.ok) return tenantResult.response;
-  const tenantSlug = tenantResult.tenant.slug;
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+  const tenantSlug = auth.tenant.slug;
 
   try {
     const { date, slots, action } = (await request.json()) as {

@@ -13,19 +13,32 @@ function extractTenantSlug(request: NextRequest): string {
     return host.replace(`.${appDomain}`, '');
   }
   // Desarrollo local o dominio raíz → tenant por defecto
-  return process.env.NEXT_PUBLIC_DEFAULT_TENANT ?? 'demo';
+  return DEFAULT_TENANT;
 }
 
-async function isAuthenticated(request: NextRequest): Promise<boolean> {
+const DEFAULT_TENANT = process.env.NEXT_PUBLIC_DEFAULT_TENANT ?? 'demo';
+
+// Misma normalización que resolveRequestTenant (lib/server/tenant.ts)
+function normalizeTenant(slug: string): string {
+  const s = slug.trim().toLowerCase();
+  return !s || s === 'www' ? DEFAULT_TENANT : s;
+}
+
+type AuthState = 'none' | 'other-tenant' | 'ok';
+
+// Valida la sesión y que pertenezca a la barbería del host.
+// Es una capa adicional: cada ruta /api/admin vuelve a validarlo en el servidor.
+async function getAuthState(request: NextRequest, tenantSlug: string): Promise<AuthState> {
   const token = request.cookies.get('admin_session')?.value;
-  if (!token) return false;
+  if (!token) return 'none';
   try {
     const s = process.env.ADMIN_SECRET;
-    if (!s) return false;
-    await jwtVerify(token, new TextEncoder().encode(s));
-    return true;
+    if (!s) return 'none';
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(s));
+    const sessionTenant = typeof payload.tenantSlug === 'string' && payload.tenantSlug ? payload.tenantSlug : DEFAULT_TENANT;
+    return sessionTenant === normalizeTenant(tenantSlug) ? 'ok' : 'other-tenant';
   } catch {
-    return false;
+    return 'none';
   }
 }
 
@@ -47,7 +60,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    if (!(await isAuthenticated(request))) {
+    if ((await getAuthState(request, tenantSlug)) !== 'ok') {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
       return NextResponse.redirect(loginUrl);
@@ -55,8 +68,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api/admin/')) {
-    if (!(await isAuthenticated(request))) {
+    const state = await getAuthState(request, tenantSlug);
+    if (state === 'none') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+    if (state === 'other-tenant') {
+      return NextResponse.json({ error: 'No tienes acceso a esta barbería' }, { status: 403 });
     }
   }
 

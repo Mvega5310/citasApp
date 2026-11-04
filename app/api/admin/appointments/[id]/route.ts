@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
-import { getSessionUser } from '@/lib/server/session';
-import { resolveRequestTenant } from '@/lib/server/tenant';
+import { DEFAULT_TENANT_SLUG } from '@/lib/server/tenant';
+import { authorizeAdmin } from '@/lib/server/authorization';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,12 +20,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await getSessionUser(request);
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-
-  const tenantResult = await resolveRequestTenant(request);
-  if (!tenantResult.ok) return tenantResult.response;
-  const tenantSlug = tenantResult.tenant.slug;
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+  const tenantSlug = auth.tenant.slug;
   const { id } = params;
   let body: { status?: string };
 
@@ -59,6 +56,11 @@ export async function PATCH(
     }
   }
 
+  // Respaldo legacy en PostgreSQL: sin barbería, solo aplica a la barbería por defecto
+  if (tenantSlug !== DEFAULT_TENANT_SLUG) {
+    return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
+  }
+
   try {
     const pool = getPool();
     const result = await pool.query(
@@ -81,9 +83,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const tenantResult = await resolveRequestTenant(request);
-  if (!tenantResult.ok) return tenantResult.response;
-  const tenantSlug = tenantResult.tenant.slug;
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+  const tenantSlug = auth.tenant.slug;
   const { id } = params;
 
   if (isFirebaseConfigured) {
@@ -100,6 +102,11 @@ export async function DELETE(
         id, error: error instanceof Error ? error.message : 'unknown',
       });
     }
+  }
+
+  // Respaldo legacy en PostgreSQL: sin barbería, solo aplica a la barbería por defecto
+  if (tenantSlug !== DEFAULT_TENANT_SLUG) {
+    return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
   }
 
   try {

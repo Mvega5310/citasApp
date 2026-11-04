@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { signSession } from '@/lib/server/session';
+import { resolveRequestTenant } from '@/lib/server/tenant';
+import { adminTenantOf } from '@/lib/server/authorization';
 
 export async function POST(request: Request) {
+  const tenantResult = await resolveRequestTenant(request);
+  if (!tenantResult.ok) return tenantResult.response;
+
   try {
     const { email, password } = await request.json();
 
@@ -58,11 +63,18 @@ export async function POST(request: Request) {
     }
 
     const data = adminDoc.data()!;
+
+    // El admin solo puede entrar al panel de su propia barbería
+    if (adminTenantOf(data) !== tenantResult.tenant.slug) {
+      return NextResponse.json({ error: 'No tienes permisos de administrador en esta barbería' }, { status: 403 });
+    }
+
     const sessionToken = await signSession({
       uid: decoded.uid,
       email: decoded.email ?? email,
       name: data.name,
       role: data.role ?? 'viewer',
+      tenantSlug: tenantResult.tenant.slug,
     });
 
     const response = NextResponse.json({ ok: true });

@@ -1,19 +1,21 @@
 import { NextResponse } from 'next/server';
 import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { getSessionUser } from '@/lib/server/session';
+import { adminTenantOf, authorizeAdmin } from '@/lib/server/authorization';
 import { sendAdminInvitation } from '@/lib/server/email';
 import admin from 'firebase-admin';
 import crypto from 'crypto';
 
 export async function GET(request: Request) {
-  const session = await getSessionUser(request);
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+  const auth = await authorizeAdmin(request, { role: 'admin' });
+  if (!auth.ok) return auth.response;
+  const { session } = auth;
+  const tenantSlug = auth.tenant.slug;
 
   if (!isFirebaseConfigured) return NextResponse.json([]);
 
   const snap = await adminDb().collection('admins').orderBy('createdAt', 'asc').get();
-  const users = snap.docs.map((doc) => ({
+  // Solo los admins de esta barbería (los registros sin barbería son de la barbería por defecto)
+  const users = snap.docs.filter((doc) => adminTenantOf(doc.data()) === tenantSlug).map((doc) => ({
     uid: doc.id,
     ...doc.data(),
     createdAt: doc.data().createdAt?.toDate?.()?.toISOString() ?? null,
@@ -23,9 +25,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getSessionUser(request);
-  if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-  if (session.role !== 'admin') return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 });
+  const auth = await authorizeAdmin(request, { role: 'admin' });
+  if (!auth.ok) return auth.response;
+  const { session } = auth;
+  const tenantSlug = auth.tenant.slug;
 
   if (!isFirebaseConfigured) {
     return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
@@ -59,6 +62,7 @@ export async function POST(request: Request) {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       createdBy: session.uid,
       invited: true,
+      tenantSlug,
     });
 
     // Generate password setup link (Firebase password reset = set initial password)

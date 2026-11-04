@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx tests/run-tests.ts",
     "emulators": "firebase emulators:start",
-    "seed:tenant": "tsx scripts/seed-tenant.ts"
+    "seed:tenant": "tsx scripts/seed-tenant.ts",
+    "test:tenants": "tsx tests/tenant-isolation.emulator.ts"
   },
   "dependencies": {
     "@types/node": "^20",

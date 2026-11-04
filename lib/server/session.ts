@@ -6,6 +6,8 @@ export type SessionUser = {
   email: string;
   name: string;
   role: 'admin' | 'viewer';
+  /** Barbería del admin. Las sesiones anteriores a este campo pertenecen a la barbería por defecto. */
+  tenantSlug?: string;
 };
 
 function secret() {

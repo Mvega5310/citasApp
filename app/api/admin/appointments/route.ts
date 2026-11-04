@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
-import { resolveRequestTenant } from '@/lib/server/tenant';
+import { DEFAULT_TENANT_SLUG } from '@/lib/server/tenant';
+import { authorizeAdmin } from '@/lib/server/authorization';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const tenantResult = await resolveRequestTenant(request);
-  if (!tenantResult.ok) return tenantResult.response;
-  const tenantSlug = tenantResult.tenant.slug;
+  const auth = await authorizeAdmin(request);
+  if (!auth.ok) return auth.response;
+  const tenantSlug = auth.tenant.slug;
 
   if (isFirebaseConfigured) {
     try {
@@ -33,7 +34,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // PostgreSQL fallback
+  // Respaldo legacy en PostgreSQL: sin barbería, solo aplica a la barbería por defecto
+  if (tenantSlug !== DEFAULT_TENANT_SLUG) {
+    return NextResponse.json({ error: 'No se pudo obtener las citas' }, { status: 503 });
+  }
+
   try {
     const pool = getPool();
     const result = await pool.query(
