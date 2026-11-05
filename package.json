@@ -13,7 +13,9 @@
     "seed:tenant": "tsx scripts/seed-tenant.ts",
     "test:tenants": "tsx tests/tenant-isolation.emulator.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
-    "db:migrate:test": "tsx scripts/db-migrate.ts --test"
+    "db:migrate:test": "tsx scripts/db-migrate.ts --test",
+    "db:copy": "tsx scripts/copy-firestore-to-postgres.ts",
+    "db:compare": "tsx scripts/compare-firestore-postgres.ts"
   },
   "dependencies": {
     "@types/node": "^20",
