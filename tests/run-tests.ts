@@ -110,8 +110,66 @@ runTest('should clamp pagination params to safe limits', () => {
   assert.equal(parsed.offset, 0);
 });
 
-if (failures > 0) {
-  console.error(`\n${failures} test(s) failed.`);
-  process.exit(1);
+// ── Pruebas asíncronas ──
+async function runAsyncTest(name: string, fn: () => Promise<void>) {
+  try {
+    await fn();
+    console.log(`PASS ${name}`);
+  } catch (error) {
+    failures++;
+    console.error(`FAIL ${name}`);
+    console.error(error instanceof Error ? error.message : error);
+  }
 }
-console.log('\nAll tests passed.');
+
+(async () => {
+  // Resend: se reemplaza fetch, no sale ningún correo real
+  await runAsyncTest('should send emails through Resend when RESEND_API_KEY is set', async () => {
+    const { sendReminderEmail } = await import('../lib/server/email');
+    const calls: { url: string; init: RequestInit }[] = [];
+    const realFetch = globalThis.fetch;
+    const savedFrom = process.env.EMAIL_FROM;
+    process.env.RESEND_API_KEY = 're_prueba';
+    process.env.EMAIL_FROM = 'Marcos BarberShop <citas@proyects.store>';
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ id: 'email_123' }), { status: 200 });
+    }) as typeof fetch;
+    try {
+      const ok = await sendReminderEmail({ clientName: 'Ana <b>', clientEmail: 'ana@test.co', serviceName: 'Corte', time: '10:00' });
+      assert.equal(ok, true);
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0].url, 'https://api.resend.com/emails');
+      assert.equal((calls[0].init.headers as Record<string, string>).Authorization, 'Bearer re_prueba');
+      const body = JSON.parse(String(calls[0].init.body));
+      assert.deepEqual(body.to, ['ana@test.co']);
+      assert.equal(body.from, 'Marcos BarberShop <citas@proyects.store>');
+      assert.ok(body.html.includes('Ana &lt;b&gt;'), 'el nombre del cliente debe ir escapado');
+    } finally {
+      globalThis.fetch = realFetch;
+      delete process.env.RESEND_API_KEY;
+      if (savedFrom) process.env.EMAIL_FROM = savedFrom;
+      else delete process.env.EMAIL_FROM;
+    }
+  });
+
+  await runAsyncTest('should report a failed send when Resend rejects the email', async () => {
+    const { sendReminderEmail } = await import('../lib/server/email');
+    const realFetch = globalThis.fetch;
+    process.env.RESEND_API_KEY = 're_prueba';
+    globalThis.fetch = (async () => new Response('dominio no verificado', { status: 403 })) as typeof fetch;
+    try {
+      const ok = await sendReminderEmail({ clientName: 'Ana', clientEmail: 'ana@test.co', serviceName: 'Corte', time: '10:00' });
+      assert.equal(ok, false);
+    } finally {
+      globalThis.fetch = realFetch;
+      delete process.env.RESEND_API_KEY;
+    }
+  });
+
+  if (failures > 0) {
+    console.error(`\n${failures} test(s) failed.`);
+    process.exit(1);
+  }
+  console.log('\nAll tests passed.');
+})();

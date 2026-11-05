@@ -1,6 +1,40 @@
 import nodemailer from 'nodemailer';
 
-function getTransporter() {
+/** Lo mínimo que necesitamos para enviar: lo cumplen nodemailer (SMTP) y Resend. */
+type Mailer = {
+  sendMail(message: { from: string; to: string; subject: string; html: string; replyTo?: string }): Promise<unknown>;
+};
+
+/**
+ * Envío por Resend (https://resend.com) mediante su API HTTP.
+ * Se activa con RESEND_API_KEY; el remitente (EMAIL_FROM) debe ser de un dominio
+ * verificado en Resend, p. ej. "Marcos BarberShop <citas@proyects.store>".
+ */
+function resendMailer(apiKey: string): Mailer {
+  return {
+    async sendMail(message) {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: message.from,
+          to: [message.to],
+          subject: message.subject,
+          html: message.html,
+          ...(message.replyTo ? { reply_to: message.replyTo } : {}),
+        }),
+        // Igual que con SMTP: un proveedor lento no debe colgar la reserva
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) throw new Error(`Resend respondió ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      return res.json();
+    },
+  };
+}
+
+function getTransporter(): Mailer | null {
+  // Resend tiene prioridad si está configurado; si no, SMTP como hasta ahora
+  if (process.env.RESEND_API_KEY) return resendMailer(process.env.RESEND_API_KEY);
   const host = process.env.EMAIL_SERVER_HOST;
   const user = process.env.EMAIL_SERVER_USER;
   const pass = process.env.EMAIL_SERVER_PASSWORD;
