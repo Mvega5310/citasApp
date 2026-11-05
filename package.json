@@ -11,7 +11,9 @@
     "test": "tsx tests/run-tests.ts",
     "emulators": "firebase emulators:start",
     "seed:tenant": "tsx scripts/seed-tenant.ts",
-    "test:tenants": "tsx tests/tenant-isolation.emulator.ts"
+    "test:tenants": "tsx tests/tenant-isolation.emulator.ts",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "db:migrate:test": "tsx scripts/db-migrate.ts --test"
   },
   "dependencies": {
     "@types/node": "^20",
