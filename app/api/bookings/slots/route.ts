@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { getPool } from '@/lib/server/db';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 
 async function fetchBlockedSlots(
@@ -51,16 +50,5 @@ export async function GET(request: NextRequest) {
     } catch {}
   }
 
-  try {
-    const pool = getPool();
-    const result = await pool.query(
-      `SELECT appointment_time FROM appointments
-       WHERE appointment_date = $1 AND status IN ('pending', 'confirmed')`,
-      [date]
-    );
-    const booked = result.rows.map((r) => r.appointment_time as string);
-    return NextResponse.json({ booked, blocked: [] });
-  } catch {
-    return NextResponse.json({ booked: [], blocked: [] });
-  }
+  return NextResponse.json({ booked: [], blocked: [] });
 }

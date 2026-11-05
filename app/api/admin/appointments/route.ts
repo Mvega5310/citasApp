@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
-import { DEFAULT_TENANT_SLUG } from '@/lib/server/tenant';
 import { authorizeAdmin } from '@/lib/server/authorization';
 
 export const dynamic = 'force-dynamic';
@@ -34,39 +32,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Respaldo legacy en PostgreSQL: sin barbería, solo aplica a la barbería por defecto
-  if (tenantSlug !== DEFAULT_TENANT_SLUG) {
-    return NextResponse.json({ error: 'No se pudo obtener las citas' }, { status: 503 });
-  }
-
-  try {
-    const pool = getPool();
-    const result = await pool.query(
-      `SELECT * FROM appointments ORDER BY created_at DESC`
-    );
-
-    const rows = result.rows.map((r) => ({
-      id: r.id,
-      serviceId: r.service_id,
-      serviceName: r.service_name,
-      clientName: r.client_name,
-      clientEmail: r.client_email,
-      clientWhatsApp: r.client_whatsapp,
-      date: r.appointment_date,
-      time: r.appointment_time,
-      status: r.status,
-      createdAt: r.created_at,
-      updatedAt: r.updated_at,
-    }));
-
-    return NextResponse.json({ rows, count: rows.length });
-  } catch (error) {
-    logger.error('admin_appointments_postgres_failed', {
-      error: error instanceof Error ? error.message : 'unknown',
-    });
-    return NextResponse.json(
-      { error: 'No se pudo obtener las citas' },
-      { status: 503 }
-    );
-  }
+  return NextResponse.json({ error: 'No se pudo obtener las citas' }, { status: 503 });
 }

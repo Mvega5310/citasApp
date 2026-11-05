@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { getPool } from '@/lib/server/db';
 import { logger } from '@/lib/server/logger';
-import { DEFAULT_TENANT_SLUG } from '@/lib/server/tenant';
 import { authorizeAdmin } from '@/lib/server/authorization';
 
 export const dynamic = 'force-dynamic';
@@ -56,27 +54,7 @@ export async function PATCH(
     }
   }
 
-  // Respaldo legacy en PostgreSQL: sin barbería, solo aplica a la barbería por defecto
-  if (tenantSlug !== DEFAULT_TENANT_SLUG) {
-    return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
-  }
-
-  try {
-    const pool = getPool();
-    const result = await pool.query(
-      `UPDATE appointments SET status = $1, updated_at = now() WHERE id = $2 RETURNING id, status`,
-      [status, id]
-    );
-    if (result.rowCount === 0) {
-      return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
-    }
-    return NextResponse.json({ ok: true, id, status });
-  } catch (error) {
-    logger.error('admin_patch_postgres_failed', {
-      id, error: error instanceof Error ? error.message : 'unknown',
-    });
-    return NextResponse.json({ error: 'Error al actualizar la cita' }, { status: 500 });
-  }
+  return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
 }
 
 export async function DELETE(
@@ -104,25 +82,5 @@ export async function DELETE(
     }
   }
 
-  // Respaldo legacy en PostgreSQL: sin barbería, solo aplica a la barbería por defecto
-  if (tenantSlug !== DEFAULT_TENANT_SLUG) {
-    return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
-  }
-
-  try {
-    const pool = getPool();
-    const result = await pool.query(
-      `DELETE FROM appointments WHERE id = $1 RETURNING id`,
-      [id]
-    );
-    if (result.rowCount === 0) {
-      return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
-    }
-    return NextResponse.json({ ok: true, id });
-  } catch (error) {
-    logger.error('admin_delete_postgres_failed', {
-      id, error: error instanceof Error ? error.message : 'unknown',
-    });
-    return NextResponse.json({ error: 'Error al eliminar la cita' }, { status: 500 });
-  }
+  return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
 }

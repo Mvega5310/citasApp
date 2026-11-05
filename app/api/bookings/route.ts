@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateBookingPayload } from '@/lib/server/booking';
-import { ensureSchema, getPool } from '@/lib/server/db';
 import { sendBookingNotification } from '@/lib/server/email';
 import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { logger } from '@/lib/server/logger';
@@ -8,56 +7,8 @@ import { generateCancelToken } from '@/lib/server/cancelToken';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
+import { appointmentsCol, isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
 
-function appointmentsCol(db: FirebaseFirestore.Firestore, tenantSlug: string) {
-  return tenantSlug
-    ? db.collection('tenants').doc(tenantSlug).collection('appointments')
-    : db.collection('appointments');
-}
-
-async function isSlotBlocked(date: string, time: string, tenantSlug: string): Promise<boolean> {
-  if (!isFirebaseConfigured) return false;
-  try {
-    const db = adminDb();
-    const base = tenantSlug
-      ? db.collection('tenants').doc(tenantSlug).collection('blocked_slots')
-      : db.collection('blocked_slots');
-    const snap = await base.doc(date).get();
-    if (!snap.exists) return false;
-    const slots: string[] = snap.data()?.slots ?? [];
-    return slots.includes(time);
-  } catch {
-    return false;
-  }
-}
-
-async function isSlotTaken(date: string, time: string, tenantSlug: string): Promise<boolean> {
-  if (isFirebaseConfigured) {
-    try {
-      const db = adminDb();
-      const snap = await appointmentsCol(db, tenantSlug)
-        .where('date', '==', date)
-        .where('time', '==', time)
-        .get();
-      return snap.docs.some((d) => ['pending', 'confirmed'].includes(d.data().status));
-    } catch {
-      // fall through
-    }
-  }
-
-  try {
-    const pool = getPool();
-    const result = await pool.query(
-      `SELECT 1 FROM appointments
-       WHERE appointment_date = $1 AND appointment_time = $2
-         AND status IN ('pending', 'confirmed') LIMIT 1`,
-      [date, time]
-    );
-    return (result.rowCount ?? 0) > 0;
-  } catch {
-    return false;
-  }
-}
 
 export async function POST(request: NextRequest) {
   const tenantResult = await resolveRequestTenant(request);
@@ -94,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     let id: string | null = null;
-    let persistence: 'firebase' | 'postgres' | null = null;
+    let persistence: 'firebase' | null = null;
 
     if (isFirebaseConfigured) {
       try {
@@ -112,35 +63,6 @@ export async function POST(request: NextRequest) {
         persistence = 'firebase';
       } catch (error) {
         logger.warn('booking_firebase_persist_failed', {
-          error: error instanceof Error ? error.message : 'unknown',
-        });
-      }
-    }
-
-    if (!id) {
-      try {
-        await ensureSchema();
-        const pool = getPool();
-        const result = await pool.query(
-          `INSERT INTO appointments(
-            service_id, service_name, client_name, client_email,
-            client_whatsapp, appointment_date, appointment_time, status, source, metadata
-          ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-          [
-            booking.serviceId, booking.serviceName, booking.clientName,
-            booking.clientEmail, booking.clientWhatsApp, booking.date, booking.time,
-            'pending', 'postgres',
-            JSON.stringify({
-              tenantSlug,
-              habeasDataAccepted: booking.habeasDataAccepted,
-              notificationsAccepted: booking.notificationsAccepted,
-            }),
-          ]
-        );
-        id = result.rows[0]?.id ?? null;
-        persistence = 'postgres';
-      } catch (error) {
-        logger.error('booking_postgres_persist_failed', {
           error: error instanceof Error ? error.message : 'unknown',
         });
       }

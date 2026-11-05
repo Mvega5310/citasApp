@@ -1,5 +1,4 @@
 import { adminDb, isFirebaseConfigured } from './firebaseAdmin';
-import { getPool } from './db';
 import { sendReminderEmail } from './email';
 import { logger } from './logger';
 import { DEFAULT_TENANT_SLUG } from './tenant';
@@ -32,7 +31,7 @@ export type AppointmentHit = {
   clientEmail: string;
   serviceName: string;
   time: string;
-  source: 'firebase' | 'postgres';
+  source: 'firebase';
   /** Barbería de la cita (para respetar su configuración de notificaciones). */
   tenantSlug: string;
   /** Documento de Firestore de la cita (solo source = 'firebase'). */
@@ -101,67 +100,20 @@ export async function findUpcomingAppointments(
     }
   }
 
-  // PostgreSQL (legado, solo barbería por defecto): búsqueda por la hora exacta, como antes
-  const date = to.date;
-  const time = to.time;
-  try {
-    const pool = getPool();
-    const result = await pool.query(
-      `SELECT id, client_name, client_email, service_name, appointment_time
-       FROM appointments
-       WHERE appointment_date = $1
-         AND appointment_time = $2
-         AND status IN ('pending', 'confirmed')
-         AND (metadata->>'reminderSent') IS DISTINCT FROM 'true'`,
-      [date, time]
-    );
-    for (const row of result.rows) {
-      hits.push({
-        id: row.id,
-        clientName: row.client_name,
-        clientEmail: row.client_email,
-        serviceName: row.service_name,
-        time: row.appointment_time,
-        source: 'postgres',
-        tenantSlug: DEFAULT_TENANT_SLUG,
-      });
-    }
-  } catch (err) {
-    logger.warn('reminder_postgres_query_failed', { error: String(err) });
-  }
-
   return hits;
 }
 
 async function markReminderSent(hit: AppointmentHit): Promise<void> {
   const sentAt = new Date().toISOString();
 
-  if (hit.source === 'firebase' && hit.ref) {
-    try {
-      await hit.ref.update({
-        reminderSent: true,
-        reminderSentAt: sentAt,
-      });
-    } catch (err) {
-      logger.warn('reminder_firebase_mark_failed', { id: hit.id, error: String(err) });
-    }
-    return;
-  }
-
+  if (!hit.ref) return;
   try {
-    const pool = getPool();
-    await pool.query(
-      `UPDATE appointments
-       SET metadata = jsonb_set(
-             jsonb_set(metadata, '{reminderSent}', 'true'),
-             '{reminderSentAt}', $1::jsonb
-           ),
-           updated_at = now()
-       WHERE id = $2`,
-      [JSON.stringify(sentAt), hit.id]
-    );
+    await hit.ref.update({
+      reminderSent: true,
+      reminderSentAt: sentAt,
+    });
   } catch (err) {
-    logger.warn('reminder_postgres_mark_failed', { id: hit.id, error: String(err) });
+    logger.warn('reminder_firebase_mark_failed', { id: hit.id, error: String(err) });
   }
 }
 
