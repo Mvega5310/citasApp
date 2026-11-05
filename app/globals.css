@@ -52,6 +52,12 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* El botón "ver contraseña" nativo de Edge duplica el nuestro */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+
   ::selection {
     background: rgba(198, 155, 98, 0.35);
     color: var(--bt-text);

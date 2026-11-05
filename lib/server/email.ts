@@ -741,6 +741,7 @@ function buildAdminInvitationEmail(payload: {
   inviterName: string;
   role: string;
   setupLink: string;
+  expiresIn?: string;
 }) {
   const b = brandOf(payload);
   const roleLabel = payload.role === 'admin' ? 'Administrador' : 'Solo lectura';
@@ -771,7 +772,7 @@ function buildAdminInvitationEmail(payload: {
           </div>
           <div style="padding:14px 16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
             <p style="margin:0; font-size:13px; color:#9d174d; line-height:1.5;">
-              🔒 Este enlace expira en <strong>24 horas</strong>. Si no lo solicitaste, ignora este mensaje.
+              🔒 Este enlace expira en <strong>${payload.expiresIn ?? '72 horas'}</strong>. Si no lo solicitaste, ignora este mensaje.
             </p>
           </div>
         </div>
@@ -791,6 +792,7 @@ export async function sendAdminInvitation(payload: {
   inviterName: string;
   role: string;
   setupLink: string;
+  expiresIn?: string;
 }): Promise<boolean> {
   const transporter = getTransporter();
   const from = getSender();
@@ -888,6 +890,75 @@ export async function sendContactMessage(payload: {
       replyTo: payload.email,
       subject: `[Contacto] ${payload.subject} — ${payload.name}`,
       html: buildContactEmail(esc(payload)),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function buildPasswordLinkEmail(payload: {
+  brand?: EmailBrand;
+  name: string;
+  link: string;
+  purpose: 'setup' | 'reset';
+  expiresIn: string;
+}) {
+  const b = brandOf(payload);
+  const isSetup = payload.purpose === 'setup';
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="${headerStyle}">
+          <div style="font-size:32px; margin-bottom:8px;">🔐</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">${isSetup ? 'Crea tu contraseña' : 'Restablece tu contraseña'}</h1>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name} · Administración</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 20px; font-size:16px;">Hola <strong>${payload.name}</strong>,</p>
+          <p style="color:#374151; margin:0 0 28px; font-size:15px; line-height:1.6;">
+            ${isSetup
+              ? 'Para entrar al panel de administración necesitas crear tu contraseña. Haz clic en el botón:'
+              : 'Recibimos una solicitud para restablecer la contraseña de tu cuenta del panel. Haz clic en el botón para elegir una nueva:'}
+          </p>
+          <div style="text-align:center; margin-bottom:28px;">
+            <a href="${payload.link}"
+               style="display:inline-block; background:linear-gradient(135deg,#ec4899,#db2777); color:#ffffff; text-decoration:none; padding:14px 32px; border-radius:10px; font-weight:700; font-size:15px; letter-spacing:0.3px;">
+              ${isSetup ? 'Crear mi contraseña' : 'Elegir nueva contraseña'}
+            </a>
+          </div>
+          <div style="padding:14px 16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
+            <p style="margin:0; font-size:13px; color:#9d174d; line-height:1.5;">
+              🔒 El enlace sirve una sola vez y expira en <strong>${payload.expiresIn}</strong>.
+              Si no lo solicitaste, ignora este mensaje: tu contraseña no cambia.
+            </p>
+          </div>
+        </div>
+        <div style="${footerStyle}">
+          ${b.name} · ${new Date().getFullYear()}<br/>
+          <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export async function sendPasswordLinkEmail(payload: {
+  brand?: EmailBrand;
+  name: string;
+  email: string;
+  link: string;
+  purpose: 'setup' | 'reset';
+  expiresIn: string;
+}): Promise<boolean> {
+  const transporter = getTransporter();
+  if (!transporter) return false;
+  try {
+    await transporter.sendMail({
+      from: getSender(),
+      to: payload.email,
+      subject: `${payload.purpose === 'setup' ? 'Crea tu contraseña' : 'Restablece tu contraseña'} — ${brandOf(payload).name}`,
+      html: buildPasswordLinkEmail(esc(payload)),
     });
     return true;
   } catch {

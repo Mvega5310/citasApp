@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { store } from '@/lib/server/data';
+import { AuthError, auth } from '@/lib/server/auth';
+import { passwordProblem } from '@/lib/server/auth/password';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 
 // One-time endpoint to create the first admin account.
@@ -21,8 +22,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'email, password y name son requeridos' }, { status: 400 });
     }
 
-    if (!isFirebaseConfigured) {
-      return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
+    if (!auth().isConfigured()) {
+      return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
     }
 
     // ¿Ya existe algún admin en esta barbería?
@@ -33,25 +34,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create Firebase Auth user
-    let user;
+    const problem = passwordProblem(password);
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+
+    let adminId: string;
     try {
-      user = await adminAuth().createUser({ email, password, displayName: name });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al crear usuario';
-      return NextResponse.json({ error: msg }, { status: 400 });
+      ({ adminId } = await auth().createWithPassword(
+        { tenantSlug, email: String(email).trim(), name, role: 'admin' },
+        password
+      ));
+    } catch (e) {
+      if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+      throw e;
     }
 
-    // Registro del primer admin de esta barbería
-    await store().createAdmin({
-      id: user.uid,
-      email: String(email).trim().toLowerCase(),
-      name,
-      role: 'admin',
-      tenantSlug,
-    });
-
-    return NextResponse.json({ ok: true, uid: user.uid, message: `Admin "${name}" creado correctamente.` });
+    return NextResponse.json({ ok: true, uid: adminId, message: `Admin "${name}" creado correctamente.` });
   } catch (error) {
     console.error('Seed error:', error);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });

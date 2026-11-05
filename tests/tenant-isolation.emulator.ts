@@ -55,6 +55,9 @@ async function main() {
   const settingsLib = await imp('lib/server/settings.ts');
   const reminders = await imp('lib/server/reminders.ts');
   const contact = await imp('app/api/contact/route.ts');
+  const login = await imp('app/api/admin/login/route.ts');
+  const forgot = await imp('app/api/admin/password/forgot/route.ts');
+  const reset = await imp('app/api/admin/password/reset/route.ts');
 
   const fx = BACKEND === 'postgres' ? await postgresFixtures(ROOT) : await firestoreFixtures(ROOT);
   console.log(`Base: ${BACKEND}${BACKEND === 'postgres' ? ' (citas_test)' : ' (emulador)'}\n`);
@@ -255,6 +258,58 @@ async function main() {
   await eq('La cita queda marcada tras enviar el recordatorio', r1after?.reminderSent, true);
   const run3 = await reminders.runReminders(nowMs);
   await eq('Una segunda pasada no repite recordatorios', run3.sent, 0);
+
+  // ── Inicio de sesión propio (solo con Postgres) ──
+  if (BACKEND === 'postgres') {
+    const { query: sql } = await imp('lib/server/pg.ts');
+    const tokenFrom = (html: string) => /token=([A-Za-z0-9_-]{20,})/.exec(html ?? '')?.[1] ?? '';
+    const loginAs = (tenant: string, email: string, password: string) =>
+      login.POST(req('POST', '/api/admin/login', tenant, undefined, { email, password }));
+    const setPassword = (tenant: string, token: string, password: string) =>
+      reset.POST(req('POST', '/api/admin/password/reset', tenant, undefined, { token, password }));
+
+    outbox.length = 0;
+    await check('Admin norte invita a un barbero', users.POST(req('POST', '/api/admin/users', 'norte', norte, {
+      email: 'Nuevo@Norte.test', name: 'Nuevo Barbero', role: 'viewer',
+    })), 200, (j) => j?.emailSent === true);
+    const invite = outbox.find((m) => String(m.to).toLowerCase() === 'nuevo@norte.test');
+    const inviteToken = tokenFrom(invite?.html);
+    await eq('La invitación trae un enlace para crear la contraseña', inviteToken.length > 20, true);
+    await check('Sin contraseña creada todavía no puede entrar', loginAs('norte', 'nuevo@norte.test', 'Clave2027segura'), 401);
+    await check('Contraseña débil se rechaza', setPassword('norte', inviteToken, 'abc'), 400);
+    await check('Crea su contraseña con el enlace', setPassword('norte', inviteToken, 'Clave2027segura'), 200);
+    await check('El mismo enlace no sirve dos veces', setPassword('norte', inviteToken, 'OtraClave2027'), 400);
+    await check('Contraseña incorrecta → 401', loginAs('norte', 'nuevo@norte.test', 'NoEsLaClave1'), 401);
+    const ok = await loginAs('norte', 'NUEVO@norte.test', 'Clave2027segura');
+    await eq('Contraseña correcta → entra (correo sin importar mayúsculas)', ok.status, 200);
+    await eq('Al entrar recibe la cookie de sesión', /admin_session=/.test(ok.headers.get('set-cookie') ?? ''), true);
+    await check('Con las mismas credenciales no entra a otra barbería', loginAs('demo', 'nuevo@norte.test', 'Clave2027segura'), 401);
+
+    outbox.length = 0;
+    await check('"Olvidé mi contraseña" con correo desconocido: misma respuesta', forgot.POST(req('POST', '/x', 'norte', undefined, { email: 'nadie@norte.test' })), 200);
+    await eq('…y no se envía ningún correo', outbox.length, 0);
+    await check('"Olvidé mi contraseña" con correo válido', forgot.POST(req('POST', '/x', 'norte', undefined, { email: 'nuevo@norte.test' })), 200);
+    const resetMail = outbox.find((m) => m.to === 'nuevo@norte.test');
+    const resetToken = tokenFrom(resetMail?.html);
+    await eq('Llega el enlace de restablecimiento (1 hora)', { token: resetToken.length > 20, expira: /1 hora/.test(resetMail?.html ?? '') }, { token: true, expira: true });
+    await sql(`UPDATE password_tokens SET expires_at = now() - interval '1 minute' WHERE used_at IS NULL`);
+    await check('Un enlace vencido no sirve', setPassword('norte', resetToken, 'NuevaClave2027'), 400);
+
+    for (let i = 0; i < 5; i++) await loginAs('norte', 'atacante@norte.test', `intento${i}x`);
+    await check('Tras 5 intentos fallidos el correo queda bloqueado (429)', loginAs('norte', 'atacante@norte.test', 'otro1234x'), 429);
+
+    const nuevo = (await users.GET(req('GET', '/api/admin/users', 'norte', norte)).then((r: Response) => r.json()))
+      .find((u: any) => u.email === 'nuevo@norte.test');
+    await check('Admin norte elimina al barbero', userId.DELETE(req('DELETE', '/x', 'norte', norte), { params: { uid: nuevo?.uid } }), 200);
+    await check('Una cuenta eliminada ya no entra', loginAs('norte', 'nuevo@norte.test', 'Clave2027segura'), 401);
+
+    const seedBody = { setupKey: process.env.ADMIN_SECRET, email: 'duena@nueva.test', name: 'Dueña Nueva' };
+    await check('Primer admin con contraseña débil → 400', seed.POST(req('POST', '/x', 'nuevo', undefined, { ...seedBody, password: 'corta' })), 400);
+    await check('Primer admin de la barbería "nuevo"', seed.POST(req('POST', '/x', 'nuevo', undefined, { ...seedBody, password: 'PrimeraClave2027' })), 200);
+    await check('El primer admin entra a su barbería', loginAs('nuevo', 'duena@nueva.test', 'PrimeraClave2027'), 200);
+    const stored = (await sql(`SELECT password_hash FROM admins WHERE email = 'duena@nueva.test'`)).rows[0]?.password_hash ?? '';
+    await eq('La contraseña se guarda cifrada (nunca en texto)', stored.startsWith('scrypt$') && !stored.includes('PrimeraClave2027'), true);
+  }
 
   await fx.close();
   console.log(fails === 0 ? '\nTODAS LAS PRUEBAS PASARON' : `\n${fails} PRUEBA(S) FALLARON`);

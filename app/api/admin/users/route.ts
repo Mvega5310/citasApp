@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { isStoreConfigured, store } from '@/lib/server/data';
 import { authorizeAdmin } from '@/lib/server/authorization';
+import { AuthError, appOrigin, auth } from '@/lib/server/auth';
 import { sendAdminInvitation } from '@/lib/server/email';
 import { emailContextFor } from '@/lib/server/settings';
-import crypto from 'crypto';
 
 export async function GET(request: Request) {
-  const auth = await authorizeAdmin(request, { role: 'admin' });
-  if (!auth.ok) return auth.response;
-  const { session } = auth;
-  const tenantSlug = auth.tenant.slug;
+  const authz = await authorizeAdmin(request, { role: 'admin' });
+  if (!authz.ok) return authz.response;
+  const { session } = authz;
+  const tenantSlug = authz.tenant.slug;
 
   if (!isStoreConfigured()) return NextResponse.json([]);
 
@@ -20,13 +19,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const auth = await authorizeAdmin(request, { role: 'admin' });
-  if (!auth.ok) return auth.response;
-  const { session } = auth;
-  const tenantSlug = auth.tenant.slug;
+  const authz = await authorizeAdmin(request, { role: 'admin' });
+  if (!authz.ok) return authz.response;
+  const { session } = authz;
+  const tenantSlug = authz.tenant.slug;
 
-  if (!isFirebaseConfigured) {
-    return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
+  if (!auth().isConfigured()) {
+    return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
   }
 
   try {
@@ -39,39 +38,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Rol inválido' }, { status: 400 });
     }
 
-    // Create Firebase Auth user with a random temp password (will be reset via email)
-    const tempPassword = crypto.randomBytes(24).toString('base64');
-    let user;
+    let invited: { adminId: string; setupLink: string | null; expiresIn: string };
     try {
-      user = await adminAuth().createUser({ email, password: tempPassword, displayName: name });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al crear usuario';
-      return NextResponse.json({ error: msg }, { status: 400 });
+      invited = await auth().invite(
+        { tenantSlug, email: String(email).trim(), name, role, createdBy: session.uid },
+        appOrigin(request, tenantSlug)
+      );
+    } catch (e) {
+      if (e instanceof AuthError) return NextResponse.json({ error: e.message }, { status: e.status });
+      throw e;
     }
-
-    // Registro del admin, ligado a esta barbería
-    await store().createAdmin({
-      id: user.uid,
-      email: String(email).trim().toLowerCase(),
-      name,
-      role,
-      createdBy: session.uid,
-      invited: true,
-      tenantSlug,
-    });
-
-    // Generate password setup link (Firebase password reset = set initial password)
-    const origin = request.headers.get('origin') || 'http://localhost:3000';
-    let setupLink: string;
-    try {
-      setupLink = await adminAuth().generatePasswordResetLink(email, {
-        url: `${origin}/admin/login`,
-      });
-    } catch {
-      // If link generation fails, still create the user but warn
+    const { adminId, setupLink } = invited;
+    if (!setupLink) {
       return NextResponse.json({
         ok: true,
-        uid: user.uid,
+        uid: adminId,
         emailSent: false,
         warning: 'Usuario creado pero no se pudo generar el enlace de invitación.',
       });
@@ -84,10 +65,11 @@ export async function POST(request: Request) {
       inviterName: session.name,
       role,
       setupLink,
-      brand: (await emailContextFor(auth.tenant)).brand,
+      expiresIn: invited.expiresIn,
+      brand: (await emailContextFor(authz.tenant)).brand,
     });
 
-    return NextResponse.json({ ok: true, uid: user.uid, emailSent });
+    return NextResponse.json({ ok: true, uid: adminId, emailSent });
   } catch (error) {
     console.error('Create admin error:', error);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });

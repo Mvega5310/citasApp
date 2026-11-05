@@ -54,12 +54,15 @@ export async function middleware(request: NextRequest) {
   if (
     pathname === '/api/admin/login' ||
     pathname === '/api/admin/logout' ||
-    pathname === '/api/admin/seed'
+    pathname === '/api/admin/seed' ||
+    pathname === '/api/admin/password/forgot' ||
+    pathname === '/api/admin/password/reset'
   ) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  // Páginas públicas del panel: iniciar sesión y crear/restablecer contraseña
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login' && pathname !== '/admin/password') {
     if ((await getAuthState(request, tenantSlug)) !== 'ok') {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);

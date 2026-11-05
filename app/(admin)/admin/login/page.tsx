@@ -16,6 +16,28 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  // "¿Olvidaste tu contraseña?": pide el correo y envía un enlace
+  const [mode, setMode] = useState<'login' | 'forgot'>('login');
+  const [forgotSent, setForgotSent] = useState(false);
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/password/forgot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (res.ok) setForgotSent(true);
+      else toast.error((await res.json().catch(() => ({}))).error || 'No se pudo enviar el enlace');
+    } catch {
+      toast.error('Error de conexión. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +66,57 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  if (mode === 'forgot') {
+    return forgotSent ? (
+      <div className="space-y-4 text-center">
+        <p className="text-sm text-cafe-muted leading-relaxed">
+          Si <strong className="text-cafe-text">{email.trim()}</strong> pertenece a un administrador, en unos minutos
+          recibirás un enlace para crear tu contraseña. Revisa también la carpeta de spam.
+        </p>
+        <button
+          type="button"
+          onClick={() => { setMode('login'); setForgotSent(false); }}
+          className="text-sm font-semibold text-cafe-goldlight hover:underline"
+        >
+          Volver a iniciar sesión
+        </button>
+      </div>
+    ) : (
+      <form onSubmit={handleForgot} className="space-y-4" noValidate>
+        <p className="text-sm text-cafe-muted leading-relaxed">
+          Escribe tu correo y te enviaremos un enlace para crear una contraseña nueva.
+        </p>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cafe-subtle" aria-hidden="true" />
+          <input
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="admin@ejemplo.com"
+            aria-label="Correo electrónico"
+            autoFocus
+            className="w-full bg-cafe-soft border border-cafe-border rounded-lg pl-10 pr-4 py-3 text-cafe-text placeholder-cafe-subtle focus:outline-none focus:ring-2 focus:ring-cafe-gold/50 focus:border-transparent transition"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !email.trim()}
+          className="w-full bg-cafe-gold text-cafe-bg font-semibold py-3 rounded-lg hover:bg-cafe-goldlight disabled:opacity-50 disabled:cursor-not-allowed transition"
+        >
+          {loading ? 'Enviando...' : 'Enviar enlace'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('login')}
+          className="w-full text-sm text-cafe-muted hover:text-cafe-text"
+        >
+          Volver
+        </button>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -108,6 +181,13 @@ function LoginForm() {
             Ingresar
           </>
         )}
+      </button>
+      <button
+        type="button"
+        onClick={() => setMode('forgot')}
+        className="w-full text-sm text-cafe-goldlight hover:underline"
+      >
+        ¿Primera vez o no recuerdas tu contraseña?
       </button>
     </form>
   );

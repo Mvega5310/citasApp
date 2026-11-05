@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { store } from '@/lib/server/data';
 import { authorizeAdmin } from '@/lib/server/authorization';
+import { auth } from '@/lib/server/auth';
 
 export async function PATCH(request: Request, { params }: { params: { uid: string } }) {
-  const auth = await authorizeAdmin(request, { role: 'admin' });
-  if (!auth.ok) return auth.response;
-  const { session } = auth;
-  const tenantSlug = auth.tenant.slug;
+  const authz = await authorizeAdmin(request, { role: 'admin' });
+  if (!authz.ok) return authz.response;
+  const { session } = authz;
+  const tenantSlug = authz.tenant.slug;
 
-  if (!isFirebaseConfigured) return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
+  if (!auth().isConfigured()) return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
 
   try {
     const target = await store().getAdmin(params.uid);
@@ -39,7 +39,7 @@ export async function PATCH(request: Request, { params }: { params: { uid: strin
     await store().updateAdmin(params.uid, update);
 
     if (update.name) {
-      await adminAuth().updateUser(params.uid, { displayName: update.name });
+      await auth().renameAccount(params.uid, update.name);
     }
 
     return NextResponse.json({ ok: true });
@@ -50,16 +50,16 @@ export async function PATCH(request: Request, { params }: { params: { uid: strin
 }
 
 export async function DELETE(request: Request, { params }: { params: { uid: string } }) {
-  const auth = await authorizeAdmin(request, { role: 'admin' });
-  if (!auth.ok) return auth.response;
-  const { session } = auth;
-  const tenantSlug = auth.tenant.slug;
+  const authz = await authorizeAdmin(request, { role: 'admin' });
+  if (!authz.ok) return authz.response;
+  const { session } = authz;
+  const tenantSlug = authz.tenant.slug;
 
   if (params.uid === session.uid) {
     return NextResponse.json({ error: 'No puedes eliminarte a ti mismo' }, { status: 400 });
   }
 
-  if (!isFirebaseConfigured) return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
+  if (!auth().isConfigured()) return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
 
   try {
     const target = await store().getAdmin(params.uid);
@@ -67,8 +67,7 @@ export async function DELETE(request: Request, { params }: { params: { uid: stri
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
-    await adminAuth().deleteUser(params.uid);
-    await store().deleteAdmin(params.uid);
+    await auth().deleteAccount(params.uid);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Delete admin error:', error);
