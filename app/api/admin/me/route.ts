@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { isStoreConfigured, store } from '@/lib/server/data';
 import { authorizeAdmin } from '@/lib/server/authorization';
 
 export async function GET(request: Request) {
@@ -7,11 +7,10 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
   const { session } = auth;
 
-  if (isFirebaseConfigured) {
+  if (isStoreConfigured()) {
     try {
-      const doc = await adminDb().collection('admins').doc(session.uid).get();
-      if (doc.exists) {
-        const data = doc.data()!;
+      const data = await store().getAdmin(session.uid);
+      if (data) {
         return NextResponse.json({
           uid: session.uid,
           name: data.name || session.name,
@@ -43,11 +42,8 @@ export async function PATCH(request: Request) {
 
     const trimmed = name.trim();
 
-    if (isFirebaseConfigured) {
-      await adminDb().collection('admins').doc(session.uid).set(
-        { name: trimmed },
-        { merge: true }
-      );
+    if (isStoreConfigured()) {
+      await store().updateAdmin(session.uid, { name: trimmed });
     }
 
     return NextResponse.json({ ok: true, name: trimmed });

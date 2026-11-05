@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateBookingPayload } from '@/lib/server/booking';
 import { sendBookingNotification } from '@/lib/server/email';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { SlotTakenError, isStoreConfigured, store } from '@/lib/server/data';
 import { logger } from '@/lib/server/logger';
 import { generateCancelToken } from '@/lib/server/cancelToken';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
-import { appointmentsCol, isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
+import { isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
 
 
 export async function POST(request: NextRequest) {
@@ -45,24 +45,21 @@ export async function POST(request: NextRequest) {
     }
 
     let id: string | null = null;
-    let persistence: 'firebase' | null = null;
+    let persistence: 'firestore' | 'postgres' | null = null;
 
-    if (isFirebaseConfigured) {
+    if (isStoreConfigured()) {
       try {
-        const db = adminDb();
-        const now = new Date();
-        const doc = await appointmentsCol(db, tenantSlug).add({
-          ...booking,
-          tenantSlug,
-          status: 'pending',
-          source: 'firebase',
-          createdAt: now.toISOString(),
-          updatedAt: now.toISOString(),
-        });
-        id = doc.id;
-        persistence = 'firebase';
+        [id] = await store().createAppointments(tenantSlug, [booking]);
+        persistence = store().backend;
       } catch (error) {
-        logger.warn('booking_firebase_persist_failed', {
+        // Otro cliente tomó el horario justo antes de guardar
+        if (error instanceof SlotTakenError) {
+          return NextResponse.json(
+            { error: 'Este horario ya está reservado. Por favor elige otro.' },
+            { status: 409 }
+          );
+        }
+        logger.warn('booking_persist_failed', {
           error: error instanceof Error ? error.message : 'unknown',
         });
       }
@@ -76,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     let cancelUrl: string | undefined;
-    if (id && persistence === 'firebase') {
+    if (id && persistence) {
       try {
         const token = await generateCancelToken({
           appointmentId: id,

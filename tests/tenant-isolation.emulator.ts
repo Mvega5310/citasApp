@@ -38,6 +38,11 @@ async function main() {
   const contact = await imp('app/api/contact/route.ts');
 
   const db = adminDb();
+  // Empezar siempre desde cero: borra los datos de corridas anteriores (solo emulador)
+  await fetch(
+    `http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/turnos-de-belleza/databases/(default)/documents`,
+    { method: 'DELETE' }
+  );
   // Datos de prueba
   const closedDay = { open: '00:00', close: '00:00', closed: true };
   await db.collection('tenants').doc('norte').set({

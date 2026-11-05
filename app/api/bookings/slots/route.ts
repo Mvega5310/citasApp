@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
 import { resolveRequestTenant } from '@/lib/server/tenant';
+import { ACTIVE_STATUSES, isStoreConfigured, store } from '@/lib/server/data';
 
-async function fetchBlockedSlots(
-  db: FirebaseFirestore.Firestore,
-  tenantSlug: string,
-  date: string,
-): Promise<string[]> {
-  try {
-    const base = tenantSlug
-      ? db.collection('tenants').doc(tenantSlug).collection('blocked_slots')
-      : db.collection('blocked_slots');
-    const snap = await base.doc(date).get();
-    return snap.exists ? (snap.data()?.slots ?? []) : [];
-  } catch {
-    return [];
-  }
-}
-
+// Horarios no disponibles de un día: citas activas + horarios bloqueados por el negocio
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get('date');
@@ -29,22 +14,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 });
   }
 
-  if (isFirebaseConfigured) {
+  if (isStoreConfigured()) {
     try {
-      const db = adminDb();
-      const col = tenantSlug
-        ? db.collection('tenants').doc(tenantSlug).collection('appointments')
-        : db.collection('appointments');
-
-      const [snap, blocked] = await Promise.all([
-        col.where('date', '==', date).get(),
-        fetchBlockedSlots(db, tenantSlug, date),
+      const [sameDay, blocked] = await Promise.all([
+        store().appointmentsOnDate(tenantSlug, date),
+        store().blockedSlots(tenantSlug, date).catch(() => [] as string[]),
       ]);
-
-      const booked = snap.docs
-        .filter((d) => ['pending', 'confirmed'].includes(d.data().status))
-        .map((d) => d.data().time as string);
-
+      const booked = sameDay.filter((a) => ACTIVE_STATUSES.includes(a.status)).map((a) => a.time);
       const unavailable = Array.from(new Set([...booked, ...blocked]));
       return NextResponse.json({ booked: unavailable, blocked });
     } catch {}

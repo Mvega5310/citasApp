@@ -1,6 +1,5 @@
 import { verifyCancelToken, msUntilAppointment, CANCEL_WINDOW_MS } from '@/lib/server/cancelToken';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { appointmentsCol } from '@/lib/server/appointments';
+import { isStoreConfigured, store } from '@/lib/server/data';
 import CancelButton from '@/components/cliente/CancelButton';
 import GroupCancelPanel from '@/components/cliente/GroupCancelPanel';
 
@@ -41,24 +40,20 @@ export default async function CancelPage({ params }: { params: { token: string }
   if (payload.kind === 'group') {
     const { groupId, tenantSlug, clientName } = payload;
 
-    if (!isFirebaseConfigured) {
+    if (!isStoreConfigured()) {
       return <InvalidLinkScreen />;
     }
 
-    const db = adminDb();
-    const snap = await appointmentsCol(db, tenantSlug).where('groupId', '==', groupId).get();
-    const appointments = snap.docs
-      .map((d) => {
-        const data = d.data();
-        return {
-          id: d.id,
-          serviceName: data.serviceName as string,
-          date: data.date as string,
-          time: data.time as string,
-          status: data.status as string,
-          isPast: msUntilAppointment(data.date, data.time) < 0,
-        };
-      })
+    const group = await store().appointmentsInGroup(tenantSlug, groupId);
+    const appointments = group
+      .map((a) => ({
+        id: a.id,
+        serviceName: a.serviceName,
+        date: a.date,
+        time: a.time,
+        status: a.status as string,
+        isPast: msUntilAppointment(a.date, a.time) < 0,
+      }))
       .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
     if (appointments.length === 0) {

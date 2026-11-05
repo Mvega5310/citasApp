@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { adminTenantOf, authorizeAdmin } from '@/lib/server/authorization';
+import { adminAuth, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { isStoreConfigured, store } from '@/lib/server/data';
+import { authorizeAdmin } from '@/lib/server/authorization';
 import { sendAdminInvitation } from '@/lib/server/email';
 import { emailContextFor } from '@/lib/server/settings';
-import admin from 'firebase-admin';
 import crypto from 'crypto';
 
 export async function GET(request: Request) {
@@ -12,16 +12,10 @@ export async function GET(request: Request) {
   const { session } = auth;
   const tenantSlug = auth.tenant.slug;
 
-  if (!isFirebaseConfigured) return NextResponse.json([]);
+  if (!isStoreConfigured()) return NextResponse.json([]);
 
-  const snap = await adminDb().collection('admins').orderBy('createdAt', 'asc').get();
-  // Solo los admins de esta barbería (los registros sin barbería son de la barbería por defecto)
-  const users = snap.docs.filter((doc) => adminTenantOf(doc.data()) === tenantSlug).map((doc) => ({
-    uid: doc.id,
-    ...doc.data(),
-    createdAt: doc.data().createdAt?.toDate?.()?.toISOString() ?? null,
-  }));
-
+  // Solo los admins de esta barbería
+  const users = (await store().listAdmins(tenantSlug)).map(({ id, ...a }) => ({ uid: id, ...a }));
   return NextResponse.json(users);
 }
 
@@ -55,12 +49,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: msg }, { status: 400 });
     }
 
-    // Save admin record in Firestore
-    await adminDb().collection('admins').doc(user.uid).set({
-      email,
+    // Registro del admin, ligado a esta barbería
+    await store().createAdmin({
+      id: user.uid,
+      email: String(email).trim().toLowerCase(),
       name,
       role,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       createdBy: session.uid,
       invited: true,
       tenantSlug,

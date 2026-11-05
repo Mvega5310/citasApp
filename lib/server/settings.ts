@@ -1,4 +1,4 @@
-import { adminDb, isFirebaseConfigured } from './firebaseAdmin';
+import { isStoreConfigured, store } from './data';
 import { DEFAULT_TENANT_SLUG, getTenantConfig, type RequestTenant } from './tenant';
 import { DEFAULT_BRAND, type EmailBrand, type NotifyRecipients } from './email';
 import { logger } from './logger';
@@ -54,28 +54,18 @@ export function defaultsFor(tenant: RequestTenant): SalonSettings {
   };
 }
 
-// Configuración propia de cada barbería
-export const settingsRef = (slug: string) =>
-  adminDb().collection('tenants').doc(slug).collection('settings').doc('salon');
-
-// Documento global anterior: solo pertenece a la barbería por defecto
-const legacyRef = () => adminDb().collection('settings').doc('salon');
-
 export async function readSettings(tenant: RequestTenant): Promise<SalonSettings> {
-  const defaults = defaultsFor(tenant);
-  const doc = await settingsRef(tenant.slug).get();
-  if (doc.exists) return { ...defaults, ...doc.data() };
+  const stored = await store().readSettings(tenant.slug);
+  return { ...defaultsFor(tenant), ...(stored ?? {}) };
+}
 
-  if (tenant.slug === DEFAULT_TENANT_SLUG) {
-    const legacy = await legacyRef().get();
-    if (legacy.exists) return { ...defaults, ...legacy.data() };
-  }
-  return defaults;
+export async function writeSettings(tenant: RequestTenant, settings: SalonSettings): Promise<void> {
+  await store().writeSettings(tenant.slug, settings);
 }
 
 /** Configuración de la barbería; ante cualquier error devuelve sus valores iniciales. */
 export async function getSettingsSafe(tenant: RequestTenant): Promise<SalonSettings> {
-  if (!isFirebaseConfigured) return defaultsFor(tenant);
+  if (!isStoreConfigured()) return defaultsFor(tenant);
   try {
     return await readSettings(tenant);
   } catch (error) {

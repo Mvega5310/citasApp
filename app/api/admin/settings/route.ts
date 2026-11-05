@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { isStoreConfigured } from '@/lib/server/data';
 import { logger } from '@/lib/server/logger';
 import { authorizeAdmin } from '@/lib/server/authorization';
 import {
@@ -8,7 +8,7 @@ import {
   TEXT_FIELDS,
   defaultsFor,
   readSettings,
-  settingsRef,
+  writeSettings,
   type SalonSettings,
 } from '@/lib/server/settings';
 
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   const auth = await authorizeAdmin(request);
   if (!auth.ok) return auth.response;
 
-  if (isFirebaseConfigured) {
+  if (isStoreConfigured()) {
     try {
       return NextResponse.json(await readSettings(auth.tenant));
     } catch (error) {
@@ -68,15 +68,15 @@ export async function PATCH(request: Request) {
   const result = sanitize(body);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
-  if (!isFirebaseConfigured) {
-    return NextResponse.json({ error: 'Firebase no configurado' }, { status: 503 });
+  if (!isStoreConfigured()) {
+    return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
   }
 
   try {
     // Se guarda la configuración completa: así la barbería por defecto conserva
     // los valores del documento global anterior la primera vez que guarda.
     const settings: SalonSettings = { ...(await readSettings(auth.tenant)), ...result.update };
-    await settingsRef(auth.tenant.slug).set(settings, { merge: true });
+    await writeSettings(auth.tenant, settings);
     return NextResponse.json({ ok: true, settings });
   } catch (error) {
     logger.error('settings_patch_failed', {

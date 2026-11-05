@@ -1,7 +1,6 @@
-import { adminDb, isFirebaseConfigured } from './firebaseAdmin';
+import { isStoreConfigured, store, type AppointmentRecord } from './data';
 import { sendReminderEmail } from './email';
 import { logger } from './logger';
-import { DEFAULT_TENANT_SLUG } from './tenant';
 import { emailContextFor, tenantFromSlug } from './settings';
 import type { EmailBrand } from './email';
 
@@ -25,98 +24,36 @@ function formatDate(date: Date): string {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
-export type AppointmentHit = {
-  id: string;
-  clientName: string;
-  clientEmail: string;
-  serviceName: string;
-  time: string;
-  source: 'firebase';
-  /** Barbería de la cita (para respetar su configuración de notificaciones). */
-  tenantSlug: string;
-  /** Documento de Firestore de la cita (solo source = 'firebase'). */
-  ref?: FirebaseFirestore.DocumentReference;
-};
+export type AppointmentHit = AppointmentRecord;
 
-/** Colecciones de citas: la de cada barbería + la colección antigua (barbería por defecto). */
-async function appointmentCollections(
-  db: FirebaseFirestore.Firestore
-): Promise<{ tenantSlug: string; col: FirebaseFirestore.CollectionReference }[]> {
-  // listDocuments incluye barberías sin documento propio pero con citas (p. ej. la por defecto)
-  const tenantRefs = await db.collection('tenants').listDocuments();
-  const slugs = new Set(tenantRefs.map((r) => r.id));
-  slugs.add(DEFAULT_TENANT_SLUG);
-  return [
-    ...Array.from(slugs).map((slug) => ({
-      tenantSlug: slug,
-      col: db.collection('tenants').doc(slug).collection('appointments'),
-    })),
-    { tenantSlug: DEFAULT_TENANT_SLUG, col: db.collection('appointments') },
-  ];
-}
-
+/** Citas activas, sin recordatorio, que empiezan dentro de la ventana [from, to] (todas las barberías). */
 export async function findUpcomingAppointments(
   from: { date: string; time: string },
   to: { date: string; time: string }
 ): Promise<AppointmentHit[]> {
-  const hits: AppointmentHit[] = [];
+  if (!isStoreConfigured()) return [];
   const fromKey = `${from.date}T${from.time}`;
   const toKey = `${to.date}T${to.time}`;
   const dates = Array.from(new Set([from.date, to.date]));
-
-  if (isFirebaseConfigured) {
-    let collections: Awaited<ReturnType<typeof appointmentCollections>> = [];
-    try {
-      collections = await appointmentCollections(adminDb());
-    } catch (err) {
-      logger.warn('reminder_tenants_list_failed', { error: String(err) });
-    }
-    for (const { tenantSlug, col } of collections) {
-      // Cada barbería por separado: un error en una no frena los avisos de las demás
-      try {
-        for (const date of dates) {
-          const snap = await col.where('date', '==', date).get();
-          for (const doc of snap.docs) {
-            const d = doc.data();
-            const key = `${d.date}T${d.time}`;
-            if (key < fromKey || key > toKey) continue;
-            if (!['pending', 'confirmed'].includes(d.status)) continue;
-            if (d.reminderSent) continue;
-            hits.push({
-              id: doc.id,
-              clientName: d.clientName,
-              clientEmail: d.clientEmail,
-              serviceName: d.serviceName,
-              time: d.time,
-              source: 'firebase',
-              tenantSlug,
-              ref: doc.ref,
-            });
-          }
-        }
-      } catch (err) {
-        logger.warn('reminder_firebase_query_failed', { tenant: tenantSlug, error: String(err) });
-      }
-    }
+  try {
+    const candidates = await store().reminderCandidates(dates);
+    return candidates.filter((a) => {
+      const key = `${a.date}T${a.time}`;
+      return key >= fromKey && key <= toKey;
+    });
+  } catch (err) {
+    logger.warn('reminder_query_failed', { error: String(err) });
+    return [];
   }
-
-  return hits;
 }
 
 async function markReminderSent(hit: AppointmentHit): Promise<void> {
-  const sentAt = new Date().toISOString();
-
-  if (!hit.ref) return;
   try {
-    await hit.ref.update({
-      reminderSent: true,
-      reminderSentAt: sentAt,
-    });
+    await store().updateAppointment(hit.tenantSlug, hit.id, { reminderSentAt: new Date().toISOString() });
   } catch (err) {
-    logger.warn('reminder_firebase_mark_failed', { id: hit.id, error: String(err) });
+    logger.warn('reminder_mark_failed', { id: hit.id, error: String(err) });
   }
 }
-
 
 /** Envía los recordatorios de las citas que empiezan en los próximos minutos (todas las barberías). */
 export async function runReminders(nowMs: number = Date.now()): Promise<{

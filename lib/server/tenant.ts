@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { adminDb, isFirebaseConfigured } from './firebaseAdmin';
 import type { TenantConfig } from '@/types';
+import { isStoreConfigured, store } from './data';
+// Barbería por defecto: funciona aunque no tenga ficha propia, igual que antes.
+import { DEFAULT_TENANT_SLUG } from './tenantDefaults';
 
-// Barbería por defecto (modo de una sola barbería / desarrollo local).
-// Funciona aunque no exista su documento en `tenants/`, igual que antes.
-export const DEFAULT_TENANT_SLUG = process.env.NEXT_PUBLIC_DEFAULT_TENANT ?? 'demo';
+export { DEFAULT_TENANT_SLUG };
 
 // Subdominios que no son barberías y se tratan como la barbería por defecto.
 const RESERVED_SLUGS = new Set(['www']);
@@ -30,23 +30,21 @@ const TTL_MS = 60_000;
 const LOOKUP_TIMEOUT_MS = 3000;
 
 // Distingue "no existe" de "no se pudo consultar" para no rechazar una barbería
-// real solo porque Firestore tardó en responder.
+// real solo porque la base tardó en responder.
 async function lookupTenant(slug: string): Promise<TenantLookup> {
-  if (!isFirebaseConfigured || !slug) return { status: 'unavailable' };
+  if (!isStoreConfigured() || !slug) return { status: 'unavailable' };
 
   const cached = cache.get(slug);
   if (cached && Date.now() < cached.expiresAt) return cached.data;
 
   try {
-    const snap = await Promise.race([
-      adminDb().collection('tenants').doc(slug).get(),
+    const result = await Promise.race([
+      store().lookupTenant(slug),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), LOOKUP_TIMEOUT_MS)),
     ]);
-    if (!snap) return { status: 'unavailable' }; // timeout: no se guarda en caché
+    if (!result) return { status: 'unavailable' }; // timeout: no se guarda en caché
 
-    const data: TenantLookup = snap.exists
-      ? { status: 'found', config: { slug, ...snap.data() } as TenantConfig }
-      : { status: 'missing' };
+    const data: TenantLookup = result.found ? { status: 'found', config: result.config } : { status: 'missing' };
     cache.set(slug, { data, expiresAt: Date.now() + TTL_MS });
     return data;
   } catch {

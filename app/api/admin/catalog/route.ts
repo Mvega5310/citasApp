@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { isStoreConfigured, store } from '@/lib/server/data';
 import { authorizeAdmin } from '@/lib/server/authorization';
 import { editableCatalogFor, validateCatalogInput } from '@/lib/server/catalog';
 import { invalidateTenantCache } from '@/lib/server/tenant';
@@ -29,24 +29,13 @@ export async function PUT(request: Request) {
   const result = validateCatalogInput(body);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
 
-  if (!isFirebaseConfigured) {
-    return NextResponse.json({ error: 'Firebase no configurado' }, { status: 503 });
+  if (!isStoreConfigured()) {
+    return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
   }
 
   const slug = auth.tenant.slug;
   try {
-    await adminDb()
-      .collection('tenants')
-      .doc(slug)
-      .set(
-        {
-          services: result.data.services,
-          workingHours: result.data.workingHours,
-          catalogUpdatedAt: new Date().toISOString(),
-          catalogUpdatedBy: auth.session.uid,
-        },
-        { merge: true }
-      );
+    await store().saveCatalog(slug, result.data, auth.session.uid);
     invalidateTenantCache(slug);
     return NextResponse.json({ ok: true, ...result.data });
   } catch (error) {

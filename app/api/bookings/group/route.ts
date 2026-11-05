@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { validateBookingPayload, type NormalizedBookingPayload } from '@/lib/server/booking';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { appointmentsCol, isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
+import { isStoreConfigured } from '@/lib/server/data';
+import { isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
+import { SlotTakenError, store } from '@/lib/server/data';
 import { sendGroupBookingNotification } from '@/lib/server/email';
 import { logger } from '@/lib/server/logger';
 import { generateGroupCancelToken } from '@/lib/server/cancelToken';
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
   const tenantSlug = tenantResult.tenant.slug;
   const catalog = catalogFor(tenantResult.tenant);
 
-  if (!isFirebaseConfigured) {
+  if (!isStoreConfigured()) {
     return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
   }
 
@@ -77,21 +78,21 @@ export async function POST(request: NextRequest) {
     }
 
     const groupId = crypto.randomUUID();
-    const db = adminDb();
-    const now = new Date().toISOString();
-    const ids: string[] = [];
-
-    for (const b of validated) {
-      const doc = await appointmentsCol(db, tenantSlug).add({
-        ...b,
+    let ids: string[];
+    try {
+      // Todas las citas del grupo se guardan juntas: o todas o ninguna
+      ids = await store().createAppointments(
         tenantSlug,
-        groupId,
-        status: 'pending',
-        source: 'firebase',
-        createdAt: now,
-        updatedAt: now,
-      });
-      ids.push(doc.id);
+        validated.map((b) => ({ ...b, groupId }))
+      );
+    } catch (error) {
+      if (error instanceof SlotTakenError) {
+        return NextResponse.json(
+          { error: 'Uno de los horarios ya no está disponible. Por favor elige otro.' },
+          { status: 409 }
+        );
+      }
+      throw error;
     }
 
     let cancelUrl: string | undefined;

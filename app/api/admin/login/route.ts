@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { adminAuth, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { store } from '@/lib/server/data';
 import { signSession } from '@/lib/server/session';
 import { resolveRequestTenant } from '@/lib/server/tenant';
-import { adminTenantOf } from '@/lib/server/authorization';
 
 export async function POST(request: Request) {
   const tenantResult = await resolveRequestTenant(request);
@@ -56,16 +56,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Error de verificación' }, { status: 401 });
     }
 
-    // Check admin record in Firestore
-    const adminDoc = await adminDb().collection('admins').doc(decoded.uid ?? uid).get();
-    if (!adminDoc.exists) {
+    // Registro del admin
+    const data = await store().getAdmin(decoded.uid ?? uid);
+    if (!data) {
       return NextResponse.json({ error: 'No tienes permisos de administrador' }, { status: 403 });
     }
 
-    const data = adminDoc.data()!;
-
     // El admin solo puede entrar al panel de su propia barbería
-    if (adminTenantOf(data) !== tenantResult.tenant.slug) {
+    if (data.tenantSlug !== tenantResult.tenant.slug) {
       return NextResponse.json({ error: 'No tienes permisos de administrador en esta barbería' }, { status: 403 });
     }
 

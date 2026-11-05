@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { adminTenantOf, authorizeAdmin } from '@/lib/server/authorization';
+import { adminAuth, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { store } from '@/lib/server/data';
+import { authorizeAdmin } from '@/lib/server/authorization';
 
 export async function PATCH(request: Request, { params }: { params: { uid: string } }) {
   const auth = await authorizeAdmin(request, { role: 'admin' });
@@ -11,19 +12,19 @@ export async function PATCH(request: Request, { params }: { params: { uid: strin
   if (!isFirebaseConfigured) return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
 
   try {
-    const target = await adminDb().collection('admins').doc(params.uid).get();
-    if (!target.exists || adminTenantOf(target.data()) !== tenantSlug) {
+    const target = await store().getAdmin(params.uid);
+    if (!target || target.tenantSlug !== tenantSlug) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
     const { name, role } = await request.json();
-    const update: Record<string, string> = {};
+    const update: { name?: string; role?: 'admin' | 'viewer' } = {};
 
     if (name && typeof name === 'string' && name.trim().length >= 2) {
       update.name = name.trim();
     }
     if (role && ['admin', 'viewer'].includes(role)) {
-      update.role = role;
+      update.role = role as 'admin' | 'viewer';
     }
 
     if (!Object.keys(update).length) {
@@ -35,7 +36,7 @@ export async function PATCH(request: Request, { params }: { params: { uid: strin
       return NextResponse.json({ error: 'No puedes cambiar tu propio rol' }, { status: 400 });
     }
 
-    await adminDb().collection('admins').doc(params.uid).set(update, { merge: true });
+    await store().updateAdmin(params.uid, update);
 
     if (update.name) {
       await adminAuth().updateUser(params.uid, { displayName: update.name });
@@ -61,13 +62,13 @@ export async function DELETE(request: Request, { params }: { params: { uid: stri
   if (!isFirebaseConfigured) return NextResponse.json({ error: 'Firebase no configurado' }, { status: 500 });
 
   try {
-    const target = await adminDb().collection('admins').doc(params.uid).get();
-    if (!target.exists || adminTenantOf(target.data()) !== tenantSlug) {
+    const target = await store().getAdmin(params.uid);
+    if (!target || target.tenantSlug !== tenantSlug) {
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
     }
 
     await adminAuth().deleteUser(params.uid);
-    await adminDb().collection('admins').doc(params.uid).delete();
+    await store().deleteAdmin(params.uid);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Delete admin error:', error);

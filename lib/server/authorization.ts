@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser, type SessionUser } from './session';
-import { DEFAULT_TENANT_SLUG, resolveRequestTenant, type RequestTenant } from './tenant';
+import { resolveRequestTenant, type RequestTenant } from './tenant';
+import { adminTenantOf } from './tenantDefaults';
 
-/** Barbería a la que pertenece un admin (documento o sesión). Sin campo = barbería por defecto. */
-export function adminTenantOf(record: { tenantSlug?: unknown } | null | undefined): string {
-  const slug = typeof record?.tenantSlug === 'string' ? record.tenantSlug.trim() : '';
-  return slug || DEFAULT_TENANT_SLUG;
-}
+export { adminTenantOf };
+
 
 type AuthorizeResult =
   | { ok: true; session: SessionUser; tenant: RequestTenant }

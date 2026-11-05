@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyCancelToken, msUntilAppointment, CANCEL_WINDOW_MS } from '@/lib/server/cancelToken';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
-import { appointmentsCol } from '@/lib/server/appointments';
+import { isStoreConfigured, store } from '@/lib/server/data';
 import { sendCancellationEmails, sendGroupCancellationEmails } from '@/lib/server/email';
 import { emailContextFor, tenantFromSlug } from '@/lib/server/settings';
 
@@ -17,11 +16,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Enlace inválido o expirado' }, { status: 400 });
     }
 
-    if (!isFirebaseConfigured) {
+    if (!isStoreConfigured()) {
       return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
     }
 
-    const db = adminDb();
+    const dataStore = store();
 
     if (payload.kind === 'group') {
       const { groupId, tenantSlug, clientName } = payload;
@@ -33,23 +32,19 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const col = appointmentsCol(db, tenantSlug);
       const cancelled: { serviceName: string; date: string; time: string }[] = [];
       let anyLate = false;
       let clientEmail = '';
 
       for (const id of appointmentIds) {
         if (typeof id !== 'string') continue;
-        const ref = col.doc(id);
-        const snap = await ref.get();
-        if (!snap.exists) continue;
-
-        const data = snap.data()!;
+        const data = await dataStore.getAppointment(tenantSlug, id);
+        if (!data) continue;
         if (data.groupId !== groupId) continue;
         if (data.status === 'cancelled') continue;
 
         const isLate = msUntilAppointment(data.date, data.time) < CANCEL_WINDOW_MS;
-        await ref.update({
+        await dataStore.updateAppointment(tenantSlug, id, {
           status: 'cancelled',
           cancelledAt: new Date().toISOString(),
           cancelledBy: 'client',
@@ -68,9 +63,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const remainingSnap = await col.where('groupId', '==', groupId).get();
-      const stillActive = remainingSnap.docs
-        .map((d) => d.data())
+      const stillActive = (await dataStore.appointmentsInGroup(tenantSlug, groupId))
         .filter((d) => d.status !== 'cancelled')
         .map((d) => ({ serviceName: d.serviceName, date: d.date, time: d.time }));
 
@@ -90,19 +83,17 @@ export async function POST(request: NextRequest) {
     const { appointmentId, tenantSlug, date, time, serviceName, clientName } = payload;
     const isLate = msUntilAppointment(date, time) < CANCEL_WINDOW_MS;
 
-    const ref = appointmentsCol(db, tenantSlug).doc(appointmentId);
-    const snap = await ref.get();
+    const data = await dataStore.getAppointment(tenantSlug, appointmentId);
 
-    if (!snap.exists) {
+    if (!data) {
       return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
     }
 
-    const data = snap.data()!;
     if (data.status === 'cancelled') {
       return NextResponse.json({ error: 'Esta cita ya fue cancelada' }, { status: 409 });
     }
 
-    await ref.update({
+    await dataStore.updateAppointment(tenantSlug, appointmentId, {
       status: 'cancelled',
       cancelledAt: new Date().toISOString(),
       cancelledBy: 'client',

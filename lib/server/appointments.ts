@@ -1,36 +1,22 @@
-import { adminDb, isFirebaseConfigured } from './firebaseAdmin';
+import { ACTIVE_STATUSES, isStoreConfigured, store } from './data';
 
-export function appointmentsCol(db: FirebaseFirestore.Firestore, tenantSlug: string) {
-  return tenantSlug
-    ? db.collection('tenants').doc(tenantSlug).collection('appointments')
-    : db.collection('appointments');
-}
+// Ante un error de la base se responde "libre": la base vuelve a comprobarlo al
+// guardar (en Postgres, una restricción impide dos citas activas en el mismo horario).
 
 export async function isSlotBlocked(date: string, time: string, tenantSlug: string): Promise<boolean> {
-  if (!isFirebaseConfigured) return false;
+  if (!isStoreConfigured()) return false;
   try {
-    const db = adminDb();
-    const base = tenantSlug
-      ? db.collection('tenants').doc(tenantSlug).collection('blocked_slots')
-      : db.collection('blocked_slots');
-    const snap = await base.doc(date).get();
-    if (!snap.exists) return false;
-    const slots: string[] = snap.data()?.slots ?? [];
-    return slots.includes(time);
+    return (await store().blockedSlots(tenantSlug, date)).includes(time);
   } catch {
     return false;
   }
 }
 
 export async function isSlotTaken(date: string, time: string, tenantSlug: string): Promise<boolean> {
-  if (!isFirebaseConfigured) return false;
+  if (!isStoreConfigured()) return false;
   try {
-    const db = adminDb();
-    const snap = await appointmentsCol(db, tenantSlug)
-      .where('date', '==', date)
-      .where('time', '==', time)
-      .get();
-    return snap.docs.some((d) => ['pending', 'confirmed'].includes(d.data().status));
+    const sameDay = await store().appointmentsOnDate(tenantSlug, date);
+    return sameDay.some((a) => a.time === time && ACTIVE_STATUSES.includes(a.status));
   } catch {
     return false;
   }

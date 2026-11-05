@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, isFirebaseConfigured } from '@/lib/server/firebaseAdmin';
+import { isStoreConfigured, store } from '@/lib/server/data';
 import { authorizeAdmin } from '@/lib/server/authorization';
-
-function blockedSlotDoc(db: FirebaseFirestore.Firestore, tenantSlug: string, date: string) {
-  const base = tenantSlug
-    ? db.collection('tenants').doc(tenantSlug).collection('blocked_slots')
-    : db.collection('blocked_slots');
-  return base.doc(date);
-}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -20,15 +13,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 });
   }
 
-  if (!isFirebaseConfigured) {
+  if (!isStoreConfigured()) {
     return NextResponse.json({ blocked: [] });
   }
 
   try {
-    const db = adminDb();
-    const snap = await blockedSlotDoc(db, tenantSlug, date).get();
-    const blocked: string[] = snap.exists ? (snap.data()?.slots ?? []) : [];
-    return NextResponse.json({ blocked });
+    return NextResponse.json({ blocked: await store().blockedSlots(tenantSlug, date) });
   } catch {
     return NextResponse.json({ blocked: [] });
   }
@@ -58,26 +48,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'action debe ser block o unblock' }, { status: 400 });
     }
 
-    if (!isFirebaseConfigured) {
-      return NextResponse.json({ error: 'Firebase no configurado' }, { status: 503 });
+    if (!isStoreConfigured()) {
+      return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
     }
 
-    const db = adminDb();
-    const docRef = blockedSlotDoc(db, tenantSlug, date);
-    const snap = await docRef.get();
-    const current: string[] = snap.exists ? (snap.data()?.slots ?? []) : [];
-
-    const updated =
-      action === 'block'
-        ? Array.from(new Set([...current, ...slots])).sort()
-        : current.filter((s) => !slots.includes(s));
-
-    if (updated.length === 0) {
-      if (snap.exists) await docRef.delete();
-    } else {
-      await docRef.set({ slots: updated, updatedAt: new Date().toISOString() });
+    if (!slots.every((t) => typeof t === 'string' && /^\d{2}:\d{2}$/.test(t))) {
+      return NextResponse.json({ error: 'Horas inválidas' }, { status: 400 });
     }
 
+    const updated = await store().updateBlockedSlots(tenantSlug, date, slots, action);
     return NextResponse.json({ ok: true, blocked: updated });
   } catch {
     return NextResponse.json({ error: 'Error al actualizar los horarios' }, { status: 500 });
