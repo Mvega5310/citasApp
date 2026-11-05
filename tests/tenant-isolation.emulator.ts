@@ -1,15 +1,35 @@
 /**
- * Prueba de aislamiento multi-tenant (admin).
- * Corre SIEMPRE contra el emulador local de Firestore, nunca contra Firebase real.
+ * Prueba de aislamiento multi-tenant: la misma batería sobre ambas bases.
+ * Nunca toca datos reales.
  *
- * Uso:
+ * Firestore (emulador local):
  *   1. npm run emulators        (en otra terminal)
  *   2. npm run test:tenants
+ *
+ * Postgres (base de pruebas "citas_test" en Railway):
+ *   1. npm run db:migrate:test  (crea/actualiza la base de pruebas)
+ *   2. npm run test:tenants -- --postgres
  */
+import { loadEnvConfig } from '@next/env';
+import { firestoreFixtures, postgresFixtures } from './fixtures';
+
+const BACKEND = process.argv.includes('--postgres') ? 'postgres' : 'firestore';
+loadEnvConfig(process.cwd());
+
+// Firebase Auth sigue en uso hasta el paso 3: siempre apunta al emulador, nunca al real
 process.env.FIRESTORE_EMULATOR_HOST = '127.0.0.1:8080';
 process.env.ADMIN_SECRET = 'clave-de-prueba-solo-emulador';
 process.env.NEXT_PUBLIC_DEFAULT_TENANT = 'demo';
-delete process.env.DATABASE_URL;
+process.env.DATA_BACKEND = BACKEND;
+if (BACKEND === 'postgres') {
+  // Siempre la base de pruebas, nunca la de la app
+  const base = new URL(process.env.RAILWAY_DATABASE_URL || process.env.DATABASE_URL || '');
+  base.pathname = '/citas_test';
+  process.env.DATABASE_URL = base.toString();
+} else {
+  delete process.env.DATABASE_URL;
+}
+delete process.env.RAILWAY_DATABASE_URL;
 // Sin SMTP: ningún correo sale de la prueba
 delete process.env.EMAIL_SERVER_HOST;
 process.env.EMAIL_TO_DEFAULT = 'duenio@marcos.test';
@@ -19,7 +39,6 @@ const ROOT = process.cwd().replace(/\\/g, '/');
 async function main() {
   const { pathToFileURL } = await import('node:url');
   const imp = (rel: string) => import(pathToFileURL(`${ROOT}/${rel}`).href);
-  const { adminDb } = await imp('lib/server/firebaseAdmin.ts');
   const { signSession } = await imp('lib/server/session.ts');
   const { NextRequest } = await imp('node_modules/next/server.js');
   const appts = await imp('app/api/admin/appointments/route.ts');
@@ -37,15 +56,13 @@ async function main() {
   const reminders = await imp('lib/server/reminders.ts');
   const contact = await imp('app/api/contact/route.ts');
 
-  const db = adminDb();
-  // Empezar siempre desde cero: borra los datos de corridas anteriores (solo emulador)
-  await fetch(
-    `http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/turnos-de-belleza/databases/(default)/documents`,
-    { method: 'DELETE' }
-  );
+  const fx = BACKEND === 'postgres' ? await postgresFixtures(ROOT) : await firestoreFixtures(ROOT);
+  console.log(`Base: ${BACKEND}${BACKEND === 'postgres' ? ' (citas_test)' : ' (emulador)'}\n`);
+  // Empezar siempre desde cero
+  await fx.reset();
   // Datos de prueba
   const closedDay = { open: '00:00', close: '00:00', closed: true };
-  await db.collection('tenants').doc('norte').set({
+  await fx.tenant('norte', {
     name: 'Barbería Norte', active: true,
     services: [
       { id: 'fade', name: 'Fade', description: '', duration: 40, price: 20000, icon: '' },
@@ -55,18 +72,16 @@ async function main() {
     workingHours: { domingo: closedDay, lunes: { open: '10:00', close: '18:00', closed: false }, martes: closedDay,
       miercoles: closedDay, jueves: closedDay, viernes: closedDay, sabado: closedDay },
   });
-  await db.collection('tenants').doc('nuevo').set({ name: 'Barbería Nueva', active: true });
-  await db.collection('tenants').doc('demo').delete(); // demo sin ficha, como en producción
-  await db.collection('tenants').doc('sur').set({ name: 'Barbería Sur', active: false });
+  await fx.tenant('nuevo', { name: 'Barbería Nueva', active: true });
+  await fx.withoutProfile('demo'); // demo sin ficha, como en producción
+  await fx.tenant('sur', { name: 'Barbería Sur', active: false });
   const appt = { clientName: 'X', status: 'pending', createdAt: new Date().toISOString() };
-  await db.collection('tenants').doc('demo').collection('appointments').doc('d1').set(appt);
-  await db.collection('tenants').doc('norte').collection('appointments').doc('n1').set(appt);
-  await db.collection('settings').doc('salon').set({ salonName: 'Nombre Legacy', phone: '111' }); // documento global anterior
-  await db.collection('tenants').doc('demo').collection('settings').doc('salon').delete();
-  await db.collection('tenants').doc('norte').collection('settings').doc('salon').delete();
-  await db.collection('admins').doc('a-demo').set({ name: 'Admin Demo', role: 'admin', createdAt: new Date() }); // sin barbería = demo
-  await db.collection('admins').doc('v-demo').set({ name: 'Viewer Demo', role: 'viewer', createdAt: new Date() });
-  await db.collection('admins').doc('a-norte').set({ name: 'Admin Norte', role: 'admin', tenantSlug: 'norte', createdAt: new Date() });
+  await fx.appointment('demo', 'd1', appt);
+  await fx.appointment('norte', 'n1', appt);
+  await fx.legacySettings({ salonName: 'Nombre Legacy', phone: '111' }); // configuración global anterior
+  await fx.admin('a-demo', { name: 'Admin Demo', role: 'admin' }); // sin barbería = demo
+  await fx.admin('v-demo', { name: 'Viewer Demo', role: 'viewer' });
+  await fx.admin('a-norte', { name: 'Admin Norte', role: 'admin', tenantSlug: 'norte' });
 
   const legacyDemo = await signSession({ uid: 'a-demo', email: 'a@demo', name: 'Admin Demo', role: 'admin' });
   const viewerDemo = await signSession({ uid: 'v-demo', email: 'v@demo', name: 'Viewer', role: 'viewer', tenantSlug: 'demo' });
@@ -99,17 +114,17 @@ async function main() {
   await check('Admin norte lista solo citas de norte', appts.GET(req('GET', '/api/admin/appointments', 'norte', norte)), 200, (j) => ids(j) === 'n1');
   await check('Admin norte NO puede cambiar cita de demo usando su ID', apptId.PATCH(req('PATCH', '/x', 'norte', norte, { status: 'cancelled' }), { params: { id: 'd1' } }), 404);
   await check('Admin norte NO puede borrar cita de demo usando su ID', apptId.DELETE(req('DELETE', '/x', 'norte', norte), { params: { id: 'd1' } }), 404);
-  const d1 = await db.collection('tenants').doc('demo').collection('appointments').doc('d1').get();
-  console.log(`${d1.exists && d1.data()?.status === 'pending' ? 'PASS' : 'FAIL'}  La cita d1 de demo sigue intacta`);
-  if (!(d1.exists && d1.data()?.status === 'pending')) fails++;
+  const d1 = await fx.readAppointment('demo', 'd1');
+  console.log(`${d1?.status === 'pending' ? 'PASS' : 'FAIL'}  La cita d1 de demo sigue intacta`);
+  if (d1?.status !== 'pending') fails++;
   await check('Admin demo SÍ cambia el estado de su cita', apptId.PATCH(req('PATCH', '/x', 'demo', legacyDemo, { status: 'confirmed' }), { params: { id: 'd1' } }), 200);
   await check('Equipo de demo: solo admins de demo', users.GET(req('GET', '/api/admin/users', 'demo', legacyDemo)), 200, (j) => uids(j) === 'a-demo,v-demo');
   await check('Equipo de norte: solo admins de norte', users.GET(req('GET', '/api/admin/users', 'norte', norte)), 200, (j) => uids(j) === 'a-norte');
   await check('Admin norte NO puede eliminar a un admin de demo', userId.DELETE(req('DELETE', '/x', 'norte', norte), { params: { uid: 'a-demo' } }), 404);
   await check('Admin norte NO puede editar a un admin de demo', userId.PATCH(req('PATCH', '/x', 'norte', norte, { role: 'viewer' }), { params: { uid: 'a-demo' } }), 404);
-  const aDemo = await db.collection('admins').doc('a-demo').get();
-  console.log(`${aDemo.exists && aDemo.data()?.role === 'admin' ? 'PASS' : 'FAIL'}  El admin a-demo sigue intacto`);
-  if (!(aDemo.exists && aDemo.data()?.role === 'admin')) fails++;
+  const aDemo = await fx.readAdmin('a-demo');
+  console.log(`${aDemo?.role === 'admin' ? 'PASS' : 'FAIL'}  El admin a-demo sigue intacto`);
+  if (aDemo?.role !== 'admin') fails++;
   await check('Viewer no gestiona Equipo (se mantiene la regla de rol)', users.GET(req('GET', '/api/admin/users', 'demo', viewerDemo)), 403);
   await check('Admin norte NO bloquea horarios de demo', blocked.POST(req('POST', '/x', 'demo', norte, { date: '2026-12-01', slots: ['10:00'], action: 'block' })), 403);
   await check('Barbería suspendida (sur) rechaza todo', appts.GET(req('GET', '/api/admin/appointments', 'sur', norte)), 403);
@@ -123,8 +138,8 @@ async function main() {
   await check('Config demo sin doc propio lee el documento global anterior', settings.GET(req('GET', '/x', 'demo', legacyDemo)), 200, (j) => j?.salonName === 'Nombre Legacy');
   await check('Config norte usa los datos de su ficha, no los de demo', settings.GET(req('GET', '/x', 'norte', norte)), 200, (j) => j?.salonName === 'Barbería Norte');
   await check('Admin demo guarda su teléfono', settings.PATCH(req('PATCH', '/x', 'demo', legacyDemo, { phone: '222' })), 200);
-  const demoCfg = (await db.collection('tenants').doc('demo').collection('settings').doc('salon').get()).data();
-  const legacyCfg = (await db.collection('settings').doc('salon').get()).data();
+  const demoCfg = await fx.readSettings('demo');
+  const legacyCfg = await fx.readLegacySettings();
   const migrated = demoCfg?.salonName === 'Nombre Legacy' && demoCfg?.phone === '222' && legacyCfg?.phone === '111';
   console.log(`${migrated ? 'PASS' : 'FAIL'}  Al guardar, demo conserva los datos anteriores y el doc global no se toca`);
   if (!migrated) fails++;
@@ -183,19 +198,30 @@ async function main() {
   const day = '2027-03-01';
   const nowMs = Date.UTC(2027, 2, 1, 15, 0); // 10:00 en Colombia
   const appt2 = (time: string, status = 'pending', extra = {}) => ({ clientName: 'C', clientEmail: 'c@test.co', serviceName: 'S', date: day, time, status, ...extra });
-  await db.collection('tenants').doc('demo').collection('appointments').doc('r1').set(appt2('10:00'));
-  await db.collection('appointments').doc('r2').set(appt2('10:10', 'confirmed')); // colección antigua
-  await db.collection('tenants').doc('norte').collection('appointments').doc('r3').set(appt2('10:05'));
-  await db.collection('tenants').doc('norte').collection('appointments').doc('r4').set(appt2('10:30'));
-  await db.collection('tenants').doc('norte').collection('appointments').doc('r5').set(appt2('10:00', 'cancelled'));
-  await db.collection('tenants').doc('demo').collection('appointments').doc('r6').set(appt2('10:00', 'pending', { reminderSent: true }));
+  await fx.appointment('demo', 'r1', appt2('10:00'));
+  await fx.appointment('', 'r2', appt2('10:10', 'confirmed')); // colección antigua
+  await fx.appointment('norte', 'r3', appt2('10:05'));
+  await fx.appointment('norte', 'r4', appt2('10:30'));
+  await fx.appointment('norte', 'r5', appt2('10:00', 'cancelled'));
+  // 10:05 (no 10:00): dos citas activas en el mismo horario son imposibles en Postgres
+  await fx.appointment('demo', 'r6', appt2('10:05', 'pending', { reminderSent: true }));
   const hits = await reminders.findUpcomingAppointments({ date: day, time: '10:00' }, { date: day, time: '10:10' });
   await eq('Recordatorio encuentra citas de todas las barberías dentro de la ventana',
     hits.map((h: any) => `${h.tenantSlug}/${h.id}`).sort(), ['demo/r1', 'demo/r2', 'norte/r3']);
   const run = await reminders.runReminders(nowMs);
   await eq('Norte (sin aviso al cliente) se omite; sin SMTP no se marca nada', { sent: run.sent, skipped: run.skipped }, { sent: 0, skipped: 1 });
-  const r1 = (await db.collection('tenants').doc('demo').collection('appointments').doc('r1').get()).data();
+  const r1 = await fx.readAppointment('demo', 'r1');
   await eq('Una cita no queda marcada si el correo no salió', r1?.reminderSent ?? false, false);
+
+  // ── Reserva simultánea del mismo horario (solo Postgres lo garantiza) ──
+  if (BACKEND === 'postgres') {
+    const sameSlot = () => bookings.POST(req('POST', '/api/bookings', 'norte', undefined, {
+      ...booking('fade', 'Fade Premium', '2027-03-01', '11:00'), clientEmail: `c${Math.random()}@test.co`,
+    }));
+    const results = await Promise.all([sameSlot(), sameSlot(), sameSlot()]);
+    await eq('Tres clientes reservan el mismo horario a la vez: entra uno, los demás reciben 409',
+      results.map((r: Response) => r.status).sort(), [201, 409, 409]);
+  }
 
   // ── Marca de cada barbería en los correos + escape de HTML ──
   await eq('Marca de demo: su nombre, y dirección real en vez de la de ejemplo',
@@ -225,11 +251,12 @@ async function main() {
   const reminderHtml = outbox.map((m) => m.html).join('');
   await eq('El recordatorio de demo lleva su marca y la dirección real (no "Calle 123")',
     { name: reminderHtml.includes('Nombre Legacy'), addr: reminderHtml.includes('Bella vista, Colombia'), fake: reminderHtml.includes('Calle 123') }, { name: true, addr: true, fake: false });
-  const r1after = (await db.collection('tenants').doc('demo').collection('appointments').doc('r1').get()).data();
+  const r1after = await fx.readAppointment('demo', 'r1');
   await eq('La cita queda marcada tras enviar el recordatorio', r1after?.reminderSent, true);
   const run3 = await reminders.runReminders(nowMs);
   await eq('Una segunda pasada no repite recordatorios', run3.sent, 0);
 
+  await fx.close();
   console.log(fails === 0 ? '\nTODAS LAS PRUEBAS PASARON' : `\n${fails} PRUEBA(S) FALLARON`);
   process.exit(fails === 0 ? 0 : 1);
 }

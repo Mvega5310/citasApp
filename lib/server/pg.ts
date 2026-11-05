@@ -1,4 +1,9 @@
-import { Pool, type PoolClient, type QueryResultRow } from 'pg';
+import pgLib, { Pool, type PoolClient, type QueryResultRow } from 'pg';
+
+// Fechas y horas como texto ("2026-11-04", "10:30"), igual que en la app:
+// sin conversiones de zona horaria de JavaScript.
+pgLib.types.setTypeParser(1082, (v: string) => v); // date
+pgLib.types.setTypeParser(1083, (v: string) => v.slice(0, 5)); // time
 
 /**
  * URL de la base de datos.
