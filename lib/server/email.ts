@@ -63,6 +63,35 @@ function getSender() {
   return process.env.EMAIL_FROM || process.env.EMAIL_SERVER_USER || 'no-reply@beautyturno.com';
 }
 
+/**
+ * Remitente con el nombre de la barbería: "Marcos BarberShop" <citas@proyects.store>.
+ * La dirección es siempre la de EMAIL_FROM (el dominio verificado en Resend);
+ * solo cambia el nombre que ve quien recibe el correo.
+ */
+function senderFor(brand?: EmailBrand): string {
+  const base = getSender();
+  const name = brand?.name?.replace(/["<>\\\r\n]/g, '').trim();
+  if (!name) return base;
+  const address = base.match(/<([^>]+)>/)?.[1]?.trim() ?? base.trim();
+  return address.includes('@') ? `"${name}" <${address}>` : base;
+}
+
+/**
+ * Envío en nombre de una barbería: remitente con su nombre y, si no se indica
+ * otra cosa, "responder a" su correo (así las respuestas de los clientes le llegan
+ * a la barbería y no a la plataforma).
+ */
+function mailerFor(brand?: EmailBrand): Mailer | null {
+  const transporter = getTransporter();
+  if (!transporter) return null;
+  return {
+    sendMail: (message) => {
+      const replyTo = message.replyTo ?? (brand?.replyTo && brand.replyTo !== message.to ? brand.replyTo : undefined);
+      return transporter.sendMail({ ...message, from: senderFor(brand), ...(replyTo ? { replyTo } : {}) });
+    },
+  };
+}
+
 function getToDefault() {
   return process.env.EMAIL_TO_DEFAULT || '';
 }
@@ -84,7 +113,13 @@ function clientAllowed(recipients?: NotifyRecipients): boolean {
 }
 
 /** Identidad de la barbería en los correos. */
-export type EmailBrand = { name: string; address: string; phone: string };
+export type EmailBrand = {
+  name: string;
+  address: string;
+  phone: string;
+  /** Correo del negocio: a donde llegan las respuestas de los clientes. */
+  replyTo?: string;
+};
 
 /** Marca de la barbería por defecto: los datos que ya mostraban los correos. */
 export const DEFAULT_BRAND: EmailBrand = {
@@ -437,8 +472,8 @@ export async function sendCancellationEmails(payload: {
   time: string;
   isLate: boolean;
 }, recipients?: NotifyRecipients): Promise<void> {
-  const transporter = getTransporter();
-  const from = getSender();
+  const transporter = mailerFor(payload.brand);
+  const from = senderFor(payload.brand);
   const toDefault = adminRecipient(recipients);
 
   if (!transporter) return;
@@ -462,6 +497,7 @@ export async function sendCancellationEmails(payload: {
           .sendMail({
             from,
             to: toDefault,
+            replyTo: payload.clientEmail || undefined,
             subject: `⚠️ Cancelación tardía: ${payload.clientName} — ${payload.serviceName}`,
             html: buildLateCancellationAdminEmail(esc(payload)),
           })
@@ -480,8 +516,8 @@ export async function sendBookingNotification(payload: {
   time: string;
   cancelUrl?: string;
 }, recipients?: NotifyRecipients): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
-  const transporter = getTransporter();
-  const from = getSender();
+  const transporter = mailerFor(payload.brand);
+  const from = senderFor(payload.brand);
   const toDefault = adminRecipient(recipients);
 
   if (!transporter) {
@@ -495,7 +531,7 @@ export async function sendBookingNotification(payload: {
   const [sentToDefault, sentToClient] = await Promise.all([
     toDefault
       ? transporter
-          .sendMail({ from, to: toDefault, subject, html: buildAdminBookingEmail(esc(payload)) })
+          .sendMail({ from, to: toDefault, replyTo: payload.clientEmail || undefined, subject, html: buildAdminBookingEmail(esc(payload)) })
           .then(() => true)
           .catch(() => false)
       : Promise.resolve(false),
@@ -632,8 +668,8 @@ export async function sendGroupBookingNotification(payload: {
   appointments: GroupAppointmentInfo[];
   cancelUrl?: string;
 }, recipients?: NotifyRecipients): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
-  const transporter = getTransporter();
-  const from = getSender();
+  const transporter = mailerFor(payload.brand);
+  const from = senderFor(payload.brand);
   const toDefault = adminRecipient(recipients);
 
   if (!transporter) {
@@ -645,7 +681,7 @@ export async function sendGroupBookingNotification(payload: {
   const [sentToDefault, sentToClient] = await Promise.all([
     toDefault
       ? transporter
-          .sendMail({ from, to: toDefault, subject, html: buildGroupBookingAdminEmail(esc(payload)) })
+          .sendMail({ from, to: toDefault, replyTo: payload.clientEmail || undefined, subject, html: buildGroupBookingAdminEmail(esc(payload)) })
           .then(() => true)
           .catch(() => false)
       : Promise.resolve(false),
@@ -744,8 +780,8 @@ export async function sendGroupCancellationEmails(payload: {
   stillActive: GroupAppointmentInfo[];
   anyLate: boolean;
 }, recipients?: NotifyRecipients): Promise<void> {
-  const transporter = getTransporter();
-  const from = getSender();
+  const transporter = mailerFor(payload.brand);
+  const from = senderFor(payload.brand);
   const toDefault = adminRecipient(recipients);
 
   if (!transporter) return;
@@ -833,8 +869,8 @@ export async function sendAdminInvitation(payload: {
   setupLink: string;
   expiresIn?: string;
 }): Promise<boolean> {
-  const transporter = getTransporter();
-  const from = getSender();
+  const transporter = mailerFor(payload.brand);
+  const from = senderFor(payload.brand);
   if (!transporter) return false;
   try {
     await transporter.sendMail({
@@ -893,8 +929,8 @@ export async function sendReminderEmail(payload: {
   serviceName: string;
   time: string;
 }): Promise<boolean> {
-  const transporter = getTransporter();
-  const from = getSender();
+  const transporter = mailerFor(payload.brand);
+  const from = senderFor(payload.brand);
   if (!transporter || !payload.clientEmail) return false;
   try {
     await transporter.sendMail({
@@ -917,8 +953,8 @@ export async function sendContactMessage(payload: {
   subject: string;
   message: string;
 }, recipients?: NotifyRecipients): Promise<boolean> {
-  const transporter = getTransporter();
-  const from = getSender();
+  const transporter = mailerFor(payload.brand);
+  const from = senderFor(payload.brand);
   const toDefault = adminRecipient(recipients);
   if (!transporter || !toDefault) return false;
 
@@ -990,11 +1026,11 @@ export async function sendPasswordLinkEmail(payload: {
   purpose: 'setup' | 'reset';
   expiresIn: string;
 }): Promise<boolean> {
-  const transporter = getTransporter();
+  const transporter = mailerFor(payload.brand);
   if (!transporter) return false;
   try {
     await transporter.sendMail({
-      from: getSender(),
+      from: senderFor(payload.brand),
       to: payload.email,
       subject: `${payload.purpose === 'setup' ? 'Crea tu contraseña' : 'Restablece tu contraseña'} — ${brandOf(payload).name}`,
       html: buildPasswordLinkEmail(esc(payload)),

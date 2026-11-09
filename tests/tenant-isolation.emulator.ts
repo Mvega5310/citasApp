@@ -227,9 +227,15 @@ async function main() {
   }
 
   // ── Marca de cada barbería en los correos + escape de HTML ──
-  await eq('Marca de demo: su nombre, y dirección real en vez de la de ejemplo',
-    (await settingsLib.emailContextFor(await T('demo'))).brand, { name: 'Nombre Legacy', address: 'Bella vista, Colombia', phone: '222' });
-  await eq('Marca de norte: solo sus propios datos', (await settingsLib.emailContextFor(await T('norte'))).brand, { name: 'Norte Premium', address: '', phone: '' });
+  const brandDemo = (await settingsLib.emailContextFor(await T('demo'))).brand;
+  const brandNorte = (await settingsLib.emailContextFor(await T('norte'))).brand;
+  const { replyTo: replyDemo, ...brandDemoRest } = brandDemo;
+  const { replyTo: replyNorte, ...brandNorteRest } = brandNorte;
+  await eq('Marca de demo: su nombre, y dirección real en vez de la de ejemplo', brandDemoRest, { name: 'Nombre Legacy', address: 'Bella vista, Colombia', phone: '222' });
+  await eq('Marca de norte: solo sus propios datos', brandNorteRest, { name: 'Norte Premium', address: '', phone: '' });
+  await eq('Las respuestas de los clientes van al correo de cada barbería',
+    { demo: replyDemo, norte: replyNorte },
+    { demo: (await settingsLib.businessEmailFor(await T('demo'))) ?? undefined, norte: 'norte@barberia.test' });
 
   // Transporte de correo falso: captura los mensajes, no envía nada
   const { createRequire } = await import('node:module');
@@ -245,6 +251,8 @@ async function main() {
   await eq('El mensaje de contacto llega a norte', !!contactMail, true);
   await eq('El HTML del cliente llega escapado (sin enlaces inyectados)',
     { escaped: contactMail?.html.includes('&lt;a href=&quot;http://malo.test&quot;&gt;'), raw: contactMail?.html.includes('<a href="http://malo.test"') }, { escaped: true, raw: false });
+  await eq('El aviso de contacto sale con el nombre de norte y se responde al cliente',
+    { from: String(contactMail?.from).startsWith('"Norte Premium" <'), replyTo: contactMail?.replyTo }, { from: true, replyTo: 'ana@test.co' });
   await eq('El correo de norte lleva su marca y no la de demo',
     { norte: contactMail?.html.includes('Norte Premium'), marcos: contactMail?.html.includes('Marcos BarberShop') || contactMail?.html.includes('Nombre Legacy') }, { norte: true, marcos: false });
 

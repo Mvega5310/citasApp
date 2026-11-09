@@ -109,13 +109,17 @@ export async function tenantFromSlug(slug: string | undefined): Promise<RequestT
 function brandFrom(tenant: RequestTenant, settings: SalonSettings): EmailBrand {
   const isDefault = tenant.slug === DEFAULT_TENANT_SLUG;
   const address = [settings.address, settings.city].filter(Boolean).join(', ');
+  // Las respuestas de los clientes van al correo del negocio de esta barbería
+  const businessEmail = businessEmailFrom(tenant, settings);
+  const replyTo = EMAIL_RE.test(businessEmail ?? '') ? { replyTo: businessEmail } : {};
   if (!isDefault) {
-    return { name: settings.salonName || tenant.slug, address, phone: settings.phone };
+    return { name: settings.salonName || tenant.slug, address, phone: settings.phone, ...replyTo };
   }
   return {
     name: settings.salonName || DEFAULT_BRAND.name,
     address: settings.address && settings.address !== DEFAULTS.address ? address : DEFAULT_BRAND.address,
     phone: settings.phone && settings.phone !== DEFAULTS.phone ? settings.phone : DEFAULT_BRAND.phone,
+    ...replyTo,
   };
 }
 

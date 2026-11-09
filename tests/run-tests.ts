@@ -153,6 +153,45 @@ async function runAsyncTest(name: string, fn: () => Promise<void>) {
     }
   });
 
+  await runAsyncTest('should send in the name of the barbería and reply to its own email', async () => {
+    const { sendBookingNotification } = await import('../lib/server/email');
+    const bodies: Record<string, unknown>[] = [];
+    const realFetch = globalThis.fetch;
+    const savedFrom = process.env.EMAIL_FROM;
+    process.env.RESEND_API_KEY = 're_prueba';
+    process.env.EMAIL_FROM = 'BeautyTurno <citas@proyects.store>';
+    globalThis.fetch = (async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return new Response('{"id":"x"}', { status: 200 });
+    }) as typeof fetch;
+    try {
+      await sendBookingNotification(
+        {
+          brand: { name: 'Barbería "Norte" <VIP>', address: '', phone: '', replyTo: 'norte@gmail.com' },
+          serviceName: 'Corte',
+          clientName: 'Ana',
+          clientEmail: 'ana@test.co',
+          clientWhatsApp: '+573000000000',
+          date: '2026-11-10',
+          time: '10:00',
+        },
+        { admin: 'norte@gmail.com', client: true }
+      );
+      assert.equal(bodies.length, 2);
+      const toClient = bodies.find((b) => (b.to as string[])[0] === 'ana@test.co')!;
+      const toShop = bodies.find((b) => (b.to as string[])[0] === 'norte@gmail.com')!;
+      // Misma dirección verificada, con el nombre de la barbería (sin comillas ni <> que rompan el encabezado)
+      assert.equal(toClient.from, '"Barbería Norte VIP" <citas@proyects.store>');
+      assert.equal(toClient.reply_to, 'norte@gmail.com', 'el cliente responde a la barbería');
+      assert.equal(toShop.reply_to, 'ana@test.co', 'la barbería responde al cliente');
+    } finally {
+      globalThis.fetch = realFetch;
+      delete process.env.RESEND_API_KEY;
+      if (savedFrom) process.env.EMAIL_FROM = savedFrom;
+      else delete process.env.EMAIL_FROM;
+    }
+  });
+
   await runAsyncTest('should report a failed send when Resend rejects the email', async () => {
     const { sendReminderEmail } = await import('../lib/server/email');
     const realFetch = globalThis.fetch;
