@@ -54,6 +54,11 @@ function getTransporter(): Mailer | null {
   });
 }
 
+/** Hay forma de enviar correos (Resend o SMTP). */
+export function isEmailConfigured(): boolean {
+  return getTransporter() !== null;
+}
+
 function getSender() {
   return process.env.EMAIL_FROM || process.env.EMAIL_SERVER_USER || 'no-reply@beautyturno.com';
 }

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "echo 'recordatorios: no necesita compilar la app'"
+  },
+  "deploy": {
+    "startCommand": "node scripts/cron-reminder.mjs",
+    "cronSchedule": "*/5 * * * *",
+    "restartPolicyType": "NEVER"
+  }
+}

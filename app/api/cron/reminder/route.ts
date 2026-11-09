@@ -3,10 +3,10 @@ import { runReminders } from '@/lib/server/reminders';
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // No secret configured — allow (useful in dev)
+  // Sin clave solo se permite en desarrollo; en producción cualquiera podría disparar correos
+  if (!secret) return process.env.NODE_ENV !== 'production';
+  // La tarea programada (Railway, Vercel o cron-job.org) envía: Authorization: Bearer <CRON_SECRET>
   const auth = request.headers.get('authorization') ?? '';
-  // Vercel sends: Authorization: Bearer <CRON_SECRET>
-  // External callers (cron-job.org) can send the same header
   return auth === `Bearer ${secret}`;
 }
 
