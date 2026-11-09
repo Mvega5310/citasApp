@@ -221,10 +221,14 @@ export async function setPasswordWithToken(token: string, newPasswordHash: strin
     );
     const id = res.rows[0]?.admin_id;
     if (!id) return null;
-    await c.query('UPDATE admins SET password_hash = $2, invited = false, updated_at = now() WHERE id = $1', [
-      id,
-      newPasswordHash,
-    ]);
+    // password_changed_at cierra las sesiones abiertas: los tokens emitidos
+    // antes de este momento los rechaza authorizeAdmin.
+    await c.query(
+      `UPDATE admins SET password_hash = $2, invited = false,
+              password_changed_at = now(), updated_at = now()
+       WHERE id = $1`,
+      [id, newPasswordHash]
+    );
     // Cualquier otro enlace pendiente de este admin deja de servir
     await c.query('DELETE FROM password_tokens WHERE admin_id = $1 AND used_at IS NULL', [id]);
     return id;

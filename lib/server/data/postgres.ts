@@ -103,6 +103,7 @@ function toAdmin(r: Record<string, unknown>): AdminRecord {
     invited: r.invited as boolean,
     createdBy: (r.created_by as string | null) ?? null,
     createdAt: iso(r.created_at),
+    passwordChangedAt: iso(r.password_changed_at),
   };
 }
 

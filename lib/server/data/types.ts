@@ -61,6 +61,12 @@ export type AdminRecord = {
   invited?: boolean;
   createdBy?: string | null;
   createdAt: string | null;
+  /**
+   * Cuándo cambió la contraseña por última vez. Las sesiones emitidas antes de
+   * ese momento dejan de servir (ver authorizeAdmin). null = nunca la ha
+   * cambiado, que no invalida ninguna sesión.
+   */
+  passwordChangedAt?: string | null;
 };
 
 export type TenantLookupResult = { found: true; config: TenantConfig } | { found: false };

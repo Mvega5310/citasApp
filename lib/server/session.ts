@@ -8,6 +8,12 @@ export type SessionUser = {
   role: 'admin' | 'viewer';
   /** Barbería del admin. Las sesiones anteriores a este campo pertenecen a la barbería por defecto. */
   tenantSlug?: string;
+  /**
+   * Momento de emisión que escribe setIssuedAt, en segundos. Lo usa
+   * authorizeAdmin para rechazar las sesiones anteriores al último cambio
+   * de contraseña.
+   */
+  iat?: number;
 };
 
 function secret() {

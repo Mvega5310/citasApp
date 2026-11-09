@@ -60,6 +60,9 @@ function toAdmin(doc: Snap): AdminRecord {
     invited: d.invited === true,
     createdBy: d.createdBy ?? null,
     createdAt: toIso(d.createdAt),
+    // Con Firebase Auth las contraseñas no las maneja la app, así que este
+    // campo no existe y queda null: no invalida ninguna sesión.
+    passwordChangedAt: toIso(d.passwordChangedAt),
   };
 }
 

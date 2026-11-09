@@ -41,12 +41,17 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 - `lib/server/data/` → `store()` elige backend con `DATA_BACKEND` (`firestore` por defecto | `postgres`).
 - `lib/server/data/firestore.ts` (comportamiento anterior) y `lib/server/data/postgres.ts` (nuevo).
 - Esquema: `db/migrations/001_init.sql`. Índice único impide dos citas activas en el mismo horario.
+- `db/migrations/002_password_changed_at.sql`: marca `password_changed_at` en `admins` (ver punto 4).
 - `npm run db:migrate` (base de la app) / `npm run db:migrate:test` (base `citas_test`).
 
 ### 4. Cuentas propias de admin (sin Firebase Auth)
 - Contraseñas con scrypt; enlaces de un solo uso: crear contraseña (72 h) y restablecer (1 h).
 - `/admin/password` (crear/cambiar), "¿Olvidaste tu contraseña?" en el login, límites de intentos.
 - Los enlaces se construyen con `APP_URL` / `NEXT_PUBLIC_APP_DOMAIN`, nunca con el `Host` (evita robo de enlaces).
+- Cambiar la contraseña **cierra las sesiones abiertas**: `authorizeAdmin` rechaza con 401 los tokens
+  emitidos antes de `password_changed_at` (se comparan truncados a segundos, porque el `iat` del token
+  viene en segundos). Si la consulta falla no se cierra la sesión: dejar fuera a un admin por una
+  consulta fallida es peor. Con `DATA_BACKEND=firestore` el campo no existe y no invalida nada.
 
 ### 5. Copia Firestore → Postgres
 - `npm run db:copy` (`--dry-run`, `--fresh`, `--target=app --yes`): solo lee Firestore; todo en una transacción.
@@ -124,6 +129,14 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 - Cuenta opcional de cliente (ver/cancelar sus citas, acceso por enlace al correo) — reservar sin cuenta debe seguir.
 - Página pública o directorio de barberías; superadmin para crear barberías.
 - Rediseñar `/cancelar/[token]` (aún con el estilo claro antiguo).
-- Cerrar sesiones abiertas al cambiar la contraseña.
-- El enlace de cancelación de la reserva aún se arma con el `Host` de la petición (usar `APP_URL`).
-- `lib/shared/TenantContext.tsx` ya no lo usa nada (el catálogo llega por `useCatalog()`): se puede borrar.
+
+### Cerrado el 9 nov 2026 (auditoría previa al cambio)
+
+- ~~El enlace de cancelación se arma con el `Host`~~ → ahora usa `appOrigin()`, igual que los de contraseña.
+  Las dos rutas de reserva ya envolvían ese armado en `try/catch`, así que si faltara `APP_URL` la reserva
+  sigue guardándose y solo se omite el enlace.
+- ~~Cerrar sesiones abiertas al cambiar la contraseña~~ → migración 002 + verificación en `authorizeAdmin`.
+- ~~`lib/shared/TenantContext.tsx` huérfano~~ → borrado (cero referencias).
+- ~~`/api/email-test`~~ → borrada. Era una ruta de diagnóstico que enviaba correos reales.
+- ~~`EMAIL_TO_DEFAULT` en `env.example`~~ → corregido a `marcosbarbershop89@gmail.com` (tenía el correo personal).
+- ~~El cron no contaba las citas sin correo del cliente~~ → ahora suman a `skipped`.
