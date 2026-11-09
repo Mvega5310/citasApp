@@ -1,1 +1,9 @@
-{}
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://citas.proyects.store/$1",
+      "permanent": false
+    }
+  ]
+}
