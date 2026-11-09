@@ -81,7 +81,12 @@ export async function runReminders(nowMs: number = Date.now()): Promise<{
   let sent = 0;
   let skipped = 0;
   for (const appt of appointments) {
-    if (!appt.clientEmail) continue;
+    // Sin correo no hay a quién avisar, pero cuenta como omitida: así el
+    // registro del cron cuadra con el total de citas de la ventana.
+    if (!appt.clientEmail) {
+      skipped++;
+      continue;
+    }
     if (!contexts.has(appt.tenantSlug)) {
       const ctx = await emailContextFor(await tenantFromSlug(appt.tenantSlug));
       contexts.set(appt.tenantSlug, { client: ctx.recipients.client, brand: ctx.brand });

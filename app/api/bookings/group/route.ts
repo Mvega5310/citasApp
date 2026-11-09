@@ -7,6 +7,7 @@ import { SlotTakenError, store } from '@/lib/server/data';
 import { sendGroupBookingNotification } from '@/lib/server/email';
 import { logger } from '@/lib/server/logger';
 import { generateGroupCancelToken } from '@/lib/server/cancelToken';
+import { appOrigin } from '@/lib/server/auth';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
@@ -103,9 +104,8 @@ export async function POST(request: NextRequest) {
         tenantSlug,
         clientName: first.clientName,
       });
-      const host = request.headers.get('host') ?? 'localhost:3001';
-      const protocol = host.startsWith('localhost') ? 'http' : 'https';
-      cancelUrl = `${protocol}://${host}/cancelar/${token}`;
+      // Nunca desde el encabezado Host (ver app/api/bookings/route.ts)
+      cancelUrl = `${appOrigin(request, tenantSlug)}/cancelar/${token}`;
     } catch {}
 
     const emailCtx = await emailContextFor(tenantResult.tenant);

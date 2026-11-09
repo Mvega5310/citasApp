@@ -4,6 +4,7 @@ import { sendBookingNotification } from '@/lib/server/email';
 import { SlotTakenError, isStoreConfigured, store } from '@/lib/server/data';
 import { logger } from '@/lib/server/logger';
 import { generateCancelToken } from '@/lib/server/cancelToken';
+import { appOrigin } from '@/lib/server/auth';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
@@ -83,9 +84,9 @@ export async function POST(request: NextRequest) {
           serviceName: booking.serviceName,
           clientName: booking.clientName,
         });
-        const host = request.headers.get('host') ?? 'localhost:3001';
-        const protocol = host.startsWith('localhost') ? 'http' : 'https';
-        cancelUrl = `${protocol}://${host}/cancelar/${token}`;
+        // Nunca desde el encabezado Host: con un Host falso el correo del
+        // cliente llevaría el enlace (y el token) al dominio del atacante.
+        cancelUrl = `${appOrigin(request, tenantSlug)}/cancelar/${token}`;
       } catch {}
     }
 
