@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Clock } from 'lucide-react';
+import { Clock, LockKeyhole } from 'lucide-react';
 import type { WeekSchedule } from '@/lib/shared/services';
 import { useCatalog } from '@/lib/shared/useCatalog';
 
@@ -48,13 +48,22 @@ export default function Header() {
           </Link>
 
           {/* Horario + navegación de escritorio */}
-          <div className="flex items-center gap-4">
-{catalog && (
+          <div className="flex items-center gap-2 md:gap-4">
+            {catalog && (
             <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-cafe-card/70 border border-cafe-border text-cafe-muted">
               <Clock className="w-3.5 h-3.5 text-cafe-gold" width={14} height={14} aria-hidden="true" />
               {getScheduleChip(catalog.schedule)}
             </span>
             )}
+
+            <Link
+              href="/admin"
+              prefetch={false}
+              className="md:hidden flex items-center gap-1.5 min-h-[44px] px-2 text-xs font-semibold text-cafe-muted hover:text-cafe-goldlight transition-colors duration-200"
+            >
+              <LockKeyhole className="w-3.5 h-3.5" width={14} height={14} aria-hidden="true" />
+              Ingresar
+            </Link>
 
             <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
               {navLinks.map(({ href, label, exact }) => {
@@ -78,6 +87,15 @@ export default function Header() {
                   </Link>
                 );
               })}
+              {/* Acceso para dueños y barberos: con sesión abierta lleva al panel, sin ella al login */}
+              <Link
+                href="/admin"
+                prefetch={false}
+                className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-cafe-muted hover:text-cafe-goldlight transition-colors duration-200"
+              >
+                <LockKeyhole className="w-3.5 h-3.5" width={14} height={14} aria-hidden="true" />
+                Ingresar
+              </Link>
               <Link href="/reservar" className="ml-3 btn-primary text-sm py-2 px-5 min-h-[40px]">
                 Reservar cita
               </Link>
