@@ -126,4 +126,4 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 - Rediseñar `/cancelar/[token]` (aún con el estilo claro antiguo).
 - Cerrar sesiones abiertas al cambiar la contraseña.
 - El enlace de cancelación de la reserva aún se arma con el `Host` de la petición (usar `APP_URL`).
-- `components/cliente/TenantServicesGrid.tsx` está sin versionar (no es de esta rama; revisar si se usa).
+- `lib/shared/TenantContext.tsx` ya no lo usa nada (el catálogo llega por `useCatalog()`): se puede borrar.
