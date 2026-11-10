@@ -1,13 +1,15 @@
 # Estado del proyecto — Marcos BarberShop / BeautyTurno
 
-> Documento de traspaso entre sesiones de trabajo. Actualizado: 9 nov 2026.
-> Rama de trabajo: `feature/multi-tenant-restructure` (ya en GitHub, **no** unida a `develop` ni a `main`).
+> Documento de traspaso entre sesiones de trabajo. Actualizado: 10 nov 2026.
+> **En producción en Railway**: https://citas.proyects.store
+> Rama de trabajo: `develop`. A `main` solo por avance directo desde `develop` (Railway publica desde `main`).
 
 ## Reglas para trabajar en este repo
 
 - **Responder siempre en español** al dueño del proyecto (Marcos).
 - **No correr `npm run build` mientras `npm run dev` está activo**: rompe `.next` y la página queda sin estilos.
-- Commits en la rama de trabajo; **no unir a `main` sin el plan del cambio** (ver abajo): Railway publica solo desde `main`.
+- **Todo el trabajo va a `develop`**, y de ahí a `main`. No se trabaja directamente sobre `main`.
+- Unir a `main` **despliega a producción** y aplica las migraciones pendientes: hazlo a sabiendas.
 - Prettier, si se usa: `--single-quote --print-width 110`. Mejor no reformatear archivos enteros.
 - Nunca pegar claves en el chat ni en commits (`.env.local` está ignorado).
 
@@ -19,11 +21,13 @@ cada barbería en su subdominio.
 
 ## Ramas
 
+Solo quedan dos. Las de trabajo viejas (`feature/multi-tenant-restructure`, `redisenio-beautyturno`)
+se borraron una vez contenidas en `main`.
+
 | Rama | Contenido |
 |---|---|
-| `main` | Producción actual (Vercel + Firebase). Railway (`citasApp`) también publica desde aquí. |
-| `develop` | Rediseño café/dorado (PR #1) — `main` + rediseño cliente y admin. |
-| `feature/multi-tenant-restructure` | **Todo lo nuevo**: contiene `main` + 32 commits. Se une sin conflictos. |
+| `main` | Lo que corre en producción. Railway publica desde aquí. |
+| `develop` | Donde se trabaja. Se une a `main` por avance directo cuando está probado. |
 
 ## Hecho
 
@@ -43,6 +47,7 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 - Esquema: `db/migrations/001_init.sql`. Índice único impide dos citas activas en el mismo horario.
 - `db/migrations/002_password_changed_at.sql`: marca `password_changed_at` en `admins` (ver punto 4).
 - `db/migrations/003_platform_admin.sql`: marca `platform_admin` en `admins` (ver punto 10).
+- `db/migrations/004_barbers.sql`: tabla `barbers` y `barber_id` en las citas (ver punto 11).
 - `npm run db:migrate` (base de la app) / `npm run db:migrate:test` (base `citas_test`).
 
 ### 4. Cuentas propias de admin (sin Firebase Auth)
@@ -59,10 +64,15 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 - `npm run db:compare`: confirma que la app responde igual con ambos backends. **Equivalencia confirmada** con `citas_test`.
 - Datos reales: 536 citas (326 + 210 antiguas en la colección raíz), 523 horarios bloqueados, 7 servicios, 2 admins.
 - Los admins se copian **sin contraseña**: cada uno la crea con el correo del paso de cambio.
-- La base real de Railway (`railway`) ya tiene el esquema pero **aún no los datos** (la copia final se hace el día del cambio).
+- Copia definitiva hecha el 10 nov 2026: 550 citas, 532 bloqueos, 7 servicios, 2 admins, con
+  `db:compare` confirmando la equivalencia contra la base real.
 
 ### 6. Correo
 - **Resend** (API HTTP) si hay `RESEND_API_KEY`; si no, SMTP. En Railway Hobby el SMTP está bloqueado → Resend.
+- Dominio verificado: **`mail.proyects.store`** (no el raíz: ya tenía la configuración de otro
+  proyecto que sigue enviando, y un nombre solo admite un CNAME). Remitente `citas@mail.proyects.store`.
+- **La suite de pruebas captura los correos por SMTP simulado**: con `RESEND_API_KEY` en `.env.local`
+  fallan 13. Coméntala para correr `test:tenants`.
 - Cada correo sale **con el nombre de su barbería** desde la dirección de `EMAIL_FROM` (dominio verificado),
   con **Responder a = correo del negocio** (Marcos BarberShop: `marcosbarbershop89@gmail.com` vía `EMAIL_TO_DEFAULT`;
   otras barberías: el correo de contacto de su Configuración). Avisos al negocio → responder al cliente.
@@ -101,6 +111,41 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
   (`--quitar` para retirarla, `--listar` para verlos). No puede salir del panel, porque para entrar
   al panel de plataforma ya hay que serlo.
 
+### 11. Barberos
+
+- El **horario es del local** (`working_hours`, sin cambios). Los barberos solo determinan cuántas
+  citas caben a la vez y con quién.
+- El cliente elige **primero la hora y después el barbero**: así no hay que recargar los horarios al
+  cambiar de barbero, y solo se ofrece quien tiene libre esa franja
+  (`GET /api/bookings/barbers?date&time`).
+- **El índice de doble reserva es lo delicado.** Pasó de `(tenant_id, date, time)` a incluir
+  `COALESCE(barber_id, '')`. Añadir `barber_id` a secas no sirve: Postgres trata los nulos como
+  distintos, así que dos citas sin barbero habrían pasado las dos y una barbería sin barberos
+  configurados habría perdido la protección. Con el centinela, las citas sin barbero siguen
+  compitiendo entre ellas igual que antes.
+- `resolverBarbero` (`lib/server/barbers.ts`) cubre los tres casos: sin equipo la cita queda sin
+  asignar; con barbero pedido se valida que exista, esté activo y tenga la franja libre; y en
+  "cualquiera disponible" gana el que **menos citas tiene ese día**, para repartir la carga. Si la
+  base rechaza al elegido porque alguien se adelantó, se reintenta con el siguiente.
+- La llave foránea es **RESTRICT**: quitar a un barbero con citas borraría su histórico. El panel
+  avisa y sugiere marcarlo inactivo, que lo saca del selector sin perder nada.
+- Las 550 citas migradas quedan **sin barbero** (son anteriores a esto) y aparecen sin asignar.
+
+### 12. Detalles de interfaz resueltos
+
+- **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de
+  559 bytes — un cuadro en blanco en el encabezado, el panel y la pantalla de inicio. Ahora sirve
+  PNG comiteados en `public/icons/`. El manifest apunta a los estáticos y hay `apple-touch-icon`,
+  que iOS necesita porque no lee los iconos del manifest.
+- **Menú móvil**: el cajón era `z-30` y la barra inferior `z-40`, así que la barra tapaba el perfil y
+  Configuración. El cajón pasó a `z-50` y la barra superior a `z-[60]`.
+- **Listado del panel**: paginado de 20 en 20 (eran 528 filas pintadas de una vez). La paginación es
+  **en pantalla**: la petición sigue trayendo todas las citas. Llevarla al servidor exige mover allá
+  los filtros de estado y fecha.
+- **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
+- **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
+  parámetro**, que sería un generador de QR alojado en el dominio propio.
+
 ## Pruebas
 
 - `npm test` — unitarias (incluye Resend con `fetch` simulado). Pasan.
@@ -121,28 +166,49 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
   barberías nuevas en `{barbería}.citas.proyects.store`, remitente `citas@proyects.store` (confirmar con Marcos).
 - Rol `viewer` = barbero (conserva sus permisos actuales).
 
-## Falta — cambio a Railway (en este orden)
+## El corte a Railway: HECHO (10 nov 2026)
+
+La app corre en **Railway + Postgres**, en `https://citas.proyects.store`. Lo ejecutado:
+
+- Resend verificado en **`mail.proyects.store`** (subdominio aparte: el dominio raíz ya tenía la
+  configuración de otro proyecto que sigue enviando, y un nombre solo admite un CNAME).
+  Remitente `citas@mail.proyects.store`, región `sa-east-1`.
+- 14 variables en el servicio `citasApp` (proyecto Railway **`valiant-clarity`**), con
+  `DATABASE_URL=${{Postgres.DATABASE_URL}}` por referencia y `PORT=3000`.
+- Dominio `citas.proyects.store` + **comodín `*.citas.proyects.store`** con certificado: una
+  barbería nueva funciona al instante sin tocar DNS.
+- Copia definitiva: 550 citas, 532 bloqueos, 7 servicios, 2 admins. `db:compare` confirmó la
+  equivalencia contra la base real.
+- **Vercel quedó como redirect 307** a `citas.proyects.store`, no apagado: los clientes entran por
+  una URL de Vercel y apagarlo dejaría colgados los enlaces repartidos. El redirect es además lo que
+  congeló Firestore en el momento exacto de la copia.
+- Servicio `recordatorios`: cron `*/5 * * * *`, `restartPolicyType NEVER`,
+  `CRON_SECRET=${{citasApp.CRON_SECRET}}` por referencia.
+
+**El config-as-code por archivo está deprecado en Railway**: `railway.json` y `railway.cron.json`
+nunca se leyeron. El `preDeployCommand` y la configuración del cron están puestos **directamente en
+cada servicio**, y de ahí en adelante las migraciones corren solas antes de cada publicación.
+Ojo: un *redeploy* reutiliza la instantánea anterior y no toma los cambios de configuración; hace
+falta un despliegue nuevo.
+
+## Falta
 
 **Pendiente de Marcos:**
-1. Resend: dominio `proyects.store` verificado (registros DNS en GoDaddy) y API key creada.
-2. Dos claves aleatorias (`ADMIN_SECRET`, `CRON_SECRET`):
-   `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+1. Probar de punta a punta: reservar, cancelar, recordatorio.
+2. Rotar lo que quedó expuesto en el chat: llave del service account de Firebase (ya se puede, la
+   copia terminó), contraseña de Postgres, y revocar la contraseña de aplicación de Gmail, que ya no
+   se usa.
+3. Quitar el proxy TCP público de Postgres y vaciar `citas_test`. **Déjalo para el final**: es el
+   único acceso a la base desde fuera de Railway.
 
-**Luego:**
-3. Variables del servicio `citasApp` en Railway:
-   `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `DATA_BACKEND=postgres`, `ADMIN_SECRET`, `CRON_SECRET`,
-   `APP_URL=https://citas.proyects.store`, `NEXT_PUBLIC_APP_DOMAIN=citas.proyects.store`,
-   `NEXT_PUBLIC_DEFAULT_TENANT=demo`, `NEXT_PUBLIC_APP_NAME=Marcos BarberShop`, `RESEND_API_KEY`,
-   `EMAIL_FROM=Marcos BarberShop <citas@proyects.store>`, `EMAIL_TO_DEFAULT=marcosbarbershop89@gmail.com`,
-   `APP_ENV=production`. (Las de Firebase solo hacen falta para copiar desde el equipo local.)
-4. Servicio nuevo de recordatorios (mismo repo, rama `main`): en Settings → *Config-as-code* usar
-   `railway.cron.json`; variables `APP_URL` y `CRON_SECRET=${{citasApp.CRON_SECRET}}`.
-5. Dominio `citas.proyects.store` en Railway + CNAME en GoDaddy.
-6. Copia final de datos: `npm run db:copy -- --fresh --target=app --yes` y `npm run db:compare -- --target=app`.
-7. Unir `feature/multi-tenant-restructure` → `develop` → `main` (Railway publica y migra).
-8. `npm run admins:setup-emails -- --target=app` (revisar) y luego con `--send --yes`.
-9. Probar reservar, cancelar, recordatorio, login de cada admin.
-10. Cerrar: quitar el proxy TCP público de Postgres, vaciar `citas_test`, apagar Vercel.
+**Pendiente de construir:**
+- **Modo claro.** Toda la interfaz está sobre tokens `cafe-*` oscuros por definición, en 17
+  archivos. Hacerlo bien es convertirlos en variables que cambien según el tema, no duplicar clases.
+- **Borrar barberías** desde el panel de plataforma: hoy solo se pueden crear y listar.
+- **Título y metadatos por barbería**: `app/layout.tsx` los tiene fijos. Arreglarlo obliga a volver
+  dinámico ese layout, y eso convierte 11 páginas estáticas en dinámicas — decisión de rendimiento
+  aparte.
+- **Paginación en el servidor** del listado de citas (hoy es solo en pantalla).
 
 ## Después del cambio (backlog)
 
