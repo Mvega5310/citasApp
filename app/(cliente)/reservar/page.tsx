@@ -266,6 +266,10 @@ export default function BookingPage() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
+  // Barberos libres a la hora elegida. Se pregunta DESPUÉS de la hora, para no
+  // tener que recargar los horarios al cambiar de barbero.
+  const [barberosLibres, setBarberosLibres] = useState<{ id: string; name: string }[]>([]);
+  const [barberoElegido, setBarberoElegido] = useState('');
   const [bookedSlots, setBookedSlots] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingResult, setBookingResult] = useState<BookingResult | null>(null);
@@ -312,6 +316,8 @@ export default function BookingPage() {
   const handleDateSelect = async (date: string) => {
     setSelectedDate(date);
     setSelectedTime('');
+    setBarberoElegido('');
+    setBarberosLibres([]);
     setBookedSlots([]);
     setStep(3);
     try {
@@ -323,9 +329,15 @@ export default function BookingPage() {
     } catch {}
   };
 
-  const handleTimeSelect = (time: string) => {
+  const handleTimeSelect = async (time: string) => {
     setSelectedTime(time);
+    setBarberoElegido('');
+    setBarberosLibres([]);
     setStep(4);
+    try {
+      const res = await fetch(`/api/bookings/barbers?date=${selectedDate}&time=${time}`);
+      if (res.ok) setBarberosLibres((await res.json()).barbers ?? []);
+    } catch {}
   };
 
   const handleBack = () => {
@@ -363,7 +375,9 @@ export default function BookingPage() {
     const res = await fetch('/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildValidatedBooking(data, slotTime)),
+      // barberId va aparte del payload validado: la validación es del catálogo
+      // y el barbero lo resuelve el servidor.
+      body: JSON.stringify({ ...buildValidatedBooking(data, slotTime), barberId: barberoElegido || null }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -594,6 +608,50 @@ export default function BookingPage() {
                 ${selectedService.price.toLocaleString('es-CO')}
               </p>
             </div>
+
+            {/* Barbero: solo quienes están libres a la hora ya elegida. Si la
+                barbería no usa barberos, la lista llega vacía y no se muestra. */}
+            {barberosLibres.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs font-medium mb-2" style={{ color: '#B8AA99' }}>
+                  ¿Con quién prefieres?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBarberoElegido('')}
+                    aria-pressed={barberoElegido === ''}
+                    className="rounded-[14px] px-3 py-3 text-sm font-medium transition-colors duration-200 touch-manipulation text-left"
+                    style={{
+                      background: barberoElegido === '' ? '#C69B62' : '#201A15',
+                      color: barberoElegido === '' ? '#100E0C' : '#F4EEE5',
+                      border: `1px solid ${barberoElegido === '' ? '#C69B62' : '#403328'}`,
+                    }}
+                  >
+                    Cualquiera disponible
+                  </button>
+                  {barberosLibres.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setBarberoElegido(b.id)}
+                      aria-pressed={barberoElegido === b.id}
+                      className="rounded-[14px] px-3 py-3 text-sm font-medium transition-colors duration-200 touch-manipulation text-left truncate"
+                      style={{
+                        background: barberoElegido === b.id ? '#C69B62' : '#201A15',
+                        color: barberoElegido === b.id ? '#100E0C' : '#F4EEE5',
+                        border: `1px solid ${barberoElegido === b.id ? '#C69B62' : '#403328'}`,
+                      }}
+                    >
+                      {b.name}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs mt-2" style={{ color: '#857767' }}>
+                  Solo aparece quien tiene libre las {selectedTime}.
+                </p>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               {/* Name */}

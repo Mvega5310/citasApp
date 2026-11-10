@@ -16,6 +16,7 @@ import {
   Clock,
   Scissors,
   Building2,
+  UserRound,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/admin/horarios', label: 'Horarios', icon: Clock, roles: ['admin'] },
   { href: '/admin/servicios', label: 'Servicios', icon: Scissors, roles: ['admin'] },
   { href: '/admin/equipo', label: 'Equipo', icon: Users, roles: ['admin'] },
+  { href: '/admin/barberos', label: 'Barberos', icon: UserRound, roles: ['admin'] },
 ];
 
 // Solo para quien opera la plataforma. Va aparte de navItems porque no se

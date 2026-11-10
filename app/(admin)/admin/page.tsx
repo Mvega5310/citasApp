@@ -478,19 +478,26 @@ export default function AdminPage() {
                     </button>
                   ))}
 
-                  <div className="flex items-center gap-1 ml-auto">
-                    <input
-                      type="date"
-                      value={filterDate}
-                      onChange={(e) => setFilterDate(e.target.value)}
-                      aria-label="Filtrar por fecha"
-                      className={selectCls}
-                    />
+                  {/* Ancho completo en móvil: con ml-auto dentro de un flex que
+                      envuelve, el campo quedaba aplastado contra el borde y no
+                      se distinguía ni el icono ni la fecha. */}
+                  <div className="flex items-center gap-1 w-full sm:w-auto sm:ml-auto">
+                    <label className="flex items-center gap-2 flex-1 sm:flex-none bg-cafe-soft border border-cafe-border rounded-lg px-2.5 py-2 focus-within:ring-2 focus-within:ring-cafe-gold/50">
+                      <Calendar className="w-4 h-4 text-cafe-goldlight shrink-0" aria-hidden="true" />
+                      <span className="text-xs text-cafe-subtle shrink-0 sm:hidden">Fecha</span>
+                      <input
+                        type="date"
+                        value={filterDate}
+                        onChange={(e) => setFilterDate(e.target.value)}
+                        aria-label="Filtrar por fecha"
+                        className="flex-1 min-w-0 bg-transparent text-xs text-cafe-text [color-scheme:dark] focus:outline-none"
+                      />
+                    </label>
 
                     {filterDate && (
                       <button
                         onClick={() => setFilterDate('')}
-                        className={`${iconBtnCls} text-cafe-subtle hover:text-cafe-text hover:bg-cafe-hover`}
+                        className={`${iconBtnCls} text-cafe-subtle hover:text-cafe-text hover:bg-cafe-hover shrink-0`}
                         aria-label="Limpiar fecha"
                       >
                         <X className="w-4 h-4" />
