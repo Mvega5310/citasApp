@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
-import { Building2, Plus, ExternalLink, Check } from 'lucide-react';
+import { Building2, Plus, ExternalLink, Check, Pause, Play, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type Tenant = {
@@ -11,10 +11,15 @@ type Tenant = {
   name: string;
   status: string;
   admins: number;
+  appointments: number;
   createdAt: string | null;
 };
 
 const VACIO = { slug: '', name: '', adminName: '', adminEmail: '' };
+
+/** La barbería principal no se suspende ni se borra desde aquí. */
+const esPrincipal = (slug: string) =>
+  slug === (process.env.NEXT_PUBLIC_DEFAULT_TENANT ?? 'demo');
 
 /** Sugiere una dirección a partir del nombre, sin imponerla. */
 function sugerirSlug(nombre: string): string {
@@ -35,6 +40,7 @@ export default function BarberiasPage() {
   const [slugTocado, setSlugTocado] = useState(false);
   const [creando, setCreando] = useState(false);
   const [dominio, setDominio] = useState('');
+  const [ocupado, setOcupado] = useState<string | null>(null);
 
   useEffect(() => {
     setDominio(process.env.NEXT_PUBLIC_APP_DOMAIN ?? '');
@@ -88,6 +94,64 @@ export default function BarberiasPage() {
       toast.error('Error de conexión');
     } finally {
       setCreando(false);
+    }
+  };
+
+  const cambiarEstado = async (t: Tenant) => {
+    const suspender = t.status === 'active';
+    if (suspender && !confirm(`¿Suspender "${t.name || t.slug}"?
+
+Sus clientes dejarán de poder reservar hasta que la reactives. No se borra nada.`)) return;
+    setOcupado(t.slug);
+    try {
+      const res = await fetch(`/api/admin/tenants/${t.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: suspender ? 'suspended' : 'active' }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        toast.error(body?.error ?? 'No se pudo cambiar el estado');
+        return;
+      }
+      toast.success(suspender ? 'Barbería suspendida' : 'Barbería reactivada');
+      cargar();
+    } catch {
+      toast.error('Error de conexión');
+    } finally {
+      setOcupado(null);
+    }
+  };
+
+  const borrar = async (t: Tenant) => {
+    // El servidor lo vuelve a comprobar; esto evita el viaje y explica el porqué.
+    if (t.appointments > 0) {
+      toast.error(`"${t.name || t.slug}" tiene ${t.appointments} citas. Suspéndela en vez de borrarla.`);
+      return;
+    }
+    if (!confirm(
+      `¿Borrar "${t.name || t.slug}" para siempre?
+
+` +
+      `Se van también su configuración, servicios, horario, barberos y ${t.admins} cuenta(s) de administrador.
+
+` +
+      'Esto no se puede deshacer.'
+    )) return;
+    setOcupado(t.slug);
+    try {
+      const res = await fetch(`/api/admin/tenants/${t.slug}`, { method: 'DELETE' });
+      const body = await res.json();
+      if (!res.ok) {
+        toast.error(body?.error ?? 'No se pudo borrar');
+        return;
+      }
+      toast.success(`"${t.name || t.slug}" eliminada`);
+      cargar();
+    } catch {
+      toast.error('Error de conexión');
+    } finally {
+      setOcupado(null);
     }
   };
 
@@ -237,29 +301,53 @@ export default function BarberiasPage() {
                         {t.slug}.{dominio || 'citas.proyects.store'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-cafe-muted">
-                        {t.admins} {t.admins === 1 ? 'admin' : 'admins'}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-cafe-muted hidden sm:inline">
+                        {t.admins} {t.admins === 1 ? 'admin' : 'admins'} · {t.appointments} citas
                       </span>
                       <span
                         className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded ${
                           t.status === 'active'
                             ? 'text-cafe-green bg-cafe-green/10'
-                            : 'text-cafe-muted bg-cafe-soft'
+                            : 'text-amber-300 bg-amber-400/10'
                         }`}
                       >
-                        {t.status === 'active' && <Check className="w-3 h-3" />}
-                        {t.status}
+                        {t.status === 'active' ? <Check className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
+                        {t.status === 'active' ? 'activa' : 'suspendida'}
                       </span>
                       <a
                         href={`https://${t.slug}.${dominio || 'citas.proyects.store'}`}
                         target="_blank"
                         rel="noreferrer"
                         aria-label={`Abrir ${t.name || t.slug}`}
-                        className="text-cafe-muted hover:text-cafe-goldlight transition"
+                        className="p-1.5 rounded-lg text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-hover transition"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
+                      {!esPrincipal(t.slug) && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => cambiarEstado(t)}
+                            disabled={ocupado === t.slug}
+                            aria-label={t.status === 'active' ? `Suspender ${t.name || t.slug}` : `Reactivar ${t.name || t.slug}`}
+                            title={t.status === 'active' ? 'Suspender: deja de atender, no borra nada' : 'Reactivar'}
+                            className="p-1.5 rounded-lg text-cafe-muted hover:text-amber-300 hover:bg-cafe-hover transition disabled:opacity-40"
+                          >
+                            {t.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => borrar(t)}
+                            disabled={ocupado === t.slug}
+                            aria-label={`Borrar ${t.name || t.slug}`}
+                            title={t.appointments > 0 ? `Tiene ${t.appointments} citas: suspéndela` : 'Borrar para siempre'}
+                            className="p-1.5 rounded-lg text-red-400 hover:bg-red-400/10 transition disabled:opacity-40"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </li>
                 ))}

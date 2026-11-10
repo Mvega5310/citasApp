@@ -3,6 +3,7 @@ node_modules/
 *.tsbuildinfo
 .env
 .env.local
+.env*.local
 .DS_Store
 npm-debug.log
 out/ 

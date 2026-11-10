@@ -94,8 +94,21 @@ export type TenantSummary = {
   name: string;
   status: string;
   admins: number;
+  /** Citas registradas. Con alguna, la barbería ya no se puede borrar. */
+  appointments: number;
   createdAt: string | null;
 };
+
+/** La barbería tiene citas: borrarla perdería el historial de clientes reales. */
+export class TenantHasDataError extends Error {
+  constructor(public readonly slug: string, public readonly appointments: number) {
+    super(
+      `"${slug}" tiene ${appointments} cita${appointments === 1 ? '' : 's'} registrada${appointments === 1 ? '' : 's'}. ` +
+        'Suspéndela en vez de borrarla: deja de atender clientes pero conserva su historial.'
+    );
+    this.name = 'TenantHasDataError';
+  }
+}
 
 /** El slug ya está tomado por otra barbería. */
 export class TenantExistsError extends Error {
@@ -123,6 +136,10 @@ export interface DataStore {
   listTenants(): Promise<TenantSummary[]>;
   /** Crea la barbería. Lanza TenantExistsError si el slug ya está tomado. */
   createTenant(input: { slug: string; name: string }): Promise<void>;
+  /** Activa o suspende. Suspendida, el resolutor devuelve 403 a sus visitantes. */
+  setTenantStatus(slug: string, status: 'active' | 'suspended'): Promise<void>;
+  /** Borra la barbería y todo lo suyo. Lanza TenantHasDataError si tiene citas. */
+  deleteTenant(slug: string): Promise<void>;
   saveCatalog(slug: string, catalog: EditableCatalog, updatedBy: string): Promise<void>;
 
   // ── Configuración ──

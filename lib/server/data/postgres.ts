@@ -8,6 +8,7 @@ import {
   ACTIVE_STATUSES,
   SlotTakenError,
   TenantExistsError,
+  TenantHasDataError,
   type AdminRecord,
   type AppointmentPatch,
   type AppointmentRecord,
@@ -162,9 +163,10 @@ export const postgresStore: DataStore = {
   },
 
   async listTenants() {
-    const res = await query<{ slug: string; name: string; status: string; admins: number; created_at: Date | null }>(
+    const res = await query<{ slug: string; name: string; status: string; admins: number; appointments: number; created_at: Date | null }>(
       `SELECT t.slug, t.name, t.status, t.created_at,
-              (SELECT count(*)::int FROM admins a WHERE a.tenant_id = t.id) AS admins
+              (SELECT count(*)::int FROM admins a WHERE a.tenant_id = t.id) AS admins,
+              (SELECT count(*)::int FROM appointments ap WHERE ap.tenant_id = t.id) AS appointments
        FROM tenants t ORDER BY t.created_at`
     );
     return res.rows.map((r) => ({
@@ -172,6 +174,7 @@ export const postgresStore: DataStore = {
       name: r.name,
       status: r.status,
       admins: r.admins,
+      appointments: r.appointments,
       createdAt: iso(r.created_at),
     }));
   },
@@ -184,6 +187,27 @@ export const postgresStore: DataStore = {
       if ((e as { code?: string }).code === '23505') throw new TenantExistsError(slug);
       throw e;
     }
+  },
+
+  async setTenantStatus(slug, status) {
+    await query(`UPDATE tenants SET status = $2, updated_at = now() WHERE slug = $1`, [norm(slug), status]);
+  },
+
+  async deleteTenant(slug) {
+    await withTransaction(async (c) => {
+      const tid = await tenantId(c, slug);
+      // appointments no tiene cascada a propósito: son datos de clientes
+      // reales. Se comprueba antes para dar un mensaje legible en vez de
+      // dejar escapar el error de la llave foránea.
+      const citas = await c.query<{ n: number }>(
+        'SELECT count(*)::int AS n FROM appointments WHERE tenant_id = $1',
+        [tid]
+      );
+      if (citas.rows[0].n > 0) throw new TenantHasDataError(slug, citas.rows[0].n);
+      // El resto (configuración, servicios, horario, bloqueos, barberos,
+      // admins y sus enlaces) se va en cascada con la fila de tenants.
+      await c.query('DELETE FROM tenants WHERE id = $1', [tid]);
+    });
   },
 
   async saveCatalog(slug, catalog: EditableCatalog, updatedBy) {

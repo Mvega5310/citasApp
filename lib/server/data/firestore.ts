@@ -7,6 +7,7 @@ import type { SalonSettings } from '../settings';
 import {
   ACTIVE_STATUSES,
   TenantExistsError,
+  TenantHasDataError,
   type AdminRecord,
   type AppointmentPatch,
   type AppointmentRecord,
@@ -89,11 +90,22 @@ export const firestoreStore: DataStore = {
           name: String(d.name ?? ''),
           status: d.active === false ? 'suspended' : 'active',
           admins: admins.docs.filter((a) => adminTenantOf(a.data() ?? {}) === doc.id).length,
+          appointments: (await appointmentsCol(adminDb(), doc.id).count().get()).data().count,
           createdAt: toIso(d.createdAt),
         };
       })
     );
     return resumen;
+  },
+
+  async setTenantStatus(slug, status) {
+    await adminDb().collection('tenants').doc(slug).set({ active: status === 'active' }, { merge: true });
+  },
+
+  async deleteTenant(slug) {
+    const n = (await appointmentsCol(adminDb(), slug).count().get()).data().count;
+    if (n > 0) throw new TenantHasDataError(slug, n);
+    await adminDb().collection('tenants').doc(slug).delete();
   },
 
   async createTenant({ slug, name }) {
