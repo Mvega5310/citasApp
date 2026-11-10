@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512" fill="currentColor" role="img" aria-labelledby="btm-title btm-desc">
+  <title id="btm-title">BeautyTurno</title>
+  <desc id="btm-desc">Versión en un solo color: toma el color del texto que la rodea. Para favicon y pie de correo.</desc>
+  <circle cx="50" cy="50" r="43" fill="none" stroke="currentColor" stroke-width="7"/>
+  <g transform="translate(50 52) scale(0.68) translate(-50 -52)">
+    <path d="M50,82 C40,70 37,50 50,34 C63,50 60,70 50,82 Z" transform="rotate(-38 50 82)"/>
+    <path d="M50,82 C40,70 37,50 50,34 C63,50 60,70 50,82 Z" transform="rotate(38 50 82)"/>
+    <path d="M50,82 C40,70 37,50 50,34 C63,50 60,70 50,82 Z" transform="rotate(74 50 82)"/>
+    <path d="M50,82 C40,70 37,50 50,34 C63,50 60,70 50,82 Z" transform="rotate(-74 50 82)"/>
+    <circle cx="50" cy="24" r="13"/>
+  </g>
+</svg>
