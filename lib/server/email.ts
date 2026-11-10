@@ -234,6 +234,7 @@ function buildAdminBookingEmail(payload: {
   clientWhatsApp: string;
   date: string;
   time: string;
+  barberName?: string | null;
 }) {
   const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
@@ -256,6 +257,7 @@ function buildAdminBookingEmail(payload: {
             Se ha registrado una nueva cita. Aquí están los detalles:
           </p>
           ${buildRow('Servicio', payload.serviceName)}
+          ${payload.barberName ? buildRow('Barbero', payload.barberName) : ''}
           ${buildRow('Cliente', payload.clientName)}
           ${buildRow('Email', payload.clientEmail)}
           ${buildRow('WhatsApp', payload.clientWhatsApp)}
@@ -282,6 +284,7 @@ function buildClientConfirmationEmail(payload: {
   date: string;
   time: string;
   cancelUrl?: string;
+  barberName?: string | null;
 }) {
   const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
@@ -316,6 +319,7 @@ function buildClientConfirmationEmail(payload: {
             Hola <strong>${payload.clientName}</strong>, tu reserva ha sido registrada con éxito. 🎉
           </p>
           ${buildRow('Servicio', payload.serviceName)}
+          ${payload.barberName ? buildRow('Te atiende', payload.barberName) : ''}
           ${buildRow('Fecha', dateFormatted)}
           ${buildRow('Hora', payload.time)}
           <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
@@ -515,6 +519,7 @@ export async function sendBookingNotification(payload: {
   date: string;
   time: string;
   cancelUrl?: string;
+  barberName?: string | null;
 }, recipients?: NotifyRecipients): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
   const transporter = mailerFor(payload.brand);
   const from = senderFor(payload.brand);

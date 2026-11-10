@@ -18,6 +18,8 @@ export interface Appointment {
   time: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   groupId?: string;
+  /** Barbero asignado. Ausente en las citas anteriores a que existieran. */
+  barberId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

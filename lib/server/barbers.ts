@@ -17,8 +17,18 @@ import { ACTIVE_STATUSES, isStoreConfigured, store } from './data';
  * el siguiente sin volver a preguntarle al cliente.
  */
 export type ResolucionBarbero =
-  | { ok: true; barberId: string | null; candidatos: string[] }
+  | { ok: true; barberId: string | null; barberName: string | null; candidatos: string[] }
   | { ok: false; error: string; status: number };
+
+/** Nombre de un barbero, para los correos y el panel. null si no hay. */
+export async function nombreDeBarbero(tenantSlug: string, barberId: string | null): Promise<string | null> {
+  if (!barberId || !isStoreConfigured()) return null;
+  try {
+    return (await store().listBarbers(tenantSlug)).find((b) => b.id === barberId)?.name ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function resolverBarbero(
   tenantSlug: string,
@@ -26,7 +36,7 @@ export async function resolverBarbero(
   time: string,
   pedido: string | null | undefined
 ): Promise<ResolucionBarbero> {
-  if (!isStoreConfigured()) return { ok: true, barberId: null, candidatos: [] };
+  if (!isStoreConfigured()) return { ok: true, barberId: null, barberName: null, candidatos: [] };
 
   let equipo: { id: string; name: string; active: boolean }[];
   try {
@@ -34,14 +44,14 @@ export async function resolverBarbero(
   } catch {
     // Si no se puede leer el equipo, no se inventa un barbero: la cita queda
     // sin asignar y el negocio la reparte después.
-    return { ok: true, barberId: null, candidatos: [] };
+    return { ok: true, barberId: null, barberName: null, candidatos: [] };
   }
 
   if (equipo.length === 0) {
     if (pedido) {
       return { ok: false, error: 'Esta barbería no trabaja con barberos asignados.', status: 400 };
     }
-    return { ok: true, barberId: null, candidatos: [] };
+    return { ok: true, barberId: null, barberName: null, candidatos: [] };
   }
 
   let delDia: { time: string; status: string; barberId?: string | null }[] = [];
@@ -69,7 +79,7 @@ export async function resolverBarbero(
         status: 409,
       };
     }
-    return { ok: true, barberId: elegido.id, candidatos: [elegido.id] };
+    return { ok: true, barberId: elegido.id, barberName: elegido.name, candidatos: [elegido.id] };
   }
 
   const libres = equipo.filter((b) => !ocupadosEnLaFranja.has(b.id));
@@ -86,5 +96,5 @@ export async function resolverBarbero(
       equipo.indexOf(a) - equipo.indexOf(b)
   );
 
-  return { ok: true, barberId: orden[0].id, candidatos: orden.map((b) => b.id) };
+  return { ok: true, barberId: orden[0].id, barberName: orden[0].name, candidatos: orden.map((b) => b.id) };
 }

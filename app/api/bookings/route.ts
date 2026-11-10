@@ -9,7 +9,7 @@ import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
 import { isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
-import { resolverBarbero } from '@/lib/server/barbers';
+import { resolverBarbero, nombreDeBarbero } from '@/lib/server/barbers';
 
 
 export async function POST(request: NextRequest) {
@@ -119,6 +119,9 @@ export async function POST(request: NextRequest) {
         date: booking.date,
         time: booking.time,
         cancelUrl,
+        // Quién atiende, para que el negocio lo vea de un vistazo y el cliente
+        // sepa con quién va. Puede ser otro del pedido si hubo reintento.
+        barberName: asignado ? await nombreDeBarbero(tenantSlug, asignado) : barbero.barberName,
         brand: emailCtx.brand,
       }, emailCtx.recipients);
     } catch (error) {
