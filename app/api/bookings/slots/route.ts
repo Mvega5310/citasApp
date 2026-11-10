@@ -59,8 +59,20 @@ export async function GET(request: NextRequest) {
           .map(([hora]) => hora);
       }
 
+      // Ocupación real por franja, para el panel. `booked` responde a "¿puede
+      // el cliente reservar aquí?" y con varios barberos solo se llena cuando
+      // no queda ninguno; Gestión de horarios necesita la otra pregunta:
+      // "¿qué está pasando a esta hora?".
+      const ocupacion: Record<string, { tomados: number; total: number }> = {};
+      const total = equipo.length;
+      for (const a of activas) {
+        const actual = ocupacion[a.time] ?? { tomados: 0, total };
+        actual.tomados += 1;
+        ocupacion[a.time] = actual;
+      }
+
       const unavailable = Array.from(new Set([...ocupados, ...blocked]));
-      return NextResponse.json({ booked: unavailable, blocked });
+      return NextResponse.json({ booked: unavailable, blocked, ocupacion });
     } catch {}
   }
 

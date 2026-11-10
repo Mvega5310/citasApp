@@ -30,7 +30,10 @@ function offsetDate(dateStr: string, days: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-type SlotStatus = 'available' | 'blocked' | 'booked';
+type SlotStatus = 'available' | 'blocked' | 'booked' | 'partial';
+
+/** Cuántos barberos están tomados en cada franja. */
+type Ocupacion = Record<string, { tomados: number; total: number }>;
 
 export default function HorariosPage() {
   const [date, setDate] = useState(todayStr());
@@ -38,6 +41,7 @@ export default function HorariosPage() {
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
+  const [ocupacion, setOcupacion] = useState<Ocupacion>({});
 
   // All 30-min slots for the selected day (respects workingSchedule)
   const { catalog } = useCatalog();
@@ -47,6 +51,7 @@ export default function HorariosPage() {
     setLoading(true);
     setBookedSlots([]);
     setBlockedSlots([]);
+    setOcupacion({});
     try {
       const [bookedRes, blockedRes] = await Promise.all([
         fetch(`/api/bookings/slots?date=${date}`),
@@ -57,6 +62,7 @@ export default function HorariosPage() {
         // The slots API merges blocked into booked; use the separate blocked field
         setBookedSlots((data.booked ?? []).filter((s: string) => !(data.blocked ?? []).includes(s)));
         setBlockedSlots(data.blocked ?? []);
+        setOcupacion(data.ocupacion ?? {});
       }
       if (blockedRes.ok) {
         const data = await blockedRes.json();
@@ -72,9 +78,23 @@ export default function HorariosPage() {
   }, [loadSlots]);
 
   const getStatus = (slot: string): SlotStatus => {
+    // La ocupación manda: `booked` del API responde a "¿puede el cliente
+    // reservar?", que con varios barberos solo se llena cuando no queda
+    // ninguno libre. Aquí interesa qué está pasando de verdad en la franja.
+    const ocupada = ocupacion[slot];
+    if (ocupada && ocupada.tomados > 0) {
+      // total 0 = la barbería no usa barberos: una cita llena la franja
+      return ocupada.total === 0 || ocupada.tomados >= ocupada.total ? 'booked' : 'partial';
+    }
     if (bookedSlots.includes(slot)) return 'booked';
     if (blockedSlots.includes(slot)) return 'blocked';
     return 'available';
+  };
+
+  /** "1 de 3" para las franjas a medio llenar. */
+  const etiquetaOcupacion = (slot: string): string => {
+    const o = ocupacion[slot];
+    return o ? `${o.tomados} de ${o.total}` : 'Con cita';
   };
 
   const callApi = async (slots: string[], action: 'block' | 'unblock') => {
@@ -283,7 +303,9 @@ export default function HorariosPage() {
                         disabled={status === 'booked' || !!saving}
                         title={
                           status === 'booked'
-                            ? 'Este horario tiene una cita'
+                            ? 'Este horario está lleno'
+                            : status === 'partial'
+                            ? `${etiquetaOcupacion(slot)} ocupados · clic para bloquear el resto`
                             : status === 'blocked'
                             ? 'Clic para habilitar'
                             : 'Clic para bloquear'
@@ -295,6 +317,9 @@ export default function HorariosPage() {
                             : '',
                           status === 'blocked'
                             ? 'border-red-500/30 bg-red-500/10 text-red-300 hover:bg-red-500/20 hover:border-red-400 cursor-pointer'
+                            : '',
+                          status === 'partial'
+                            ? 'border-cafe-gold/40 bg-cafe-gold/10 text-cafe-goldlight hover:bg-cafe-gold/20 hover:border-cafe-gold cursor-pointer'
                             : '',
                           status === 'booked'
                             ? 'border-cafe-border bg-cafe-soft text-cafe-subtle cursor-not-allowed'
@@ -310,7 +335,11 @@ export default function HorariosPage() {
                           <>
                             <span className="font-bold tracking-wide">{slot}</span>
                             <span className="text-[10px] opacity-60 mt-0.5 font-normal">
-                              {status === 'available' ? 'Libre' : status === 'blocked' ? 'Bloqueado' : 'Con cita'}
+                              {status === 'available'
+                                ? 'Libre'
+                                : status === 'blocked'
+                                ? 'Bloqueado'
+                                : etiquetaOcupacion(slot)}
                             </span>
                           </>
                         )}
@@ -324,7 +353,8 @@ export default function HorariosPage() {
                   {[
                     { label: 'Disponibles', count: countByStatus('available'), bg: 'bg-emerald-500/10', text: 'text-emerald-300' },
                     { label: 'Bloqueadas', count: countByStatus('blocked'), bg: 'bg-red-500/10', text: 'text-red-300' },
-                    { label: 'Con cita', count: countByStatus('booked'), bg: 'bg-cafe-soft', text: 'text-cafe-text' },
+                    { label: 'A medias', count: countByStatus('partial'), bg: 'bg-cafe-gold/10', text: 'text-cafe-goldlight' },
+                    { label: 'Llenas', count: countByStatus('booked'), bg: 'bg-cafe-soft', text: 'text-cafe-text' },
                   ].map(({ label, count, bg, text }) => (
                     <div key={label} className={`rounded-xl p-3 ${bg}`}>
                       <p className={`text-2xl font-bold ${text}`}>{count}</p>
