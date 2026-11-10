@@ -112,6 +112,9 @@ export default function AdminPage() {
   // id -> nombre, incluidos los inactivos: una cita vieja puede ser de alguien
   // que ya no está en el equipo y aun así hay que poder leer su nombre.
   const [nombresBarbero, setNombresBarbero] = useState<Record<string, string>>({});
+  // Solo si la barbería usa barberos tiene sentido avisar de "sin asignar":
+  // donde no los hay, todas las citas lo estarían y sería puro ruido.
+  const usaBarberos = Object.keys(nombresBarbero).length > 0;
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [total, setTotal] = useState(0);
 
@@ -648,12 +651,17 @@ export default function AdminPage() {
                                 <span className="inline-flex bg-cafe-gold/10 text-cafe-goldlight px-3 py-1.5 rounded-lg text-sm font-semibold">
                                   {apt.serviceName}
                                 </span>
-                                {apt.barberId && (
+                                {apt.barberId ? (
                                   <span className="inline-flex items-center gap-1.5 bg-cafe-soft text-cafe-muted px-3 py-1.5 rounded-lg text-sm border border-cafe-border">
                                     <UserRound className="w-3.5 h-3.5 shrink-0" />
                                     {nombresBarbero[apt.barberId] ?? apt.barberId}
                                   </span>
-                                )}
+                                ) : usaBarberos ? (
+                                  <span className="inline-flex items-center gap-1.5 text-cafe-subtle px-3 py-1.5 rounded-lg text-sm border border-dashed border-cafe-border">
+                                    <UserRound className="w-3.5 h-3.5 shrink-0" />
+                                    Sin asignar
+                                  </span>
+                                ) : null}
                               </div>
 
                               <div className="flex items-center gap-2 text-sm text-cafe-muted">
@@ -833,12 +841,17 @@ export default function AdminPage() {
 
                               <td className="px-5 py-4">
                                 <span className="text-sm text-cafe-text">{apt.serviceName}</span>
-                                {apt.barberId && (
+                                {apt.barberId ? (
                                   <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
                                     <UserRound className="w-3 h-3 shrink-0" />
                                     {nombresBarbero[apt.barberId] ?? apt.barberId}
                                   </p>
-                                )}
+                                ) : usaBarberos ? (
+                                  <p className="text-xs text-cafe-subtle flex items-center gap-1 mt-0.5">
+                                    <UserRound className="w-3 h-3 shrink-0" />
+                                    Sin asignar
+                                  </p>
+                                ) : null}
                               </td>
 
                               <td className="px-5 py-4">
