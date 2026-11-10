@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
+import QrCard from '@/components/admin/QrCard';
 import {
   Store, Phone, MapPin, Mail, Instagram, Facebook,
   MessageCircle, Bell, Save, CheckCircle, Settings,
@@ -277,6 +278,12 @@ export default function ConfiguracionPage() {
                 </button>
               </div>
             </form>
+          )}
+
+          {!loading && (
+            <div className="mt-6">
+              <QrCard />
+            </div>
           )}
         </div>
       </div>
