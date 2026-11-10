@@ -100,10 +100,14 @@ const selectCls =
   'text-xs bg-cafe-soft text-cafe-text border border-cafe-border rounded-lg px-2 py-2 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-cafe-gold/50 disabled:opacity-50';
 const iconBtnCls = 'p-1.5 rounded-lg transition-colors';
 
+/** Filas por página en el listado de citas. */
+const POR_PAGINA = 20;
+
 export default function AdminPage() {
   const router = useRouter();
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [pagina, setPagina] = useState(1);
   const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
   const [total, setTotal] = useState(0);
 
@@ -166,7 +170,12 @@ export default function AdminPage() {
     }
 
     setAppointments(filtered);
+    // Al cambiar el filtro, volver al principio: quedarse en la página 7 de
+    // un resultado que ahora tiene 2 deja la pantalla vacía sin explicación.
+    setPagina(1);
   }, [allAppointments, filterStatus, filterDate]);
+
+
 
   useEffect(() => {
     fetchAppointments();
@@ -333,18 +342,25 @@ export default function AdminPage() {
   };
 
   // Seleccionar solamente las citas visibles
-  const allSelected = appointments.length > 0 && appointments.every((apt) => selectedIds.has(apt.id));
+  // Paginación en pantalla: con una barbería que trabaja a diario, el listado
+  // completo son miles de filas y el navegador las pinta todas.
+  const totalPaginas = Math.max(1, Math.ceil(appointments.length / POR_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const desde = (paginaActual - 1) * POR_PAGINA;
+  const visibles = appointments.slice(desde, desde + POR_PAGINA);
 
-  const someSelected = appointments.some((apt) => selectedIds.has(apt.id)) && !allSelected;
+  const allSelected = visibles.length > 0 && visibles.every((apt) => selectedIds.has(apt.id));
+
+  const someSelected = visibles.some((apt) => selectedIds.has(apt.id)) && !allSelected;
 
   const toggleSelectAll = () => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
 
       if (allSelected) {
-        appointments.forEach((apt) => next.delete(apt.id));
+        visibles.forEach((apt) => next.delete(apt.id));
       } else {
-        appointments.forEach((apt) => next.add(apt.id));
+        visibles.forEach((apt) => next.add(apt.id));
       }
 
       return next;
@@ -517,8 +533,12 @@ export default function AdminPage() {
               <div className="bg-cafe-card rounded-2xl border border-cafe-border overflow-hidden">
                 <div className="px-5 py-4 border-b border-cafe-border flex items-center justify-between">
                   <h2 className="font-display font-medium text-cafe-text text-lg">Citas</h2>
-                  <span className="text-xs text-cafe-muted">
-                    {appointments.length} resultado{appointments.length !== 1 ? 's' : ''}
+                  <span className="text-xs text-cafe-muted tabular-nums">
+                    {appointments.length === 0
+                      ? '0 resultados'
+                      : appointments.length <= POR_PAGINA
+                        ? `${appointments.length} resultado${appointments.length !== 1 ? 's' : ''}`
+                        : `${desde + 1}–${desde + visibles.length} de ${appointments.length}`}
                   </span>
                 </div>
 
@@ -563,7 +583,7 @@ export default function AdminPage() {
                         <span className="text-sm text-cafe-muted font-medium">Seleccionar todas</span>
                       </div>
 
-                      {appointments.map((apt) => {
+                      {visibles.map((apt) => {
                         const isEditing = editingId === apt.id;
                         const isSaving = savingStatusId === apt.id;
 
@@ -749,7 +769,7 @@ export default function AdminPage() {
                         </thead>
 
                         <tbody className="divide-y divide-cafe-border">
-                          {appointments.map((apt) => (
+                          {visibles.map((apt) => (
                             <tr
                               key={apt.id}
                               className={`transition-colors ${
@@ -868,6 +888,30 @@ export default function AdminPage() {
                       </table>
                     </div>
                   </>
+                )}
+
+                {totalPaginas > 1 && (
+                  <div className="px-5 py-4 border-t border-cafe-border flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPagina(paginaActual - 1)}
+                      disabled={paginaActual === 1}
+                      className="px-3 py-2 text-xs font-medium rounded-lg border border-cafe-border text-cafe-muted hover:text-cafe-text hover:border-cafe-gold transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-cafe-border"
+                    >
+                      Anteriores
+                    </button>
+                    <span className="text-xs text-cafe-muted tabular-nums">
+                      Página {paginaActual} de {totalPaginas}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPagina(paginaActual + 1)}
+                      disabled={paginaActual === totalPaginas}
+                      className="px-3 py-2 text-xs font-medium rounded-lg border border-cafe-border text-cafe-muted hover:text-cafe-text hover:border-cafe-gold transition disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-cafe-border"
+                    >
+                      Siguientes
+                    </button>
+                  </div>
                 )}
               </div>
             </>

@@ -178,7 +178,7 @@ export default function AdminSidebar() {
       </aside>
 
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-cafe-bg/95 backdrop-blur-md border-b border-cafe-border flex items-center justify-between px-4 h-14">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-cafe-bg/95 backdrop-blur-md border-b border-cafe-border flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -200,12 +200,19 @@ export default function AdminSidebar() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/60" onClick={() => setMobileOpen(false)}>
+        /* z-50 para quedar por encima de la barra inferior (z-40): con z-30
+           la barra tapaba justo la franja del perfil y Configuración. La barra
+           superior sube a z-[60] para que su botón de cerrar siga encima. */
+        <div className="md:hidden fixed inset-0 z-50 bg-black/60" onClick={() => setMobileOpen(false)}>
           <div
             className="absolute top-14 left-0 bottom-0 w-64 bg-cafe-soft border-r border-cafe-border flex flex-col"
             onClick={(e) => e.stopPropagation()}
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
-            <NavLinks onClose={() => setMobileOpen(false)} />
+            {/* El menú se desplaza si no cabe; el perfil queda anclado abajo */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              <NavLinks onClose={() => setMobileOpen(false)} />
+            </div>
             <ProfileSection onClose={() => setMobileOpen(false)} />
           </div>
         </div>

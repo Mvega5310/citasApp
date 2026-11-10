@@ -6,7 +6,7 @@ import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import QrCard from '@/components/admin/QrCard';
 import {
   Store, Phone, MapPin, Mail, Instagram, Facebook,
-  MessageCircle, Bell, Save, CheckCircle, Settings,
+  MessageCircle, Bell, Save, CheckCircle, Settings, QrCode,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -22,6 +22,13 @@ type SalonSettings = {
   notifyClient: boolean;
   notifyAdmin: boolean;
 };
+
+const ACCESOS = [
+  { id: 'salon', label: 'Inf. salón', Icon: Store },
+  { id: 'redes', label: 'Redes sociales', Icon: Instagram },
+  { id: 'correos', label: 'Not. email', Icon: Bell },
+  { id: 'qr', label: 'Código QR', Icon: QrCode },
+] as const;
 
 const DEFAULTS: SalonSettings = {
   salonName: 'Marcos BarberShop',
@@ -156,9 +163,23 @@ export default function ConfiguracionPage() {
               <div className="w-8 h-8 border-2 border-cafe-border border-t-cafe-gold rounded-full animate-spin" />
             </div>
           ) : (
+            <>
+            {/* Accesos rápidos: el código QR quedaba al final y no se veía */}
+            <nav aria-label="Secciones" className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+              {ACCESOS.map(({ id, label, Icon }) => (
+                <a
+                  key={id}
+                  href={`#${id}`}
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-cafe-border bg-cafe-card px-2 py-3 text-center text-[11px] font-medium text-cafe-muted hover:border-cafe-gold hover:text-cafe-text transition min-h-[72px]"
+                >
+                  <Icon className="w-5 h-5 text-cafe-goldlight shrink-0" />
+                  {label}
+                </a>
+              ))}
+            </nav>
             <form onSubmit={handleSave} className="space-y-6">
               {/* Información general */}
-              <div className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
+              <div id="salon" className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6 scroll-mt-32">
                 <h2 className="text-base font-semibold text-cafe-text mb-5 flex items-center gap-2">
                   <Store className="w-4 h-4 text-cafe-goldlight" />
                   Información del salón
@@ -206,7 +227,7 @@ export default function ConfiguracionPage() {
               </div>
 
               {/* Redes sociales */}
-              <div className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
+              <div id="redes" className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6 scroll-mt-32">
                 <h2 className="text-base font-semibold text-cafe-text mb-5 flex items-center gap-2">
                   <Settings className="w-4 h-4 text-cafe-goldlight" />
                   Redes sociales
@@ -239,7 +260,7 @@ export default function ConfiguracionPage() {
               </div>
 
               {/* Notificaciones */}
-              <div className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
+              <div id="correos" className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6 scroll-mt-32">
                 <h2 className="text-base font-semibold text-cafe-text mb-5 flex items-center gap-2">
                   <Bell className="w-4 h-4 text-cafe-goldlight" />
                   Notificaciones por email
@@ -278,12 +299,11 @@ export default function ConfiguracionPage() {
                 </button>
               </div>
             </form>
-          )}
 
-          {!loading && (
-            <div className="mt-6">
+            <div id="qr" className="mt-6 scroll-mt-32">
               <QrCard />
             </div>
+            </>
           )}
         </div>
       </div>
