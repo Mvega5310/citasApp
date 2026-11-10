@@ -1,11 +1,13 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import { useCatalog } from '@/lib/shared/useCatalog';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Check, CheckCircle2, Eye, EyeOff, Lock, X } from 'lucide-react';
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Marcos BarberShop';
+// El nombre sale del catálogo: es por barbería, no de la variable global.
+const NOMBRE_GENERICO = 'Barbería';
 
 const inputCls =
   'w-full bg-cafe-soft border border-cafe-border rounded-lg pl-10 pr-12 py-3 text-cafe-text placeholder-cafe-subtle focus:outline-none focus:ring-2 focus:ring-cafe-gold/50 focus:border-transparent transition';
@@ -159,13 +161,15 @@ function PasswordForm() {
 }
 
 export default function PasswordPage() {
+  const { catalog } = useCatalog();
+  const nombre = catalog?.salonName ?? '';
   return (
     <div className="min-h-screen bg-cafe-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/api/logo?size=128" alt={APP_NAME} className="inline-flex w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover" />
-          <h1 className="text-2xl font-display font-medium text-cafe-text">{APP_NAME}</h1>
+          <img src="/api/logo?size=128" alt={nombre || NOMBRE_GENERICO} className="inline-flex w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover" />
+          <h1 className="text-2xl font-display font-medium text-cafe-text">{nombre}</h1>
           <p className="text-cafe-muted text-sm mt-1">Panel de Administración</p>
         </div>
         <div className="bg-cafe-card rounded-2xl shadow-lg border border-cafe-border p-8">

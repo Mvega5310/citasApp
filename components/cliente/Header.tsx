@@ -6,7 +6,10 @@ import { Clock, LockKeyhole } from 'lucide-react';
 import type { WeekSchedule } from '@/lib/shared/services';
 import { useCatalog } from '@/lib/shared/useCatalog';
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'Marcos BarberShop';
+// El nombre llega en el catálogo, que es por barbería. Mientras carga queda
+// vacío a propósito: mostrar un nombre de respaldo enseñaría el de otra
+// barbería durante un instante, y eso confunde más que un hueco.
+const NOMBRE_GENERICO = 'Barbería';
 
 const navLinks = [
   { href: '/', label: 'Inicio', exact: true },
@@ -37,13 +40,13 @@ export default function Header() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/api/logo?size=64"
-              alt={APP_NAME}
+              alt={catalog?.salonName || NOMBRE_GENERICO}
               width={36}
               height={36}
               className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border"
             />
             <span className="font-display text-lg font-medium tracking-tight text-cafe-text hidden min-[420px]:block">
-              {APP_NAME}
+              {catalog?.salonName ?? ''}
             </span>
           </Link>
 

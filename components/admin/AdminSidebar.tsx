@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useCatalog } from '@/lib/shared/useCatalog';
 import {
   LogOut,
   Menu,
@@ -29,7 +30,10 @@ const navItems = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const tenantName = process.env.NEXT_PUBLIC_APP_NAME ?? 'Marcos BarberShop';
+  // Del catálogo, que es por barbería: la variable de compilación es la misma
+  // para todo el despliegue y mostraría el nombre de otra barbería.
+  const { catalog } = useCatalog();
+  const tenantName = catalog?.salonName ?? '';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profile, setProfile] = useState<AdminProfile>({ name: 'Administrador', email: '' });

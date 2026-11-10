@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Catalog } from './services';
+import type { PublicCatalog } from './services';
 
 // Una sola petición por carga de página, compartida por todos los componentes.
-let pending: Promise<Catalog | null> | null = null;
+let pending: Promise<PublicCatalog | null> | null = null;
 
-function loadCatalog(): Promise<Catalog | null> {
+function loadCatalog(): Promise<PublicCatalog | null> {
   pending ??= fetch('/api/catalog', { cache: 'no-store' })
-    .then((res) => (res.ok ? (res.json() as Promise<Catalog>) : null))
+    .then((res) => (res.ok ? (res.json() as Promise<PublicCatalog>) : null))
     .catch(() => null)
     .then((catalog) => {
       if (!catalog) pending = null; // permite reintentar si falló
@@ -18,8 +18,8 @@ function loadCatalog(): Promise<Catalog | null> {
 }
 
 /** Catálogo (servicios + horario) de la barbería actual. `null` mientras carga o si falla. */
-export function useCatalog(): { catalog: Catalog | null; loading: boolean } {
-  const [catalog, setCatalog] = useState<Catalog | null>(null);
+export function useCatalog(): { catalog: PublicCatalog | null; loading: boolean } {
+  const [catalog, setCatalog] = useState<PublicCatalog | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

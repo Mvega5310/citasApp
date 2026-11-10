@@ -1,11 +1,13 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import { useCatalog } from '@/lib/shared/useCatalog';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock, Eye, EyeOff, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? 'Marcos BarberShop';
+// El nombre sale del catálogo: es por barbería, no de la variable global.
+const NOMBRE_GENERICO = 'Barbería';
 
 function LoginForm() {
   const router = useRouter();
@@ -194,6 +196,8 @@ function LoginForm() {
 }
 
 export default function AdminLoginPage() {
+  const { catalog } = useCatalog();
+  const nombre = catalog?.salonName ?? '';
   return (
     <div className="min-h-screen bg-cafe-bg flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -201,10 +205,10 @@ export default function AdminLoginPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/api/logo?size=128"
-            alt={APP_NAME}
+            alt={nombre || NOMBRE_GENERICO}
             className="inline-flex w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover"
           />
-          <h1 className="text-2xl font-bold text-cafe-text font-serif">{APP_NAME}</h1>
+          <h1 className="text-2xl font-bold text-cafe-text font-serif">{nombre}</h1>
           <p className="text-cafe-muted text-sm mt-1">Panel de Administración</p>
         </div>
 
@@ -221,7 +225,7 @@ export default function AdminLoginPage() {
         </div>
 
         <p className="text-center text-xs text-cafe-subtle mt-6">
-          Solo personal autorizado · {APP_NAME} © {new Date().getFullYear()}
+          Solo personal autorizado{nombre ? ` · ${nombre}` : ""} © {new Date().getFullYear()}
         </p>
       </div>
     </div>

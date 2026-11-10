@@ -6,7 +6,7 @@ import Header from '@/components/cliente/Header';
 import WhatsAppButton from '@/components/cliente/WhatsAppButton';
 import BottomNav from '@/components/cliente/BottomNav';
 import ServiceIcon from '@/components/shared/ServiceIcon';
-import { getPageCatalog } from '@/lib/server/pageTenant';
+import { getPageCatalogWithName } from '@/lib/server/pageTenant';
 
 const testimonial = {
   name: 'Carlos M.',
@@ -17,10 +17,9 @@ const testimonial = {
 };
 
 const WHATSAPP = '573024075828';
-const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || 'Marcos BarberShop';
 
 export default async function HomePage() {
-  const { services } = await getPageCatalog();
+  const { services, salonName } = await getPageCatalogWithName();
   const featured = services.slice(0, 3);
 
   return (
@@ -54,7 +53,7 @@ export default async function HomePage() {
             <div className="flex items-center gap-3">
               <span className="h-px w-8 bg-cafe-gold" aria-hidden="true" />
               <span className="font-display text-sm sm:text-base tracking-wide text-cafe-goldlight">
-                {APP_NAME}
+                {salonName}
               </span>
             </div>
 

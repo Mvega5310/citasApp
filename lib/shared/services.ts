@@ -90,6 +90,16 @@ export type WeekSchedule = Record<number, DaySchedule>;
 /** Catálogo de una barbería: servicios activos y horario general. */
 export type Catalog = { services: Service[]; schedule: WeekSchedule };
 
+/**
+ * Lo que devuelve /api/catalog: el catálogo más el nombre del negocio.
+ *
+ * El nombre va aquí y no dentro de Catalog porque Catalog lo arma `catalogFor`,
+ * que es síncrono y no consulta la base, mientras que el nombre vive en la
+ * configuración de cada barbería y hay que leerlo. Separarlos evita que la
+ * validación de reservas, que también usa Catalog, cargue algo que no necesita.
+ */
+export type PublicCatalog = Catalog & { salonName: string };
+
 // Horarios por día de la semana (0=Domingo...6=Sábado)
 export const workingSchedule: WeekSchedule = {
   0: { start: '09:00', end: '17:00' },
