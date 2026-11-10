@@ -4,6 +4,7 @@ import type { Catalog, PublicCatalog } from '../shared/services';
 import { resolveTenant } from './tenant';
 import { catalogFor } from './catalog';
 import { readSettings } from './settings';
+import { store } from './data';
 
 /**
  * Catálogo de la barbería para páginas del servidor (Server Components).
@@ -25,6 +26,13 @@ export async function getPageCatalog(): Promise<Catalog> {
 export async function getPageCatalogWithName(): Promise<PublicCatalog> {
   const result = await resolveTenant(headers().get('x-tenant-slug'));
   if (!result.ok) notFound();
-  const settings = await readSettings(result.tenant);
-  return { ...catalogFor(result.tenant), salonName: settings.salonName };
+  const [settings, barbers] = await Promise.all([
+    readSettings(result.tenant),
+    store().listBarbers(result.tenant.slug).catch(() => []),
+  ]);
+  return {
+    ...catalogFor(result.tenant),
+    salonName: settings.salonName,
+    barbers: barbers.filter((b) => b.active).map(({ id, name }) => ({ id, name })),
+  };
 }

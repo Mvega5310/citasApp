@@ -23,6 +23,8 @@ export type AppointmentRecord = {
   time: string; // HH:MM
   status: AppointmentStatus;
   groupId?: string | null;
+  /** Barbero asignado. null en las citas anteriores a que existieran. */
+  barberId?: string | null;
   habeasDataAccepted?: boolean;
   notificationsAccepted?: boolean;
   reminderSent?: boolean;
@@ -46,6 +48,8 @@ export type NewAppointment = {
   habeasDataAccepted: boolean;
   notificationsAccepted: boolean;
   groupId?: string;
+  /** null o ausente = sin barbero (barbería que no los usa). */
+  barberId?: string | null;
 };
 
 export type AppointmentPatch = Partial<
@@ -76,6 +80,13 @@ export type AdminRecord = {
 };
 
 export type TenantLookupResult = { found: true; config: TenantConfig } | { found: false };
+
+/** Un barbero del equipo. El horario es del local, no de cada barbero. */
+export type BarberRecord = {
+  id: string;
+  name: string;
+  active: boolean;
+};
 
 /** Una barbería vista desde el panel de plataforma. */
 export type TenantSummary = {
@@ -136,6 +147,12 @@ export interface DataStore {
   blockedSlots(slug: string, date: string): Promise<string[]>;
   /** Devuelve la lista final de horarios bloqueados del día. */
   updateBlockedSlots(slug: string, date: string, slots: string[], action: 'block' | 'unblock'): Promise<string[]>;
+
+  // ── Barberos ──
+  /** Barberos de la barbería, en orden. */
+  listBarbers(slug: string): Promise<BarberRecord[]>;
+  /** Reemplaza el equipo completo. Lanza error si se intenta quitar a alguien con citas. */
+  saveBarbers(slug: string, barbers: BarberRecord[]): Promise<void>;
 
   // ── Administradores ──
   getAdmin(id: string): Promise<AdminRecord | null>;

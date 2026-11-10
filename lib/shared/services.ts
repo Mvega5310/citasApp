@@ -98,7 +98,11 @@ export type Catalog = { services: Service[]; schedule: WeekSchedule };
  * configuración de cada barbería y hay que leerlo. Separarlos evita que la
  * validación de reservas, que también usa Catalog, cargue algo que no necesita.
  */
-export type PublicCatalog = Catalog & { salonName: string };
+export type PublicCatalog = Catalog & {
+  salonName: string;
+  /** Equipo activo. Vacío si la barbería no usa barberos. */
+  barbers: { id: string; name: string }[];
+};
 
 // Horarios por día de la semana (0=Domingo...6=Sábado)
 export const workingSchedule: WeekSchedule = {

@@ -165,11 +165,13 @@ export const firestoreStore: DataStore = {
     const now = new Date().toISOString();
     const batch = db.batch(); // todas o ninguna
     const ids: string[] = [];
-    for (const { groupId, ...item } of items) {
+    for (const { groupId, barberId, ...item } of items) {
       const ref = col.doc();
       batch.set(ref, {
         ...item,
-        ...(groupId ? { groupId } : {}), // Firestore no acepta campos undefined
+        // Firestore no acepta campos undefined: se omiten si no vienen
+        ...(groupId ? { groupId } : {}),
+        ...(barberId ? { barberId } : {}),
         tenantSlug: slug,
         status: 'pending',
         source: 'firebase',
@@ -240,6 +242,24 @@ export const firestoreStore: DataStore = {
       await ref.set({ slots: updated, updatedAt: new Date().toISOString() });
     }
     return updated;
+  },
+
+  async listBarbers(slug) {
+    const snap = await adminDb().collection('tenants').doc(slug).collection('barbers').orderBy('sortOrder').get();
+    return snap.docs.map((d) => {
+      const x = d.data() ?? {};
+      return { id: d.id, name: String(x.name ?? ''), active: x.active !== false };
+    });
+  },
+
+  async saveBarbers(slug, barbers) {
+    const col = adminDb().collection('tenants').doc(slug).collection('barbers');
+    const actuales = await col.get();
+    const quedan = new Set(barbers.map((b) => b.id));
+    const batch = adminDb().batch();
+    for (const doc of actuales.docs) if (!quedan.has(doc.id)) batch.delete(doc.ref);
+    barbers.forEach((b, i) => batch.set(col.doc(b.id), { name: b.name, active: b.active, sortOrder: i }));
+    await batch.commit();
   },
 
   async getAdmin(id) {

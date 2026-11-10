@@ -2,10 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { ACTIVE_STATUSES, isStoreConfigured, store } from '@/lib/server/data';
 
-// Horarios no disponibles de un día: citas activas + horarios bloqueados por el negocio
+/**
+ * Horarios no disponibles de un día.
+ *
+ * Sin barberos configurados se comporta como siempre: una cita por horario.
+ * Con barberos:
+ *  - `barberId=<id>` → ocupados los de ESE barbero.
+ *  - sin `barberId` ("cualquiera disponible") → ocupados solo los horarios en
+ *    los que TODOS los barberos activos están tomados; si queda uno libre, el
+ *    horario se ofrece.
+ *
+ * Los horarios bloqueados valen para todos: es el local el que cierra, no una
+ * persona.
+ */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const date = searchParams.get('date');
+  const barberId = searchParams.get('barberId')?.trim() || null;
+
   const tenantResult = await resolveRequestTenant(request);
   if (!tenantResult.ok) return tenantResult.response;
   const tenantSlug = tenantResult.tenant.slug;
@@ -16,12 +30,36 @@ export async function GET(request: NextRequest) {
 
   if (isStoreConfigured()) {
     try {
-      const [sameDay, blocked] = await Promise.all([
+      const [sameDay, blocked, barbers] = await Promise.all([
         store().appointmentsOnDate(tenantSlug, date),
         store().blockedSlots(tenantSlug, date).catch(() => [] as string[]),
+        store().listBarbers(tenantSlug).catch(() => []),
       ]);
-      const booked = sameDay.filter((a) => ACTIVE_STATUSES.includes(a.status)).map((a) => a.time);
-      const unavailable = Array.from(new Set([...booked, ...blocked]));
+
+      const activas = sameDay.filter((a) => ACTIVE_STATUSES.includes(a.status));
+      const equipo = barbers.filter((b) => b.active);
+
+      let ocupados: string[];
+      if (equipo.length === 0) {
+        // Sin equipo configurado: una cita por horario, igual que antes.
+        ocupados = activas.map((a) => a.time);
+      } else if (barberId) {
+        ocupados = activas.filter((a) => a.barberId === barberId).map((a) => a.time);
+      } else {
+        const porHorario = new Map<string, Set<string>>();
+        for (const a of activas) {
+          // Cita antigua sin barbero: no bloquea a nadie en concreto
+          if (!a.barberId) continue;
+          const tomados = porHorario.get(a.time) ?? new Set<string>();
+          tomados.add(a.barberId);
+          porHorario.set(a.time, tomados);
+        }
+        ocupados = [...porHorario.entries()]
+          .filter(([, tomados]) => equipo.every((b) => tomados.has(b.id)))
+          .map(([hora]) => hora);
+      }
+
+      const unavailable = Array.from(new Set([...ocupados, ...blocked]));
       return NextResponse.json({ booked: unavailable, blocked });
     } catch {}
   }

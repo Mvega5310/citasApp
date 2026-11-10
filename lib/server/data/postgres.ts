@@ -49,7 +49,7 @@ const APPOINTMENT_COLUMNS = `
   a.id, t.slug AS tenant_slug, a.service_id, a.service_name, a.client_name, a.client_email,
   a.client_whatsapp, a.date, a.time, a.status, a.group_id, a.habeas_data_accepted,
   a.notifications_accepted, a.reminder_sent_at, a.cancelled_at, a.cancelled_by, a.late_cancel,
-  a.source, a.created_at, a.updated_at`;
+  a.source, a.barber_id, a.created_at, a.updated_at`;
 
 type AppointmentRow = Record<string, unknown>;
 
@@ -66,6 +66,7 @@ function toAppointment(r: AppointmentRow): AppointmentRecord {
     time: r.time as string,
     status: r.status as AppointmentRecord['status'],
     groupId: (r.group_id as string | null) ?? null,
+    barberId: (r.barber_id as string | null) ?? null,
     habeasDataAccepted: r.habeas_data_accepted as boolean,
     notificationsAccepted: r.notifications_accepted as boolean,
     reminderSent: r.reminder_sent_at != null,
@@ -269,11 +270,12 @@ export const postgresStore: DataStore = {
         for (const it of items) {
           const res = await c.query<{ id: string }>(
             `INSERT INTO appointments (tenant_id, service_id, service_name, client_name, client_email,
-               client_whatsapp, date, time, status, group_id, habeas_data_accepted, notifications_accepted, source)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, 'postgres')
+               client_whatsapp, date, time, status, group_id, habeas_data_accepted, notifications_accepted, source, barber_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', $9, $10, $11, 'postgres', $12)
              RETURNING id`,
             [tid, it.serviceId, it.serviceName, it.clientName, it.clientEmail, it.clientWhatsApp,
-              it.date, it.time, it.groupId ?? null, it.habeasDataAccepted, it.notificationsAccepted]
+              it.date, it.time, it.groupId ?? null, it.habeasDataAccepted, it.notificationsAccepted,
+              it.barberId ?? null]
           );
           ids.push(res.rows[0].id);
         }
@@ -359,6 +361,46 @@ export const postgresStore: DataStore = {
         [tid, date]
       );
       return res.rows.map((r) => r.time);
+    });
+  },
+
+  async listBarbers(slug) {
+    const res = await query<{ id: string; name: string; active: boolean }>(
+      `SELECT b.id, b.name, b.active FROM barbers b JOIN tenants t ON t.id = b.tenant_id
+       WHERE t.slug = $1 ORDER BY b.sort_order, b.name`,
+      [norm(slug)]
+    );
+    return res.rows.map((r) => ({ id: r.id, name: r.name, active: r.active }));
+  },
+
+  async saveBarbers(slug, barbers) {
+    await withTransaction(async (c) => {
+      const tid = await tenantId(c, slug);
+      const quedan = barbers.map((b) => b.id);
+      // La llave foránea con RESTRICT impide borrar a alguien con citas; el
+      // error de Postgres no es legible, así que se avisa antes.
+      const conCitas = await c.query<{ barber_id: string; name: string }>(
+        `SELECT DISTINCT a.barber_id, b.name FROM appointments a JOIN barbers b
+           ON b.tenant_id = a.tenant_id AND b.id = a.barber_id
+         WHERE a.tenant_id = $1 AND a.barber_id IS NOT NULL
+           AND NOT (a.barber_id = ANY($2::text[]))`,
+        [tid, quedan]
+      );
+      if (conCitas.rowCount) {
+        const nombres = conCitas.rows.map((r) => r.name).join(', ');
+        throw new Error(
+          `No se puede quitar a ${nombres}: tiene citas registradas. Márcalo como inactivo en vez de borrarlo.`
+        );
+      }
+      await c.query(`DELETE FROM barbers WHERE tenant_id = $1 AND NOT (id = ANY($2::text[]))`, [tid, quedan]);
+      for (const [i, b] of barbers.entries()) {
+        await c.query(
+          `INSERT INTO barbers (tenant_id, id, name, active, sort_order) VALUES ($1,$2,$3,$4,$5)
+           ON CONFLICT (tenant_id, id) DO UPDATE
+             SET name = EXCLUDED.name, active = EXCLUDED.active, sort_order = EXCLUDED.sort_order`,
+          [tid, b.id, b.name, b.active, i]
+        );
+      }
     });
   },
 

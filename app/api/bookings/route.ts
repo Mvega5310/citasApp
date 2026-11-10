@@ -9,6 +9,7 @@ import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
 import { isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
+import { resolverBarbero } from '@/lib/server/barbers';
 
 
 export async function POST(request: NextRequest) {
@@ -26,11 +27,7 @@ export async function POST(request: NextRequest) {
 
     const booking = validation.data;
 
-    const [taken, blocked] = await Promise.all([
-      isSlotTaken(booking.date, booking.time, tenantSlug),
-      isSlotBlocked(booking.date, booking.time, tenantSlug),
-    ]);
-
+    const blocked = await isSlotBlocked(booking.date, booking.time, tenantSlug);
     if (blocked) {
       return NextResponse.json(
         { error: 'Este horario no está disponible en este momento. Por favor elige otro.' },
@@ -38,7 +35,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (taken) {
+    // Quién atiende. Con barberos configurados, esto ya comprueba la
+    // disponibilidad de la persona; sin ellos hay que seguir mirando la franja.
+    const barbero = await resolverBarbero(
+      tenantSlug,
+      booking.date,
+      booking.time,
+      typeof body?.barberId === 'string' ? body.barberId.trim() : null
+    );
+    if (!barbero.ok) {
+      return NextResponse.json({ error: barbero.error }, { status: barbero.status });
+    }
+
+    if (barbero.candidatos.length === 0 && (await isSlotTaken(booking.date, booking.time, tenantSlug))) {
       return NextResponse.json(
         { error: 'Este horario ya está reservado. Por favor elige otro.' },
         { status: 409 }
@@ -47,22 +56,31 @@ export async function POST(request: NextRequest) {
 
     let id: string | null = null;
     let persistence: 'firestore' | 'postgres' | null = null;
+    let asignado: string | null = null;
 
     if (isStoreConfigured()) {
-      try {
-        [id] = await store().createAppointments(tenantSlug, [booking]);
-        persistence = store().backend;
-      } catch (error) {
-        // Otro cliente tomó el horario justo antes de guardar
-        if (error instanceof SlotTakenError) {
-          return NextResponse.json(
-            { error: 'Este horario ya está reservado. Por favor elige otro.' },
-            { status: 409 }
-          );
+      // Con "cualquiera disponible" se prueba con el siguiente libre si alguien
+      // se adelantó: la base es la que decide, no la comprobación de antes.
+      const intentos = barbero.candidatos.length > 0 ? barbero.candidatos : [barbero.barberId];
+      for (const candidato of intentos) {
+        try {
+          [id] = await store().createAppointments(tenantSlug, [{ ...booking, barberId: candidato }]);
+          persistence = store().backend;
+          asignado = candidato;
+          break;
+        } catch (error) {
+          if (error instanceof SlotTakenError) continue;
+          logger.warn('booking_persist_failed', {
+            error: error instanceof Error ? error.message : 'unknown',
+          });
+          break;
         }
-        logger.warn('booking_persist_failed', {
-          error: error instanceof Error ? error.message : 'unknown',
-        });
+      }
+      if (!id && persistence === null) {
+        return NextResponse.json(
+          { error: 'Este horario ya está reservado. Por favor elige otro.' },
+          { status: 409 }
+        );
       }
     }
 
