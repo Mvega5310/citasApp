@@ -87,6 +87,9 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 - `npm test` — unitarias (incluye Resend con `fetch` simulado). Pasan.
 - `npm run test:tenants` — aislamiento entre barberías con el emulador de Firestore.
 - `npm run test:tenants -- --postgres` — lo mismo contra `citas_test` en Railway (necesita `RAILWAY_DATABASE_URL`).
+  Son **93 comprobaciones**. Ojo: la suite captura los correos por SMTP simulado, así que **con
+  `RESEND_API_KEY` en `.env.local` fallan 13** (las de correo, y las de login que dependen del
+  enlace que viaja en el correo). No es un fallo del código: coméntala para correr las pruebas.
 
 ## Decisiones tomadas
 
