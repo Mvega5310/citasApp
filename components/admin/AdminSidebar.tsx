@@ -17,6 +17,7 @@ import {
   Scissors,
   Building2,
   UserRound,
+  Store,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -124,6 +125,13 @@ export default function AdminSidebar() {
           >
             <Settings className="w-4 h-4 shrink-0" />
             Configuración
+          </button>
+          <button
+            onClick={() => { setProfileOpen(false); onClose?.(); router.push('/'); }}
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-cafe-muted hover:bg-cafe-hover hover:text-cafe-text transition-colors"
+          >
+            <Store className="w-4 h-4 shrink-0" />
+            Ver el sitio
           </button>
           <div className="border-t border-cafe-border" />
           <button

@@ -5,6 +5,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import ServiceIcon from '@/components/shared/ServiceIcon';
 import { Clock, Loader2, Plus, RotateCcw, Save, Scissors, Trash2 } from 'lucide-react';
+import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 
 // Mismo formato que devuelve /api/admin/catalog
@@ -192,6 +193,9 @@ export default function ServiciosAdminPage() {
       setServices(saved);
       setHours(data.workingHours);
       setSnapshot(JSON.stringify({ services: saved.map(({ key: _k, ...s }) => s), hours: data.workingHours }));
+      // El catálogo lo leen Horarios y el sitio del cliente: sin esto se
+      // quedaban con la copia vieja hasta recargar la página entera.
+      await invalidateCatalog();
       toast.success('Servicios y horario guardados');
     } catch {
       toast.error('Error de conexión');

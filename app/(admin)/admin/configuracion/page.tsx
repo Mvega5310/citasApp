@@ -8,6 +8,7 @@ import {
   Store, Phone, MapPin, Mail, Instagram, Facebook,
   MessageCircle, Bell, Save, CheckCircle, Settings, QrCode,
 } from 'lucide-react';
+import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 
 type SalonSettings = {
@@ -127,6 +128,8 @@ export default function ConfiguracionPage() {
       });
       if (res.ok) {
         setSaved(true);
+        // El nombre del negocio viaja en el catálogo
+        await invalidateCatalog();
         toast.success('Configuración guardada');
         setTimeout(() => setSaved(false), 3000);
       } else {

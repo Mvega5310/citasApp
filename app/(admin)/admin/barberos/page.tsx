@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { UserRound, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
+import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 
 type Barbero = { id: string; name: string; active: boolean };
@@ -79,6 +80,8 @@ export default function BarberosPage() {
       setOriginal(JSON.stringify(body.barbers));
       setGuardado(true);
       setTimeout(() => setGuardado(false), 2000);
+      // El selector del cliente lee los barberos del catálogo
+      await invalidateCatalog();
       toast.success('Equipo guardado');
     } catch {
       toast.error('Error de conexión');
