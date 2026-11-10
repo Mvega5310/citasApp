@@ -13,9 +13,14 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: '/',
     lang: 'es',
     categories: ['lifestyle', 'barbershop'],
+    // Archivos estáticos y no /api/logo: el instalador de la app los pide sin
+    // sesión y a veces antes de que el servidor esté caliente; un archivo
+    // suelto no puede fallar. 'maskable' evita que Android recorte el logo
+    // dentro de su propia máscara.
     icons: [
-      { src: '/api/logo?size=192', sizes: '192x192', type: 'image/png', purpose: 'any' },
-      { src: '/api/logo?size=512', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/icons/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: '/icons/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
 }

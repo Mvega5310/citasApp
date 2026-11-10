@@ -11,6 +11,12 @@ export const metadata: Metadata = {
   keywords: 'barbería, barber, corte de cabello, afeitado, reservas, citas, Marcos BarberShop',
   authors: [{ name: 'Marcos BarberShop' }],
   manifest: '/manifest.webmanifest',
+  // iOS no lee los iconos del manifest: usa apple-touch-icon. Sin esto, al
+  // añadir la app a la pantalla de inicio en iPhone sale un recuadro vacío.
+  icons: {
+    icon: [{ url: '/icons/logo-192.png', sizes: '192x192', type: 'image/png' }],
+    apple: [{ url: '/icons/logo-180.png', sizes: '180x180', type: 'image/png' }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
