@@ -17,6 +17,7 @@
     "db:copy": "tsx scripts/copy-firestore-to-postgres.ts",
     "db:compare": "tsx scripts/compare-firestore-postgres.ts",
     "admins:setup-emails": "tsx scripts/send-setup-emails.ts",
+    "platform:grant": "tsx scripts/grant-platform-admin.ts",
     "cron:reminder": "node scripts/cron-reminder.mjs"
   },
   "dependencies": {

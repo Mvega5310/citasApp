@@ -16,6 +16,9 @@ export async function GET(request: Request) {
           name: data.name || session.name,
           email: data.email || session.email,
           role: data.role || session.role,
+          // De la base y no del token: si se le retira la marca, el panel deja
+          // de ofrecer la sección sin esperar a que caduque la sesión.
+          platformAdmin: data.platformAdmin === true,
         });
       }
     } catch {}
@@ -26,6 +29,7 @@ export async function GET(request: Request) {
     name: session.name,
     email: session.email,
     role: session.role,
+    platformAdmin: session.platformAdmin === true,
   });
 }
 

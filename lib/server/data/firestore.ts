@@ -6,6 +6,7 @@ import type { EditableCatalog } from '../catalog';
 import type { SalonSettings } from '../settings';
 import {
   ACTIVE_STATUSES,
+  TenantExistsError,
   type AdminRecord,
   type AppointmentPatch,
   type AppointmentRecord,
@@ -63,6 +64,7 @@ function toAdmin(doc: Snap): AdminRecord {
     // Con Firebase Auth las contraseñas no las maneja la app, así que este
     // campo no existe y queda null: no invalida ninguna sesión.
     passwordChangedAt: toIso(d.passwordChangedAt),
+    platformAdmin: d.platformAdmin === true,
   };
 }
 
@@ -74,6 +76,34 @@ export const firestoreStore: DataStore = {
   async lookupTenant(slug) {
     const snap = await adminDb().collection('tenants').doc(slug).get();
     return snap.exists ? { found: true, config: { slug, ...snap.data() } as TenantConfig } : { found: false };
+  },
+
+  async listTenants() {
+    const snap = await adminDb().collection('tenants').get();
+    const resumen = await Promise.all(
+      snap.docs.map(async (doc) => {
+        const d = doc.data() ?? {};
+        const admins = await adminDb().collection('admins').get();
+        return {
+          slug: doc.id,
+          name: String(d.name ?? ''),
+          status: d.active === false ? 'suspended' : 'active',
+          admins: admins.docs.filter((a) => adminTenantOf(a.data() ?? {}) === doc.id).length,
+          createdAt: toIso(d.createdAt),
+        };
+      })
+    );
+    return resumen;
+  },
+
+  async createTenant({ slug, name }) {
+    const ref = adminDb().collection('tenants').doc(slug);
+    if ((await ref.get()).exists) throw new TenantExistsError(slug);
+    await ref.set({
+      name,
+      active: true,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
   },
 
   async saveCatalog(slug, catalog: EditableCatalog, updatedBy) {

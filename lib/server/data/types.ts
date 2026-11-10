@@ -67,9 +67,32 @@ export type AdminRecord = {
    * cambiado, que no invalida ninguna sesión.
    */
   passwordChangedAt?: string | null;
+  /**
+   * Puede crear barberías nuevas. Es una capacidad de plataforma, aparte del
+   * rol: quien la tiene sigue siendo admin o viewer de SU barbería, y no
+   * obtiene acceso a los datos de las demás.
+   */
+  platformAdmin?: boolean;
 };
 
 export type TenantLookupResult = { found: true; config: TenantConfig } | { found: false };
+
+/** Una barbería vista desde el panel de plataforma. */
+export type TenantSummary = {
+  slug: string;
+  name: string;
+  status: string;
+  admins: number;
+  createdAt: string | null;
+};
+
+/** El slug ya está tomado por otra barbería. */
+export class TenantExistsError extends Error {
+  constructor(public readonly slug: string) {
+    super(`Ya existe una barbería con la dirección "${slug}"`);
+    this.name = 'TenantExistsError';
+  }
+}
 
 /** Una cita ocupa un horario que ya estaba tomado (lo detecta la base al guardar). */
 export class SlotTakenError extends Error {
@@ -85,6 +108,10 @@ export interface DataStore {
   // ── Barberías ──
   /** Lanza error si la base no responde (distinto de "no existe"). */
   lookupTenant(slug: string): Promise<TenantLookupResult>;
+  /** Todas las barberías, para el panel de plataforma. */
+  listTenants(): Promise<TenantSummary[]>;
+  /** Crea la barbería. Lanza TenantExistsError si el slug ya está tomado. */
+  createTenant(input: { slug: string; name: string }): Promise<void>;
   saveCatalog(slug: string, catalog: EditableCatalog, updatedBy: string): Promise<void>;
 
   // ── Configuración ──

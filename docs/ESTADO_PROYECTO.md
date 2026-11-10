@@ -42,6 +42,7 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 - `lib/server/data/firestore.ts` (comportamiento anterior) y `lib/server/data/postgres.ts` (nuevo).
 - Esquema: `db/migrations/001_init.sql`. Índice único impide dos citas activas en el mismo horario.
 - `db/migrations/002_password_changed_at.sql`: marca `password_changed_at` en `admins` (ver punto 4).
+- `db/migrations/003_platform_admin.sql`: marca `platform_admin` en `admins` (ver punto 10).
 - `npm run db:migrate` (base de la app) / `npm run db:migrate:test` (base `citas_test`).
 
 ### 4. Cuentas propias de admin (sin Firebase Auth)
@@ -81,6 +82,24 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
 ### 9. Acceso al panel desde el sitio de clientes
 - Enlace **"🔒 Ingresar"** en el encabezado y **"Acceso para el negocio"** en el pie → `/admin`
   (con sesión va al panel, sin sesión al login). Los clientes siguen reservando **sin cuenta**.
+
+### 10. Operador de la plataforma (crear barberías)
+
+- **Es una capacidad, no un rol.** `admins.platform_admin` va aparte de `role` porque los dos
+  mapeadores hacen `role === 'admin' ? 'admin' : 'viewer'` (un rol nuevo se degradaría en silencio)
+  y porque `role` es el papel *dentro* de una barbería: como tercer rol, el dueño de la plataforma
+  perdería los permisos sobre su propio negocio.
+- **No da acceso a los datos de otras barberías.** `authorizePlatformAdmin` se apoya en
+  `authorizeAdmin`, que sigue atando la sesión a su barbería. Lo único que habilita es dar de alta.
+- La marca se revalida **contra la base** en cada petición, no solo contra el token: retirarla corta
+  el acceso en el acto, sin esperar a que caduque la sesión.
+- `POST/GET /api/admin/tenants` y la pantalla `/admin/barberias`, visible solo con la marca.
+- Al crear: valida el formato del slug, rechaza una lista de nombres reservados (`www`, `api`,
+  `admin`, `send`…), exige nombre —es lo que ven los clientes hasta que la barbería lo cambie— y
+  envía al admin nuevo su enlace para crear contraseña, apuntando a **su** subdominio.
+- **El primer operador se otorga por consola**: `npm run platform:grant -- correo@ejemplo.com`
+  (`--quitar` para retirarla, `--listar` para verlos). No puede salir del panel, porque para entrar
+  al panel de plataforma ya hay que serlo.
 
 ## Pruebas
 

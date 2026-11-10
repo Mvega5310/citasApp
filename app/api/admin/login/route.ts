@@ -52,6 +52,8 @@ export async function POST(request: Request) {
       name: admin.name,
       role: admin.role ?? 'viewer',
       tenantSlug,
+      // Solo si la tiene, para no meter `false` en todos los tokens
+      ...(admin.platformAdmin ? { platformAdmin: true } : {}),
     });
 
     const response = NextResponse.json({ ok: true });

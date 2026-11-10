@@ -7,6 +7,7 @@ import type { SalonSettings } from '../settings';
 import {
   ACTIVE_STATUSES,
   SlotTakenError,
+  TenantExistsError,
   type AdminRecord,
   type AppointmentPatch,
   type AppointmentRecord,
@@ -104,6 +105,7 @@ function toAdmin(r: Record<string, unknown>): AdminRecord {
     createdBy: (r.created_by as string | null) ?? null,
     createdAt: iso(r.created_at),
     passwordChangedAt: iso(r.password_changed_at),
+    platformAdmin: r.platform_admin === true,
   };
 }
 
@@ -156,6 +158,31 @@ export const postgresStore: DataStore = {
       );
     }
     return { found: true, config: config as unknown as TenantConfig };
+  },
+
+  async listTenants() {
+    const res = await query<{ slug: string; name: string; status: string; admins: number; created_at: Date | null }>(
+      `SELECT t.slug, t.name, t.status, t.created_at,
+              (SELECT count(*)::int FROM admins a WHERE a.tenant_id = t.id) AS admins
+       FROM tenants t ORDER BY t.created_at`
+    );
+    return res.rows.map((r) => ({
+      slug: r.slug,
+      name: r.name,
+      status: r.status,
+      admins: r.admins,
+      createdAt: iso(r.created_at),
+    }));
+  },
+
+  async createTenant({ slug, name }) {
+    try {
+      await query(`INSERT INTO tenants (slug, name, status) VALUES ($1, $2, 'active')`, [norm(slug), name]);
+    } catch (e) {
+      // 23505 = violacion de unicidad; el slug lleva UNIQUE en el esquema
+      if ((e as { code?: string }).code === '23505') throw new TenantExistsError(slug);
+      throw e;
+    }
   },
 
   async saveCatalog(slug, catalog: EditableCatalog, updatedBy) {

@@ -15,10 +15,11 @@ import {
   Users,
   Clock,
   Scissors,
+  Building2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-type AdminProfile = { name: string; email: string; role?: string };
+type AdminProfile = { name: string; email: string; role?: string; platformAdmin?: boolean };
 
 const navItems = [
   { href: '/admin', label: 'Panel', icon: LayoutDashboard, roles: ['admin', 'viewer'] },
@@ -26,6 +27,10 @@ const navItems = [
   { href: '/admin/servicios', label: 'Servicios', icon: Scissors, roles: ['admin'] },
   { href: '/admin/equipo', label: 'Equipo', icon: Users, roles: ['admin'] },
 ];
+
+// Solo para quien opera la plataforma. Va aparte de navItems porque no se
+// filtra por rol dentro de la barbería, sino por una capacidad distinta.
+const platformItem = { href: '/admin/barberias', label: 'Barberías', icon: Building2 };
 
 export default function AdminSidebar() {
   const pathname = usePathname();
@@ -42,7 +47,7 @@ export default function AdminSidebar() {
   useEffect(() => {
     fetch('/api/admin/me')
       .then((r) => r.json())
-      .then((d) => setProfile({ name: d.name ?? 'Admin', email: d.email ?? '', role: d.role }))
+      .then((d) => setProfile({ name: d.name ?? 'Admin', email: d.email ?? '', role: d.role, platformAdmin: d.platformAdmin === true }))
       .catch(() => {});
   }, []);
 
@@ -74,8 +79,8 @@ export default function AdminSidebar() {
 
   const NavLinks = ({ onClose }: { onClose?: () => void }) => (
     <nav className="flex-1 px-3 py-4 space-y-1">
-      {navItems
-        .filter(({ roles }) => !profile.role || roles.includes(profile.role))
+      {[...navItems, ...(profile.platformAdmin ? [{ ...platformItem, roles: [] as string[] }] : [])]
+        .filter(({ roles }) => roles.length === 0 || !profile.role || roles.includes(profile.role))
         .map(({ href, label, icon: Icon }) => (
           <Link
             key={href}

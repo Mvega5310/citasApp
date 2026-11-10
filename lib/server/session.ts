@@ -14,6 +14,11 @@ export type SessionUser = {
    * de contraseña.
    */
   iat?: number;
+  /**
+   * Puede crear barberías. Capacidad de plataforma, aparte del rol: no da
+   * acceso a los datos de otras barberías, solo a darlas de alta.
+   */
+  platformAdmin?: boolean;
 };
 
 function secret() {
