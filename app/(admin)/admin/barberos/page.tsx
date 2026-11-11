@@ -7,7 +7,7 @@ import { UserRound, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 
-type Barbero = { id: string; name: string; active: boolean };
+type Barbero = { id: string; name: string; active: boolean; commission: number };
 
 /** Código a partir del nombre: es lo que guardan las citas, no cambia después. */
 function codigoDesde(nombre: string): string {
@@ -59,7 +59,7 @@ export default function BarberosPage() {
       toast.error(`Ya hay alguien con el código "${id}".`);
       return;
     }
-    setBarberos([...barberos, { id, name, active: true }]);
+    setBarberos([...barberos, { id, name, active: true, commission: 0 }]);
     setNuevo('');
   };
 
@@ -169,6 +169,25 @@ export default function BarberosPage() {
                       <p className="text-xs text-cafe-subtle font-mono px-1">{b.id}</p>
                     </div>
 
+                    <label className="flex items-center gap-1.5 shrink-0" title="Porcentaje de lo que produce que le corresponde">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={b.commission}
+                        onChange={(e) => {
+                          const v = Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)));
+                          const copia = [...barberos];
+                          copia[i] = { ...b, commission: v };
+                          setBarberos(copia);
+                        }}
+                        aria-label={`Porcentaje de ${b.name}`}
+                        className="w-14 bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1 text-sm text-cafe-text text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
+                      />
+                      <span className="text-xs text-cafe-subtle">%</span>
+                    </label>
+
                     <label className="flex items-center gap-2 shrink-0 cursor-pointer">
                       <input
                         type="checkbox"
@@ -199,6 +218,11 @@ export default function BarberosPage() {
             <p className="text-xs text-cafe-subtle mt-4 leading-relaxed">
               Desmarcar <strong className="text-cafe-muted">Activo</strong> lo saca del selector del cliente pero
               conserva su historial. Quitarlo del todo solo es posible si no tiene ninguna cita registrada.
+            </p>
+            <p className="text-xs text-cafe-subtle mt-2 leading-relaxed">
+              El <strong className="text-cafe-muted">%</strong> es lo que le corresponde de lo que produce, y
+              aparece en Cierre. Déjalo en 0 si trabaja a sueldo. Ojo: es el acuerdo vigente, no se guarda por
+              cita — si lo cambias, un periodo ya pagado mostrará otra cifra al volver a consultarlo.
             </p>
           </div>
 

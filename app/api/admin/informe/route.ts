@@ -42,7 +42,11 @@ export async function GET(request: Request) {
     const completadas = delPeriodo.filter((c) => c.status === 'completed');
 
     const nombreBarbero = new Map(barberos.map((b) => [b.id, b.name]));
-    const porBarbero = new Map<string, { nombre: string; citas: number; total: number; sinPrecio: number }>();
+    const comisionDe = new Map(barberos.map((b) => [b.id, b.commission ?? 0]));
+    const porBarbero = new Map<
+      string,
+      { nombre: string; citas: number; total: number; sinPrecio: number; porcentaje: number; leToca: number }
+    >();
     const porServicio = new Map<string, { nombre: string; citas: number; total: number; sinPrecio: number }>();
 
     let total = 0;
@@ -59,10 +63,15 @@ export async function GET(request: Request) {
         citas: 0,
         total: 0,
         sinPrecio: 0,
+        porcentaje: c.barberId ? comisionDe.get(c.barberId) ?? 0 : 0,
+        leToca: 0,
       };
       b.citas++;
       if (precio === null) b.sinPrecio++;
       else b.total += precio;
+      // Se redondea al final sobre el total, no cita a cita: redondear cada una
+      // y sumar se desvía de lo que de verdad le corresponde.
+      b.leToca = Math.round((b.total * b.porcentaje) / 100);
       porBarbero.set(bid, b);
 
       const s = porServicio.get(c.serviceId) ?? { nombre: c.serviceName, citas: 0, total: 0, sinPrecio: 0 };
@@ -90,6 +99,8 @@ export async function GET(request: Request) {
         ticketPromedio: completadas.length - sinPrecio > 0 ? Math.round(total / (completadas.length - sinPrecio)) : 0,
       },
       porBarbero: ordenar(porBarbero),
+      // Lo que hay que repartir en total, para cuadrar el corte de una mirada
+      totalComisiones: [...porBarbero.values()].reduce((s, b) => s + b.leToca, 0),
       porServicio: ordenar(porServicio),
     });
   } catch (error) {

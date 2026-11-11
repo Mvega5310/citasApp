@@ -7,6 +7,7 @@ import { BarChart3, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 type Linea = { nombre: string; citas: number; total: number; sinPrecio: number };
+type LineaBarbero = Linea & { porcentaje: number; leToca: number };
 type Informe = {
   desde: string;
   hasta: string;
@@ -19,7 +20,8 @@ type Informe = {
     sinPrecio: number;
     ticketPromedio: number;
   };
-  porBarbero: Linea[];
+  porBarbero: LineaBarbero[];
+  totalComisiones: number;
   porServicio: Linea[];
 };
 
@@ -68,8 +70,9 @@ export default function InformePage() {
       ['Canceladas sobre la hora', datos.resumen.cancelacionesTarde],
       ['Ticket promedio', datos.resumen.ticketPromedio],
       [],
-      ['Barbero', 'Citas', 'Facturado'],
-      ...datos.porBarbero.map((b) => [b.nombre, b.citas, b.total]),
+      ['Barbero', 'Citas', 'Facturado', '%', 'Le toca'],
+      ...datos.porBarbero.map((b) => [b.nombre, b.citas, b.total, b.porcentaje, b.leToca]),
+      ['', '', '', 'Total a repartir', datos.totalComisiones],
       [],
       ['Servicio', 'Citas', 'Facturado'],
       ...datos.porServicio.map((s) => [s.nombre, s.citas, s.total]),
@@ -210,7 +213,46 @@ export default function InformePage() {
                 )}
               </div>
 
-              <Tabla titulo="Por barbero" lineas={datos.porBarbero} etiqueta="cita" />
+              <div className="bg-cafe-card rounded-xl border border-cafe-border p-5">
+                <div className="flex items-baseline justify-between gap-3 mb-4">
+                  <h2 className="text-base font-semibold text-cafe-text">Por barbero</h2>
+                  {datos.totalComisiones > 0 && (
+                    <span className="text-xs text-cafe-muted">
+                      a repartir{' '}
+                      <strong className="text-cafe-goldlight tabular-nums">{pesos(datos.totalComisiones)}</strong>
+                    </span>
+                  )}
+                </div>
+                {datos.porBarbero.length === 0 ? (
+                  <p className="text-sm text-cafe-muted">Sin citas completadas en este periodo.</p>
+                ) : (
+                  <ul className="divide-y divide-cafe-border">
+                    {datos.porBarbero.map((b) => (
+                      <li key={b.nombre} className="py-2.5 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm text-cafe-text truncate">{b.nombre}</p>
+                          <p className="text-xs text-cafe-subtle">
+                            {b.citas} {b.citas === 1 ? 'cita' : 'citas'} · produjo {pesos(b.total)}
+                            {b.sinPrecio > 0 && ` · ${b.sinPrecio} sin precio`}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          {b.porcentaje > 0 ? (
+                            <>
+                              <p className="text-sm font-semibold text-cafe-goldlight tabular-nums">
+                                {pesos(b.leToca)}
+                              </p>
+                              <p className="text-xs text-cafe-subtle tabular-nums">{b.porcentaje}%</p>
+                            </>
+                          ) : (
+                            <p className="text-xs text-cafe-subtle">a sueldo</p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <Tabla titulo="Por servicio" lineas={datos.porServicio} etiqueta="cita" />
 
               <div className="flex justify-end">

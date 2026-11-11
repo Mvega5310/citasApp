@@ -390,12 +390,12 @@ export const postgresStore: DataStore = {
   },
 
   async listBarbers(slug) {
-    const res = await query<{ id: string; name: string; active: boolean }>(
-      `SELECT b.id, b.name, b.active FROM barbers b JOIN tenants t ON t.id = b.tenant_id
+    const res = await query<{ id: string; name: string; active: boolean; commission: number }>(
+      `SELECT b.id, b.name, b.active, b.commission FROM barbers b JOIN tenants t ON t.id = b.tenant_id
        WHERE t.slug = $1 ORDER BY b.sort_order, b.name`,
       [norm(slug)]
     );
-    return res.rows.map((r) => ({ id: r.id, name: r.name, active: r.active }));
+    return res.rows.map((r) => ({ id: r.id, name: r.name, active: r.active, commission: r.commission ?? 0 }));
   },
 
   async saveBarbers(slug, barbers) {
@@ -420,10 +420,11 @@ export const postgresStore: DataStore = {
       await c.query(`DELETE FROM barbers WHERE tenant_id = $1 AND NOT (id = ANY($2::text[]))`, [tid, quedan]);
       for (const [i, b] of barbers.entries()) {
         await c.query(
-          `INSERT INTO barbers (tenant_id, id, name, active, sort_order) VALUES ($1,$2,$3,$4,$5)
+          `INSERT INTO barbers (tenant_id, id, name, active, sort_order, commission) VALUES ($1,$2,$3,$4,$5,$6)
            ON CONFLICT (tenant_id, id) DO UPDATE
-             SET name = EXCLUDED.name, active = EXCLUDED.active, sort_order = EXCLUDED.sort_order`,
-          [tid, b.id, b.name, b.active, i]
+             SET name = EXCLUDED.name, active = EXCLUDED.active, sort_order = EXCLUDED.sort_order,
+                 commission = EXCLUDED.commission`,
+          [tid, b.id, b.name, b.active, i, b.commission]
         );
       }
     });

@@ -54,8 +54,15 @@ export async function PUT(request: Request) {
     if (vistos.has(id)) {
       return NextResponse.json({ error: `El código "${id}" está repetido.` }, { status: 400 });
     }
+    const commission = Number(b.commission ?? 0);
+    if (!Number.isInteger(commission) || commission < 0 || commission > 100) {
+      return NextResponse.json(
+        { error: `El porcentaje de "${name}" debe ser un número entero entre 0 y 100.` },
+        { status: 400 }
+      );
+    }
     vistos.add(id);
-    barbers.push({ id, name, active: b.active !== false });
+    barbers.push({ id, name, active: b.active !== false, commission });
   }
 
   try {

@@ -93,6 +93,12 @@ export type BarberRecord = {
   id: string;
   name: string;
   active: boolean;
+  /**
+   * Porcentaje de lo que produce que le corresponde (0-100). 0 = a sueldo.
+   *
+   * Nunca sale al cliente: el catálogo público solo expone id y nombre.
+   */
+  commission: number;
 };
 
 /** Una barbería vista desde el panel de plataforma. */

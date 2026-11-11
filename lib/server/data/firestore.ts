@@ -261,7 +261,7 @@ export const firestoreStore: DataStore = {
     const snap = await adminDb().collection('tenants').doc(slug).collection('barbers').orderBy('sortOrder').get();
     return snap.docs.map((d) => {
       const x = d.data() ?? {};
-      return { id: d.id, name: String(x.name ?? ''), active: x.active !== false };
+      return { id: d.id, name: String(x.name ?? ''), active: x.active !== false, commission: Number(x.commission ?? 0) };
     });
   },
 
@@ -271,7 +271,9 @@ export const firestoreStore: DataStore = {
     const quedan = new Set(barbers.map((b) => b.id));
     const batch = adminDb().batch();
     for (const doc of actuales.docs) if (!quedan.has(doc.id)) batch.delete(doc.ref);
-    barbers.forEach((b, i) => batch.set(col.doc(b.id), { name: b.name, active: b.active, sortOrder: i }));
+    barbers.forEach((b, i) =>
+      batch.set(col.doc(b.id), { name: b.name, active: b.active, sortOrder: i, commission: b.commission })
+    );
     await batch.commit();
   },
 
