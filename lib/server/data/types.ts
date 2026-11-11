@@ -84,6 +84,12 @@ export type AdminRecord = {
    * obtiene acceso a los datos de las demás.
    */
   platformAdmin?: boolean;
+  /**
+   * Barbero al que pertenece esta cuenta. Si está puesto, el panel y el cierre
+   * se filtran a sus citas: entre colegas que solo comparten local, la agenda
+   * del otro no es asunto suyo.
+   */
+  barberId?: string | null;
 };
 
 export type TenantLookupResult = { found: true; config: TenantConfig } | { found: false };
@@ -95,10 +101,19 @@ export type BarberRecord = {
   active: boolean;
   /**
    * Porcentaje de lo que produce que le corresponde (0-100). 0 = a sueldo.
+   * Solo cuenta con modalidad 'comision'.
    *
    * Nunca sale al cliente: el catálogo público solo expone id y nombre.
    */
   commission: number;
+  /**
+   * Cómo se reparte lo que produce:
+   *  - 'comision': es del local, que le paga `commission`%
+   *  - 'puesto':   es suyo, y le paga al local `tarifaDiaria` por día trabajado
+   */
+  modalidad: 'comision' | 'puesto';
+  /** Pesos por día trabajado. Solo cuenta con modalidad 'puesto'. */
+  tarifaDiaria: number;
 };
 
 /** Una barbería vista desde el panel de plataforma. */
@@ -188,7 +203,10 @@ export interface DataStore {
   getAdmin(id: string): Promise<AdminRecord | null>;
   listAdmins(slug: string): Promise<AdminRecord[]>;
   createAdmin(admin: Omit<AdminRecord, 'createdAt'>): Promise<void>;
-  updateAdmin(id: string, patch: { name?: string; role?: 'admin' | 'viewer' }): Promise<void>;
+  updateAdmin(
+    id: string,
+    patch: { name?: string; role?: 'admin' | 'viewer'; barberId?: string | null }
+  ): Promise<void>;
   deleteAdmin(id: string): Promise<void>;
   hasAdmins(slug: string): Promise<boolean>;
 }

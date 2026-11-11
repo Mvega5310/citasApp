@@ -61,8 +61,18 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
+    const modalidad = b.modalidad === 'puesto' ? ('puesto' as const) : ('comision' as const);
+    const tarifaDiaria = Number(b.tarifaDiaria ?? 0);
+    if (!Number.isInteger(tarifaDiaria) || tarifaDiaria < 0 || tarifaDiaria > 10000000) {
+      return NextResponse.json(
+        { error: `La tarifa diaria de "${name}" no es válida.` },
+        { status: 400 }
+      );
+    }
     vistos.add(id);
-    barbers.push({ id, name, active: b.active !== false, commission });
+    // Los dos valores se guardan siempre, pero solo cuenta el de su modalidad:
+    // así cambiar de modelo y volver no pierde lo que había configurado.
+    barbers.push({ id, name, active: b.active !== false, commission, modalidad, tarifaDiaria });
   }
 
   try {

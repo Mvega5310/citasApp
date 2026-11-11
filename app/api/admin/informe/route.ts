@@ -3,6 +3,7 @@ import { authorizeAdmin } from '@/lib/server/authorization';
 import { store } from '@/lib/server/data';
 import { catalogFor } from '@/lib/server/catalog';
 import { logger } from '@/lib/server/logger';
+import { barberoDeLaCuenta, soloDeEseBarbero } from '@/lib/server/alcance';
 
 /**
  * Informe de cierre: qué se facturó en un periodo, y de quién.
@@ -38,15 +39,30 @@ export async function GET(request: Request) {
       store().listBarbers(auth.tenant.slug).catch(() => []),
     ]);
 
-    const delPeriodo = citas.filter((c) => c.date >= desde && c.date <= hasta);
+    const miBarbero = await barberoDeLaCuenta(auth.session);
+    const visibles = soloDeEseBarbero(citas, miBarbero);
+    const delPeriodo = visibles.filter((c) => c.date >= desde && c.date <= hasta);
     const completadas = delPeriodo.filter((c) => c.status === 'completed');
 
-    const nombreBarbero = new Map(barberos.map((b) => [b.id, b.name]));
-    const comisionDe = new Map(barberos.map((b) => [b.id, b.commission ?? 0]));
-    const porBarbero = new Map<
-      string,
-      { nombre: string; citas: number; total: number; sinPrecio: number; porcentaje: number; leToca: number }
-    >();
+    const datosBarbero = new Map(barberos.map((b) => [b.id, b]));
+    type LineaBarbero = {
+      nombre: string;
+      citas: number;
+      total: number;
+      sinPrecio: number;
+      porcentaje: number;
+      leToca: number;
+      modalidad: 'comision' | 'puesto';
+      tarifaDiaria: number;
+      /** Fechas distintas con citas completadas: es lo que se cobra del puesto. */
+      diasTrabajados: number;
+      /** Lo que le debe al local por los días de puesto. */
+      debeAlLocal: number;
+      /** Lo que le queda en el bolsillo, ya con su modalidad aplicada. */
+      neto: number;
+      dias: Set<string>;
+    };
+    const porBarbero = new Map<string, LineaBarbero>();
     const porServicio = new Map<string, { nombre: string; citas: number; total: number; sinPrecio: number }>();
 
     let total = 0;
@@ -58,20 +74,25 @@ export async function GET(request: Request) {
       else total += precio;
 
       const bid = c.barberId ?? '__sin__';
+      const datos = c.barberId ? datosBarbero.get(c.barberId) : undefined;
       const b = porBarbero.get(bid) ?? {
-        nombre: c.barberId ? nombreBarbero.get(c.barberId) ?? c.barberId : 'Sin asignar',
+        nombre: c.barberId ? datos?.name ?? c.barberId : 'Sin asignar',
         citas: 0,
         total: 0,
         sinPrecio: 0,
-        porcentaje: c.barberId ? comisionDe.get(c.barberId) ?? 0 : 0,
+        porcentaje: datos?.commission ?? 0,
         leToca: 0,
+        modalidad: datos?.modalidad ?? ('comision' as const),
+        tarifaDiaria: datos?.tarifaDiaria ?? 0,
+        diasTrabajados: 0,
+        debeAlLocal: 0,
+        neto: 0,
+        dias: new Set<string>(),
       };
       b.citas++;
       if (precio === null) b.sinPrecio++;
       else b.total += precio;
-      // Se redondea al final sobre el total, no cita a cita: redondear cada una
-      // y sumar se desvía de lo que de verdad le corresponde.
-      b.leToca = Math.round((b.total * b.porcentaje) / 100);
+      b.dias.add(c.date);
       porBarbero.set(bid, b);
 
       const s = porServicio.get(c.serviceId) ?? { nombre: c.serviceName, citas: 0, total: 0, sinPrecio: 0 };
@@ -81,15 +102,43 @@ export async function GET(request: Request) {
       porServicio.set(c.serviceId, s);
     }
 
+    // Cerrar las cuentas de cada barbero según su modalidad. Se hace al final y
+    // sobre el total del periodo, no cita a cita: redondear cada cita y sumar
+    // se desvía de lo que de verdad le corresponde.
+    //
+    // Son dos modelos opuestos, y de ahí sale la caja del local:
+    //   comision → lo que produjo es del local, que le paga su %
+    //   puesto   → lo que produjo es suyo, y le paga al local la tarifa por día
+    let paraElLocal = 0;
+    for (const b of porBarbero.values()) {
+      b.diasTrabajados = b.dias.size;
+      if (b.modalidad === 'puesto') {
+        b.leToca = 0;
+        b.debeAlLocal = b.diasTrabajados * b.tarifaDiaria;
+        b.neto = b.total - b.debeAlLocal;
+        paraElLocal += b.debeAlLocal;
+      } else {
+        b.leToca = Math.round((b.total * b.porcentaje) / 100);
+        b.debeAlLocal = 0;
+        b.neto = b.leToca;
+        paraElLocal += b.total - b.leToca;
+      }
+    }
+
     const canceladas = delPeriodo.filter((c) => c.status === 'cancelled');
     const ordenar = <T extends { total: number }>(m: Map<string, T>) =>
       [...m.values()].sort((a, b) => b.total - a.total);
+    // `dias` es un Set auxiliar; fuera del cálculo no aporta nada al panel.
+    const sinSet = ({ dias, ...resto }: LineaBarbero) => resto;
 
     return NextResponse.json({
       desde,
       hasta,
       resumen: {
         total,
+        // Caja del local una vez repartido: con 'puesto' sumar lo que produjo
+        // el barbero sería contar dinero que no le pertenece al local.
+        paraElLocal,
         completadas: completadas.length,
         canceladas: canceladas.length,
         // Cancelar con poco margen es la que duele: el hueco ya no se llena.
@@ -98,9 +147,13 @@ export async function GET(request: Request) {
         sinPrecio,
         ticketPromedio: completadas.length - sinPrecio > 0 ? Math.round(total / (completadas.length - sinPrecio)) : 0,
       },
-      porBarbero: ordenar(porBarbero),
+      porBarbero: ordenar(porBarbero).map(sinSet),
       // Lo que hay que repartir en total, para cuadrar el corte de una mirada
       totalComisiones: [...porBarbero.values()].reduce((s, b) => s + b.leToca, 0),
+      // Lo que cobra el local por los puestos, y lo que le queda en total
+      totalPuestos: [...porBarbero.values()].reduce((s, b) => s + b.debeAlLocal, 0),
+      /** Solo ve lo suyo: el panel oculta la caja del local y los demás. */
+      soloMias: miBarbero !== null,
       porServicio: ordenar(porServicio),
     });
   } catch (error) {

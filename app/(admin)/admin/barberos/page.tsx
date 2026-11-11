@@ -7,7 +7,17 @@ import { UserRound, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 
-type Barbero = { id: string; name: string; active: boolean; commission: number };
+type Modalidad = 'comision' | 'puesto';
+type Barbero = {
+  id: string;
+  name: string;
+  active: boolean;
+  commission: number;
+  modalidad: Modalidad;
+  tarifaDiaria: number;
+};
+
+const pesos = (n: number) => `$${n.toLocaleString('es-CO')}`;
 
 /** Código a partir del nombre: es lo que guardan las citas, no cambia después. */
 function codigoDesde(nombre: string): string {
@@ -19,6 +29,19 @@ function codigoDesde(nombre: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 40);
 }
+
+const MODALIDADES = [
+  {
+    id: 'comision' as const,
+    label: 'Comisión',
+    ayuda: 'Lo que produce es del local, que le paga un porcentaje.',
+  },
+  {
+    id: 'puesto' as const,
+    label: 'Paga puesto',
+    ayuda: 'Lo que produce es suyo, y le paga al local una tarifa por día trabajado.',
+  },
+];
 
 export default function BarberosPage() {
   const [barberos, setBarberos] = useState<Barbero[]>([]);
@@ -59,7 +82,10 @@ export default function BarberosPage() {
       toast.error(`Ya hay alguien con el código "${id}".`);
       return;
     }
-    setBarberos([...barberos, { id, name, active: true, commission: 0 }]);
+    setBarberos([
+      ...barberos,
+      { id, name, active: true, commission: 0, modalidad: 'comision', tarifaDiaria: 0 },
+    ]);
     setNuevo('');
   };
 
@@ -90,7 +116,14 @@ export default function BarberosPage() {
     }
   };
 
+  const cambiar = (i: number, patch: Partial<Barbero>) => {
+    const copia = [...barberos];
+    copia[i] = { ...copia[i], ...patch };
+    setBarberos(copia);
+  };
+
   const hayCambios = JSON.stringify(barberos) !== original;
+  const hayPuesto = barberos.some((b) => b.modalidad === 'puesto');
   const activos = barberos.filter((b) => b.active).length;
 
   return (
@@ -153,63 +186,109 @@ export default function BarberosPage() {
             ) : (
               <ul className="divide-y divide-cafe-border">
                 {barberos.map((b, i) => (
-                  <li key={b.id} className="py-3 flex items-center gap-3">
-                    <div className="min-w-0 flex-1">
-                      <input
-                        value={b.name}
-                        onChange={(e) => {
-                          const copia = [...barberos];
-                          copia[i] = { ...b, name: e.target.value };
-                          setBarberos(copia);
-                        }}
-                        maxLength={60}
-                        aria-label={`Nombre de ${b.name}`}
-                        className="w-full bg-transparent text-sm font-medium text-cafe-text focus:outline-none focus:bg-cafe-soft rounded px-1 py-0.5"
-                      />
-                      <p className="text-xs text-cafe-subtle font-mono px-1">{b.id}</p>
+                  <li key={b.id} className="py-3.5 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <input
+                          value={b.name}
+                          onChange={(e) => cambiar(i, { name: e.target.value })}
+                          maxLength={60}
+                          aria-label={`Nombre de ${b.name}`}
+                          className="w-full bg-transparent text-sm font-medium text-cafe-text focus:outline-none focus:bg-cafe-soft rounded px-1 py-0.5"
+                        />
+                        <p className="text-xs text-cafe-subtle font-mono px-1">{b.id}</p>
+                      </div>
+
+                      <label className="flex items-center gap-2 shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={b.active}
+                          onChange={(e) => cambiar(i, { active: e.target.checked })}
+                          className="w-4 h-4 rounded accent-cafe-gold"
+                        />
+                        <span className="text-xs text-cafe-muted">Activo</span>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => setBarberos(barberos.filter((x) => x.id !== b.id))}
+                        aria-label={`Quitar a ${b.name}`}
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
 
-                    <label className="flex items-center gap-1.5 shrink-0" title="Porcentaje de lo que produce que le corresponde">
-                      <input
-                        type="number"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={b.commission}
-                        onChange={(e) => {
-                          const v = Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0)));
-                          const copia = [...barberos];
-                          copia[i] = { ...b, commission: v };
-                          setBarberos(copia);
-                        }}
-                        aria-label={`Porcentaje de ${b.name}`}
-                        className="w-14 bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1 text-sm text-cafe-text text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
-                      />
-                      <span className="text-xs text-cafe-subtle">%</span>
-                    </label>
+                    {/* Cómo se reparte lo que produce. Son modelos opuestos, así que
+                        cada uno muestra solo su propio campo: ver los dos juntos
+                        sugiere que se suman, y no se suman. */}
+                    <div className="flex flex-wrap items-center gap-2 pl-1">
+                      <div className="flex rounded-lg border border-cafe-border overflow-hidden shrink-0">
+                        {MODALIDADES.map((m) => (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => cambiar(i, { modalidad: m.id })}
+                            aria-pressed={b.modalidad === m.id}
+                            title={m.ayuda}
+                            className={`px-3 py-1.5 text-xs font-semibold transition ${
+                              b.modalidad === m.id
+                                ? 'bg-cafe-gold text-cafe-bg'
+                                : 'bg-cafe-soft text-cafe-muted hover:text-cafe-text'
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
 
-                    <label className="flex items-center gap-2 shrink-0 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={b.active}
-                        onChange={(e) => {
-                          const copia = [...barberos];
-                          copia[i] = { ...b, active: e.target.checked };
-                          setBarberos(copia);
-                        }}
-                        className="w-4 h-4 rounded accent-cafe-gold"
-                      />
-                      <span className="text-xs text-cafe-muted">Activo</span>
-                    </label>
-
-                    <button
-                      type="button"
-                      onClick={() => setBarberos(barberos.filter((x) => x.id !== b.id))}
-                      aria-label={`Quitar a ${b.name}`}
-                      className="p-1.5 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                      {b.modalidad === 'comision' ? (
+                        <label className="flex items-center gap-1.5 text-xs text-cafe-subtle">
+                          <span>le queda el</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={b.commission}
+                            onChange={(e) =>
+                              cambiar(i, {
+                                commission: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))),
+                              })
+                            }
+                            aria-label={`Porcentaje de ${b.name}`}
+                            className="w-14 bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1 text-sm text-cafe-text text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
+                          />
+                          <span>% de lo que produce</span>
+                          {b.commission === 0 && <span className="text-cafe-muted">· a sueldo</span>}
+                        </label>
+                      ) : (
+                        <label className="flex items-center gap-1.5 text-xs text-cafe-subtle">
+                          <span>paga</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={10000000}
+                            step={1000}
+                            value={b.tarifaDiaria}
+                            onChange={(e) =>
+                              cambiar(i, {
+                                tarifaDiaria: Math.max(
+                                  0,
+                                  Math.min(10000000, Math.round(Number(e.target.value) || 0))
+                                ),
+                              })
+                            }
+                            aria-label={`Tarifa diaria de ${b.name}`}
+                            className="w-28 bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1 text-sm text-cafe-text text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
+                          />
+                          <span>por día trabajado</span>
+                          {b.tarifaDiaria > 0 && (
+                            <span className="text-cafe-muted">· {pesos(b.tarifaDiaria)}</span>
+                          )}
+                        </label>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -220,9 +299,21 @@ export default function BarberosPage() {
               conserva su historial. Quitarlo del todo solo es posible si no tiene ninguna cita registrada.
             </p>
             <p className="text-xs text-cafe-subtle mt-2 leading-relaxed">
-              El <strong className="text-cafe-muted">%</strong> es lo que le corresponde de lo que produce, y
-              aparece en Cierre. Déjalo en 0 si trabaja a sueldo. Ojo: es el acuerdo vigente, no se guarda por
-              cita — si lo cambias, un periodo ya pagado mostrará otra cifra al volver a consultarlo.
+              <strong className="text-cafe-muted">Comisión</strong>: lo que produce es del local, que le paga ese
+              porcentaje. Déjalo en 0 si trabaja a sueldo.{' '}
+              <strong className="text-cafe-muted">Paga puesto</strong>: lo que produce es suyo, y le paga al local
+              la tarifa por cada día que trabajó. Es el caso del local compartido entre colegas.
+            </p>
+            {hayPuesto && (
+              <p className="text-xs text-cafe-subtle mt-2 leading-relaxed">
+                Cierre cuenta los <strong className="text-cafe-muted">días con citas completadas</strong>: si
+                alguien no trabajó un día, ese día no se le cobra. Si entre ustedes el acuerdo es cobrar el puesto
+                igual aunque no venga, ese ajuste va por fuera.
+              </p>
+            )}
+            <p className="text-xs text-cafe-subtle mt-2 leading-relaxed">
+              Las dos cifras son el acuerdo vigente, no se guardan por cita: si las cambias, un periodo ya pagado
+              mostrará otro número al volver a consultarlo.
             </p>
           </div>
 

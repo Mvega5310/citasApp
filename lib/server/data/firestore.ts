@@ -66,6 +66,7 @@ function toAdmin(doc: Snap): AdminRecord {
     // campo no existe y queda null: no invalida ninguna sesión.
     passwordChangedAt: toIso(d.passwordChangedAt),
     platformAdmin: d.platformAdmin === true,
+    barberId: d.barberId ?? null,
   };
 }
 
@@ -261,7 +262,14 @@ export const firestoreStore: DataStore = {
     const snap = await adminDb().collection('tenants').doc(slug).collection('barbers').orderBy('sortOrder').get();
     return snap.docs.map((d) => {
       const x = d.data() ?? {};
-      return { id: d.id, name: String(x.name ?? ''), active: x.active !== false, commission: Number(x.commission ?? 0) };
+      return {
+        id: d.id,
+        name: String(x.name ?? ''),
+        active: x.active !== false,
+        commission: Number(x.commission ?? 0),
+        modalidad: x.modalidad === 'puesto' ? ('puesto' as const) : ('comision' as const),
+        tarifaDiaria: Number(x.tarifaDiaria ?? 0),
+      };
     });
   },
 
@@ -272,7 +280,14 @@ export const firestoreStore: DataStore = {
     const batch = adminDb().batch();
     for (const doc of actuales.docs) if (!quedan.has(doc.id)) batch.delete(doc.ref);
     barbers.forEach((b, i) =>
-      batch.set(col.doc(b.id), { name: b.name, active: b.active, sortOrder: i, commission: b.commission })
+      batch.set(col.doc(b.id), {
+        name: b.name,
+        active: b.active,
+        sortOrder: i,
+        commission: b.commission,
+        modalidad: b.modalidad,
+        tarifaDiaria: b.tarifaDiaria,
+      })
     );
     await batch.commit();
   },

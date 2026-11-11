@@ -131,6 +131,37 @@ Sitio de clientes y panel admin con estilo editorial café/dorado (tokens `cafe.
   avisa y sugiere marcarlo inactivo, que lo saca del selector sin perder nada.
 - Las 550 citas migradas quedan **sin barbero** (son anteriores a esto) y aparecen sin asignar.
 
+### 11.1 Ganancias por barbero: comisión o paga puesto
+
+Nace del caso real de un local informal: tres colegas comparten el arriendo y cada uno maneja lo
+suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en `comision` con 0 %,
+`tarifa_diaria` en 0 y ninguna cuenta vinculada. Una barbería normal no se entera de que existe.
+
+- **Dos modelos opuestos, nunca mezclados** (migración `007`):
+  - `comision`: lo que produce es del local, que le paga `commission` %.
+  - `puesto`: lo que produce es **suyo**, y le paga al local `tarifa_diaria` por día trabajado.
+
+  Sumar la producción de alguien que paga puesto a la caja del local sería contar dinero que no le
+  pertenece. Por eso Cierre separa **Facturado** (lo que entró por la puerta) de **Queda para el
+  local** (lo que de verdad es del negocio una vez repartido). La pantalla de Barberos muestra solo
+  el campo de la modalidad activa: ver el % y la tarifa juntos sugiere que se suman, y no se suman.
+- **Días trabajados = fechas distintas con citas completadas.** Si no trabajó, ese día no se le
+  cobra. Si el acuerdo entre ellos es cobrar igual aunque no venga, ese ajuste va por fuera: la app
+  no inventa días que no ocurrieron. Un neto negativo (produjo menos que el puesto) sale en rojo con
+  la explicación.
+- **Cada barbero ve solo sus citas** (`admins.barber_id` → `lib/server/alcance.ts`). El filtrado es
+  **del servidor contra la base**, no del token ni del navegador: filtrar en el cliente habría hecho
+  viajar igual las citas de los compañeros, y bastaría abrir la consola para leerlas. Cubre las tres
+  puertas — el listado, el informe y la cita individual por id (que responde **404**, no 403: decir
+  "no es tuya" confirmaría que existe y de quién es).
+- **Nadie cambia su propio vínculo**: si pudiera, un barbero se desvincularía solo y vería la agenda
+  de los demás. Lo cambia otro administrador, desde Equipo. Un barbero tampoco puede estar vinculado
+  a dos cuentas (índice único parcial), porque haría ambiguo el filtrado.
+- La tarifa y el % **no salen al cliente**: el catálogo público solo expone `{id, name}` de los
+  barberos activos.
+- Igual que el %, las dos cifras son el acuerdo vigente y no se guardan por cita: cambiarlas hace que
+  un periodo ya pagado muestre otro número al volver a consultarlo.
+
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

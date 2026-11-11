@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import {
-  Users, Plus, Trash2, Shield, Eye, Mail, X, CheckCircle,
+  Users, Plus, Trash2, Shield, Eye, Mail, X, CheckCircle, Scissors,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
@@ -15,7 +15,11 @@ type AdminUser = {
   email: string;
   role: 'admin' | 'viewer';
   createdAt: string | null;
+  /** Si está puesto, la cuenta solo ve las citas de ese barbero. */
+  barberId?: string | null;
 };
+
+type Barbero = { id: string; name: string; active: boolean };
 
 type NewAdminForm = {
   name: string;
@@ -41,16 +45,24 @@ export default function EquipoPage() {
   const [saving, setSaving] = useState(false);
   const [deletingUid, setDeletingUid] = useState<string | null>(null);
   const [currentUid, setCurrentUid] = useState<string | null>(null);
+  const [barberos, setBarberos] = useState<Barbero[]>([]);
+  const [vinculando, setVinculando] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     try {
-      const [usersRes, meRes] = await Promise.all([
+      const [usersRes, meRes, barbersRes] = await Promise.all([
         fetch('/api/admin/users'),
         fetch('/api/admin/me'),
+        fetch('/api/admin/barbers'),
       ]);
-      const [usersData, meData] = await Promise.all([usersRes.json(), meRes.json()]);
+      const [usersData, meData, barbersData] = await Promise.all([
+        usersRes.json(),
+        meRes.json(),
+        barbersRes.json().catch(() => ({})),
+      ]);
       setUsers(Array.isArray(usersData) ? usersData : []);
       setCurrentUid(meData.uid ?? null);
+      setBarberos(Array.isArray(barbersData?.barbers) ? barbersData.barbers : []);
     } catch {
       toast.error('Error al cargar el equipo');
     } finally {
@@ -116,6 +128,32 @@ export default function EquipoPage() {
     }
   };
 
+  const vincular = async (uid: string, barberId: string) => {
+    setVinculando(uid);
+    try {
+      const res = await fetch(`/api/admin/users/${uid}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barberId: barberId || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'No se pudo vincular');
+        return;
+      }
+      setUsers((prev) => prev.map((u) => (u.uid === uid ? { ...u, barberId: barberId || null } : u)));
+      toast.success(
+        barberId
+          ? `Ahora solo ve las citas de ${barberos.find((b) => b.id === barberId)?.name ?? barberId}`
+          : 'Vuelve a ver todas las citas del local'
+      );
+    } catch {
+      toast.error('Error de conexión');
+    } finally {
+      setVinculando(null);
+    }
+  };
+
   const set = (key: keyof NewAdminForm, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
@@ -157,7 +195,7 @@ export default function EquipoPage() {
                   const RoleIcon = roleIcon[user.role];
                   const isMe = user.uid === currentUid;
                   return (
-                    <div key={user.uid} className="flex items-center justify-between px-6 py-4 hover:bg-cafe-soft transition-colors">
+                    <div key={user.uid} className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 hover:bg-cafe-soft transition-colors">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-cafe-gold flex items-center justify-center text-cafe-bg text-sm font-bold shrink-0">
                           {user.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
@@ -173,10 +211,46 @@ export default function EquipoPage() {
                             <Mail className="w-3 h-3" />
                             {user.email}
                           </p>
+                          {user.barberId && (
+                            <p className="text-xs text-cafe-goldlight flex items-center gap-1 mt-1">
+                              <Scissors className="w-3 h-3 shrink-0" />
+                              Solo ve las citas de{' '}
+                              {barberos.find((b) => b.id === user.barberId)?.name ?? user.barberId}
+                            </p>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap justify-end ml-auto">
+                        {/* A qué barbero pertenece la cuenta. Vacío = ve todo el
+                            local, que es como estaba y sigue siendo lo normal.
+                            Solo aparece si la barbería tiene equipo cargado. */}
+                        {barberos.length > 0 && (
+                          <label className="flex items-center gap-1.5">
+                            <Scissors className="w-3.5 h-3.5 text-cafe-subtle shrink-0" />
+                            <select
+                              value={user.barberId ?? ''}
+                              disabled={isMe || vinculando === user.uid}
+                              onChange={(e) => vincular(user.uid, e.target.value)}
+                              aria-label={`Barbero vinculado a ${user.name}`}
+                              title={
+                                isMe
+                                  ? 'Otro administrador cambia tu propio vínculo'
+                                  : 'Si eliges un barbero, esta cuenta solo verá sus citas'
+                              }
+                              className="text-xs bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1.5 text-cafe-text focus:outline-none focus:ring-2 focus:ring-cafe-gold/50 disabled:opacity-50"
+                            >
+                              <option value="">Ve todo el local</option>
+                              {barberos.map((b) => (
+                                <option key={b.id} value={b.id}>
+                                  Solo {b.name}
+                                  {b.active ? '' : ' (inactivo)'}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
+
                         <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${roleColor[user.role]}`}>
                           <RoleIcon className="w-3 h-3" />
                           {roleLabel[user.role]}
@@ -223,6 +297,17 @@ export default function EquipoPage() {
                 <Eye className="w-3.5 h-3.5 shrink-0" />
                 <strong>Solo lectura</strong> — Solo puede ver las citas del panel
               </p>
+              {barberos.length > 0 && (
+                <p className="text-xs text-cafe-goldlight flex items-start gap-2 pt-1.5">
+                  <Scissors className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Vincular a un barbero</strong> — Útil cuando varios barberos comparten el local y
+                    cada uno maneja lo suyo: la cuenta solo ve sus citas y su cierre, no la agenda de los
+                    demás. Déjalo en &ldquo;Ve todo el local&rdquo; para quien administra. Tu propio vínculo lo
+                    cambia otro administrador, no tú.
+                  </span>
+                </p>
+              )}
             </div>
           </div>
         </div>

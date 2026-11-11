@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/server/logger';
 import { authorizeAdmin } from '@/lib/server/authorization';
 import { SlotTakenError, isStoreConfigured, store } from '@/lib/server/data';
+import { puedeTocarLaCita } from '@/lib/server/alcance';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 
   try {
+    const permiso = await puedeTocarLaCita(auth.session, auth.tenant.slug, id);
+    if (!permiso.ok) return permiso.response;
+
     const updated = await store().updateAppointment(auth.tenant.slug, id, { status: status as AppointmentStatus });
     if (!updated) return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
     return NextResponse.json({ ok: true, id, status });
@@ -59,6 +63,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 
   try {
+    const permiso = await puedeTocarLaCita(auth.session, auth.tenant.slug, id);
+    if (!permiso.ok) return permiso.response;
+
     const deleted = await store().deleteAppointment(auth.tenant.slug, id);
     if (!deleted) return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 });
     return NextResponse.json({ ok: true, id });
