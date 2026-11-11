@@ -7,6 +7,7 @@ import ServiceIcon from '@/components/shared/ServiceIcon';
 import { Clock, Loader2, Plus, RotateCcw, Save, Scissors, Trash2 } from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
+import { useConfirmacion } from '@/components/admin/useConfirmacion';
 
 // Mismo formato que devuelve /api/admin/catalog
 type DayKey = 'domingo' | 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes' | 'sabado';
@@ -98,6 +99,7 @@ function Toggle({
 }
 
 export default function ServiciosAdminPage() {
+  const { confirmar, dialogo } = useConfirmacion();
   const [services, setServices] = useState<EditableService[]>([]);
   const [hours, setHours] = useState<Hours | null>(null);
   const [snapshot, setSnapshot] = useState('');
@@ -164,9 +166,16 @@ export default function ServiciosAdminPage() {
     return () => cancelAnimationFrame(frame);
   }, [justAdded]);
 
-  const removeService = (svc: EditableService) => {
-    if (!svc.isNew && !confirm(`¿Quitar "${svc.name}" del catálogo? Las citas ya reservadas no se borran. Si solo quieres dejar de ofrecerlo por un tiempo, desactívalo.`)) {
-      return;
+  const removeService = async (svc: EditableService) => {
+    if (!svc.isNew) {
+      const seguro = await confirmar({
+        titulo: `¿Quitar "${svc.name}" del catálogo?`,
+        mensaje:
+          'Las citas ya reservadas no se borran. Si solo quieres dejar de ofrecerlo por un tiempo, desactívalo en vez de quitarlo.',
+        aceptar: 'Quitar',
+        peligro: true,
+      });
+      if (!seguro) return;
     }
     setServices((prev) => prev.filter((s) => s.key !== svc.key));
   };
@@ -448,6 +457,7 @@ export default function ServiciosAdminPage() {
           )}
         </div>
       </div>
+      {dialogo}
     </div>
   );
 }

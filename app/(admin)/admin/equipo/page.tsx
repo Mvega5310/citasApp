@@ -7,6 +7,7 @@ import {
   Users, Plus, Trash2, Shield, Eye, Mail, X, CheckCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useConfirmacion } from '@/components/admin/useConfirmacion';
 
 type AdminUser = {
   uid: string;
@@ -32,6 +33,7 @@ const roleColor = {
 };
 
 export default function EquipoPage() {
+  const { confirmar, dialogo } = useConfirmacion();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -90,7 +92,13 @@ export default function EquipoPage() {
   };
 
   const handleDelete = async (uid: string, name: string) => {
-    if (!confirm(`¿Eliminar a ${name} del equipo? Esta acción no se puede deshacer.`)) return;
+    const seguro = await confirmar({
+      titulo: `¿Eliminar a ${name} del equipo?`,
+      mensaje: 'Perderá el acceso al panel. Esta acción no se puede deshacer.',
+      aceptar: 'Eliminar',
+      peligro: true,
+    });
+    if (!seguro) return;
     setDeletingUid(uid);
     try {
       const res = await fetch(`/api/admin/users/${uid}`, { method: 'DELETE' });
@@ -311,6 +319,7 @@ export default function EquipoPage() {
           </div>
         </div>
       )}
+      {dialogo}
     </div>
   );
 }

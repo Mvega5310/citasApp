@@ -5,6 +5,7 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { Building2, Plus, ExternalLink, Check, Pause, Play, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useConfirmacion } from '@/components/admin/useConfirmacion';
 
 type Tenant = {
   slug: string;
@@ -41,6 +42,7 @@ export default function BarberiasPage() {
   const [creando, setCreando] = useState(false);
   const [dominio, setDominio] = useState('');
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const { confirmar, dialogo } = useConfirmacion();
 
   useEffect(() => {
     setDominio(process.env.NEXT_PUBLIC_APP_DOMAIN ?? '');
@@ -99,9 +101,16 @@ export default function BarberiasPage() {
 
   const cambiarEstado = async (t: Tenant) => {
     const suspender = t.status === 'active';
-    if (suspender && !confirm(`¿Suspender "${t.name || t.slug}"?
-
-Sus clientes dejarán de poder reservar hasta que la reactives. No se borra nada.`)) return;
+    if (
+      suspender &&
+      !(await confirmar({
+        titulo: `¿Suspender "${t.name || t.slug}"?`,
+        mensaje: 'Sus clientes dejarán de poder reservar hasta que la reactives. No se borra nada.',
+        aceptar: 'Suspender',
+      }))
+    ) {
+      return;
+    }
     setOcupado(t.slug);
     try {
       const res = await fetch(`/api/admin/tenants/${t.slug}`, {
@@ -129,15 +138,17 @@ Sus clientes dejarán de poder reservar hasta que la reactives. No se borra nada
       toast.error(`"${t.name || t.slug}" tiene ${t.appointments} citas. Suspéndela en vez de borrarla.`);
       return;
     }
-    if (!confirm(
-      `¿Borrar "${t.name || t.slug}" para siempre?
+    const seguro = await confirmar({
+      titulo: `¿Borrar "${t.name || t.slug}" para siempre?`,
+      mensaje:
+        `Se van también su configuración, servicios, horario, barberos y ${t.admins} cuenta(s) de administrador.
 
 ` +
-      `Se van también su configuración, servicios, horario, barberos y ${t.admins} cuenta(s) de administrador.
-
-` +
-      'Esto no se puede deshacer.'
-    )) return;
+        'Esto no se puede deshacer.',
+      aceptar: 'Borrar',
+      peligro: true,
+    });
+    if (!seguro) return;
     setOcupado(t.slug);
     try {
       const res = await fetch(`/api/admin/tenants/${t.slug}`, { method: 'DELETE' });
@@ -356,6 +367,7 @@ Sus clientes dejarán de poder reservar hasta que la reactives. No se borra nada
           </div>
         </div>
       </div>
+      {dialogo}
     </div>
   );
 }

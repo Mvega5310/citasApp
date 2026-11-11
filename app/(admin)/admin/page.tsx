@@ -25,6 +25,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useConfirmacion } from '@/components/admin/useConfirmacion';
 
 type FilterStatus = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
@@ -105,6 +106,7 @@ const iconBtnCls = 'p-1.5 rounded-lg transition-colors';
 const POR_PAGINA = 20;
 
 export default function AdminPage() {
+  const { confirmar, dialogo } = useConfirmacion();
   const router = useRouter();
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -225,7 +227,12 @@ export default function AdminPage() {
     if (
       newStatus === 'cancelled' &&
       appointment.status !== 'cancelled' &&
-      !confirm('¿Estás seguro de que deseas cancelar esta cita?')
+      !(await confirmar({
+        titulo: '¿Cancelar esta cita?',
+        mensaje: `La cita de ${appointment.clientName} pasará a cancelada.`,
+        aceptar: 'Cancelar la cita',
+        peligro: true,
+      }))
     ) {
       return;
     }
@@ -269,7 +276,13 @@ export default function AdminPage() {
 
   // Eliminar una cita
   const handleDelete = async (id: string, clientName: string) => {
-    if (!confirm(`¿Eliminar la cita de ${clientName}?`)) return;
+    const seguro = await confirmar({
+      titulo: `¿Eliminar la cita de ${clientName}?`,
+      mensaje: 'Se borra del historial y no se puede recuperar.',
+      aceptar: 'Eliminar',
+      peligro: true,
+    });
+    if (!seguro) return;
 
     try {
       const res = await fetch(`/api/admin/appointments/${id}`, {
@@ -302,9 +315,13 @@ export default function AdminPage() {
 
     if (ids.length === 0 || bulkDeleting) return;
 
-    if (!confirm(`¿Eliminar ${ids.length} cita${ids.length !== 1 ? 's' : ''}? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+    const seguro = await confirmar({
+      titulo: `¿Eliminar ${ids.length} cita${ids.length !== 1 ? 's' : ''}?`,
+      mensaje: 'Se borran del historial y no se pueden recuperar.',
+      aceptar: `Eliminar ${ids.length}`,
+      peligro: true,
+    });
+    if (!seguro) return;
 
     setBulkDeleting(true);
 
@@ -968,6 +985,7 @@ export default function AdminPage() {
           )}
         </div>
       </div>
+      {dialogo}
     </div>
   );
 }
