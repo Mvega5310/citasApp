@@ -25,6 +25,11 @@ export type AppointmentRecord = {
   groupId?: string | null;
   /** Barbero asignado. null en las citas anteriores a que existieran. */
   barberId?: string | null;
+  /**
+   * Precio cobrado, congelado al reservar. null en las citas anteriores a que
+   * se guardara: cruzarlas con el catálogo de hoy daría una cifra inventada.
+   */
+  price?: number | null;
   habeasDataAccepted?: boolean;
   notificationsAccepted?: boolean;
   reminderSent?: boolean;
@@ -50,6 +55,8 @@ export type NewAppointment = {
   groupId?: string;
   /** null o ausente = sin barbero (barbería que no los usa). */
   barberId?: string | null;
+  /** Precio del servicio en el momento de reservar. */
+  price?: number | null;
 };
 
 export type AppointmentPatch = Partial<

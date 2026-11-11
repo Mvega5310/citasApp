@@ -177,13 +177,14 @@ export const firestoreStore: DataStore = {
     const now = new Date().toISOString();
     const batch = db.batch(); // todas o ninguna
     const ids: string[] = [];
-    for (const { groupId, barberId, ...item } of items) {
+    for (const { groupId, barberId, price, ...item } of items) {
       const ref = col.doc();
       batch.set(ref, {
         ...item,
         // Firestore no acepta campos undefined: se omiten si no vienen
         ...(groupId ? { groupId } : {}),
         ...(barberId ? { barberId } : {}),
+        ...(typeof price === 'number' ? { price } : {}),
         tenantSlug: slug,
         status: 'pending',
         source: 'firebase',

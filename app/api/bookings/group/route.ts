@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
   if (!tenantResult.ok) return tenantResult.response;
   const tenantSlug = tenantResult.tenant.slug;
   const catalog = catalogFor(tenantResult.tenant);
+  const precioDe = (id: string) => catalog.services.find((s) => s.id === id)?.price ?? null;
 
   if (!isStoreConfigured()) {
     return NextResponse.json({ error: 'Servicio no disponible' }, { status: 503 });
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
       // Todas las citas del grupo se guardan juntas: o todas o ninguna
       ids = await store().createAppointments(
         tenantSlug,
-        validated.map((b) => ({ ...b, groupId }))
+        validated.map((b) => ({ ...b, groupId, price: precioDe(b.serviceId) }))
       );
     } catch (error) {
       if (error instanceof SlotTakenError) {

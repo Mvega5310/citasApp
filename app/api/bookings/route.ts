@@ -19,7 +19,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const validation = validateBookingPayload(body, catalogFor(tenantResult.tenant));
+    const catalogo = catalogFor(tenantResult.tenant);
+    const validation = validateBookingPayload(body, catalogo);
 
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
     let id: string | null = null;
     let persistence: 'firestore' | 'postgres' | null = null;
     let asignado: string | null = null;
+    const precioDe = (id: string) => catalogo.services.find((s) => s.id === id)?.price ?? null;
 
     if (isStoreConfigured()) {
       // Con "cualquiera disponible" se prueba con el siguiente libre si alguien
@@ -64,7 +66,10 @@ export async function POST(request: NextRequest) {
       const intentos = barbero.candidatos.length > 0 ? barbero.candidatos : [barbero.barberId];
       for (const candidato of intentos) {
         try {
-          [id] = await store().createAppointments(tenantSlug, [{ ...booking, barberId: candidato }]);
+          // El precio se congela aquí: si mañana sube, lo facturado hoy no cambia.
+          [id] = await store().createAppointments(tenantSlug, [
+            { ...booking, barberId: candidato, price: precioDe(booking.serviceId) },
+          ]);
           persistence = store().backend;
           asignado = candidato;
           break;
