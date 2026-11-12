@@ -157,6 +157,31 @@ export const firestoreStore: DataStore = {
       .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')));
   },
 
+  /**
+   * Firestore no pagina esto en el servidor: trae todo y corta en memoria.
+   * Es el respaldo congelado (la app corre sobre Postgres), así que importa
+   * que dé el mismo resultado, no que sea rápido.
+   */
+  async listAppointmentsPage(slug, { status, date, barberId, limit, offset }) {
+    const todas = await this.listAppointments(slug);
+    const delAlcance = barberId ? todas.filter((a) => a.barberId === barberId) : todas;
+
+    const conteo = { total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+    for (const a of delAlcance) {
+      conteo.total++;
+      if (a.status in conteo) conteo[a.status as keyof typeof conteo]++;
+    }
+
+    const filtradas = delAlcance.filter(
+      (a) => (!status || a.status === status) && (!date || a.date === date)
+    );
+    return {
+      rows: filtradas.slice(offset, offset + limit),
+      total: filtradas.length,
+      resumen: conteo,
+    };
+  },
+
   async appointmentsOnDate(slug, date) {
     const snap = await appointmentsCol(adminDb(), slug).where('date', '==', date).get();
     return snap.docs.map((doc) => toAppointment(doc, slug));

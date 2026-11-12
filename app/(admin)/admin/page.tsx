@@ -117,8 +117,10 @@ export default function AdminPage() {
   // Solo si la barbería usa barberos tiene sentido avisar de "sin asignar":
   // donde no los hay, todas las citas lo estarían y sería puro ruido.
   const usaBarberos = Object.keys(nombresBarbero).length > 0;
-  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
+  /** Cuántas cumplen el filtro actual: de ahí salen las páginas. */
   const [total, setTotal] = useState(0);
+  /** Conteo por estado de TODA la barbería, para las tarjetas de arriba. */
+  const [resumen, setResumen] = useState({ total: 0, pending: 0, confirmed: 0, completed: 0 });
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -133,13 +135,22 @@ export default function AdminPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
+  // Los filtros y la paginación los resuelve la base: el panel pide una
+  // página, no el histórico entero.
   const fetchAppointments = useCallback(
     async (showRefreshing = false) => {
       if (showRefreshing) setRefreshing(true);
       else setLoading(true);
 
       try {
-        const res = await fetch('/api/admin/appointments');
+        const params = new URLSearchParams({
+          limit: String(POR_PAGINA),
+          offset: String((pagina - 1) * POR_PAGINA),
+        });
+        if (filterStatus !== 'all') params.set('status', filterStatus);
+        if (filterDate) params.set('date', filterDate);
+
+        const res = await fetch(`/api/admin/appointments?${params}`);
 
         if (res.status === 401) {
           router.push('/admin/login');
@@ -154,8 +165,9 @@ export default function AdminPage() {
 
         const data = await res.json();
 
-        setAllAppointments(data.rows ?? []);
-        setTotal(data.count ?? 0);
+        setAppointments(data.rows ?? []);
+        setTotal(data.total ?? 0);
+        if (data.resumen) setResumen(data.resumen);
       } catch {
         toast.error('Error de conexión');
       } finally {
@@ -163,28 +175,27 @@ export default function AdminPage() {
         setRefreshing(false);
       }
     },
-    [router]
+    [router, pagina, filterStatus, filterDate]
   );
 
-  // Filtros locales
-  useEffect(() => {
-    let filtered = allAppointments;
-
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter((a) => a.status === filterStatus);
-    }
-
-    if (filterDate) {
-      filtered = filtered.filter((a) => a.date === filterDate);
-    }
-
-    setAppointments(filtered);
-    // Al cambiar el filtro, volver al principio: quedarse en la página 7 de
-    // un resultado que ahora tiene 2 deja la pantalla vacía sin explicación.
+  // Al cambiar el filtro, volver al principio: quedarse en la página 7 de un
+  // resultado que ahora tiene 2 deja la pantalla vacía sin explicación. Va
+  // junto al cambio y no en un efecto aparte, para que la lista se pida una
+  // sola vez en lugar de dos (la página vieja y después la primera).
+  const aplicarEstado = (valor: FilterStatus) => {
+    setFilterStatus(valor);
     setPagina(1);
-  }, [allAppointments, filterStatus, filterDate]);
+  };
+  const aplicarFecha = (valor: string) => {
+    setFilterDate(valor);
+    setPagina(1);
+  };
 
-
+  // Nada seleccionado sobrevive a un cambio de página o de filtro: borrar
+  // filas que ya no se ven en pantalla es demasiado fácil de hacer sin querer.
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [pagina, filterStatus, filterDate]);
 
   useEffect(() => {
     fetchAppointments();
@@ -220,7 +231,7 @@ export default function AdminPage() {
 
     if (!newStatus || savingStatusId) return;
 
-    const appointment = allAppointments.find((apt) => apt.id === id);
+    const appointment = appointments.find((apt) => apt.id === id);
 
     if (!appointment) return;
 
@@ -249,17 +260,13 @@ export default function AdminPage() {
       });
 
       if (res.ok) {
-        setAllAppointments((prev) =>
-          prev.map((apt) =>
-            apt.id === id
-              ? {
-                  ...apt,
-                  status: newStatus,
-                  updatedAt: new Date(),
-                }
-              : apt
-          )
+        // Se pinta el cambio en el acto y se recarga en segundo plano: si
+        // hay un filtro de estado, la cita puede dejar de pertenecer a esta
+        // página, y eso solo lo sabe la base.
+        setAppointments((prev) =>
+          prev.map((apt) => (apt.id === id ? { ...apt, status: newStatus, updatedAt: new Date() } : apt))
         );
+        fetchAppointments(true);
 
         closeStatusEditor();
         toast.success('Estado actualizado correctamente');
@@ -290,9 +297,10 @@ export default function AdminPage() {
       });
 
       if (res.ok) {
-        setAllAppointments((prev) => prev.filter((apt) => apt.id !== id));
-
-        setTotal((t) => Math.max(0, t - 1));
+        // Recargar en vez de quitarla de la lista: al borrar una fila de la
+        // página 3 hay que subir una desde la 4, y de paso cuadran los totales.
+        setAppointments((prev) => prev.filter((apt) => apt.id !== id));
+        fetchAppointments(true);
 
         setSelectedIds((prev) => {
           const next = new Set(prev);
@@ -343,9 +351,8 @@ export default function AdminPage() {
       }
 
       if (deletedIds.size > 0) {
-        setAllAppointments((prev) => prev.filter((apt) => !deletedIds.has(apt.id)));
-
-        setTotal((t) => Math.max(0, t - deletedIds.size));
+        setAppointments((prev) => prev.filter((apt) => !deletedIds.has(apt.id)));
+        fetchAppointments(true);
       }
 
       setSelectedIds((prev) => {
@@ -377,13 +384,11 @@ export default function AdminPage() {
     });
   };
 
-  // Seleccionar solamente las citas visibles
-  // Paginación en pantalla: con una barbería que trabaja a diario, el listado
-  // completo son miles de filas y el navegador las pinta todas.
-  const totalPaginas = Math.max(1, Math.ceil(appointments.length / POR_PAGINA));
+  // La página llega ya cortada de la base; aquí solo se ubica en el conjunto.
+  const totalPaginas = Math.max(1, Math.ceil(total / POR_PAGINA));
   const paginaActual = Math.min(pagina, totalPaginas);
   const desde = (paginaActual - 1) * POR_PAGINA;
-  const visibles = appointments.slice(desde, desde + POR_PAGINA);
+  const visibles = appointments;
 
   const allSelected = visibles.length > 0 && visibles.every((apt) => selectedIds.has(apt.id));
 
@@ -403,12 +408,9 @@ export default function AdminPage() {
     });
   };
 
-  const stats = {
-    total: allAppointments.length,
-    pending: allAppointments.filter((a) => a.status === 'pending').length,
-    confirmed: allAppointments.filter((a) => a.status === 'confirmed').length,
-    completed: allAppointments.filter((a) => a.status === 'completed').length,
-  };
+  // Las tarjetas resumen la barbería entera, no la página que se está viendo:
+  // los conteos vienen de la base sin aplicar los filtros de pantalla.
+  const stats = resumen;
 
   const formatAppointmentDate = (date: Appointment['date']) => {
     return new Date(typeof date === 'string' ? date + 'T12:00:00' : date).toLocaleDateString('es-ES', {
@@ -432,13 +434,13 @@ export default function AdminPage() {
             </p>
             <h1 className="text-2xl font-medium text-cafe-text font-display">Panel</h1>
             <p className="text-sm text-cafe-muted mt-0.5">
-              {total} cita{total !== 1 ? 's' : ''} registradas
+              {resumen.total} cita{resumen.total !== 1 ? 's' : ''} registradas
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setFilterStatus('pending')}
+              onClick={() => aplicarEstado('pending')}
               title="Ver citas pendientes"
               aria-label="Ver citas pendientes"
               className="relative p-2.5 rounded-xl border border-cafe-border bg-cafe-card text-cafe-muted hover:text-cafe-goldlight hover:border-cafe-gold/60 transition"
@@ -503,7 +505,7 @@ export default function AdminPage() {
                   {(['all', 'pending', 'confirmed', 'completed', 'cancelled'] as FilterStatus[]).map((s) => (
                     <button
                       key={s}
-                      onClick={() => setFilterStatus(s)}
+                      onClick={() => aplicarEstado(s)}
                       className={`px-3.5 py-2 rounded-full text-xs font-semibold transition ${
                         filterStatus === s
                           ? 'bg-cafe-gold text-cafe-bg'
@@ -524,7 +526,7 @@ export default function AdminPage() {
                       <input
                         type="date"
                         value={filterDate}
-                        onChange={(e) => setFilterDate(e.target.value)}
+                        onChange={(e) => aplicarFecha(e.target.value)}
                         aria-label="Filtrar por fecha"
                         className="flex-1 min-w-0 bg-transparent text-xs text-cafe-text [color-scheme:dark] focus:outline-none"
                       />
@@ -532,7 +534,7 @@ export default function AdminPage() {
 
                     {filterDate && (
                       <button
-                        onClick={() => setFilterDate('')}
+                        onClick={() => aplicarFecha('')}
                         className={`${iconBtnCls} text-cafe-subtle hover:text-cafe-text hover:bg-cafe-hover shrink-0`}
                         aria-label="Limpiar fecha"
                       >
@@ -577,29 +579,29 @@ export default function AdminPage() {
                 <div className="px-5 py-4 border-b border-cafe-border flex items-center justify-between">
                   <h2 className="font-display font-medium text-cafe-text text-lg">Citas</h2>
                   <span className="text-xs text-cafe-muted tabular-nums">
-                    {appointments.length === 0
+                    {total === 0
                       ? '0 resultados'
-                      : appointments.length <= POR_PAGINA
-                        ? `${appointments.length} resultado${appointments.length !== 1 ? 's' : ''}`
-                        : `${desde + 1}–${desde + visibles.length} de ${appointments.length}`}
+                      : total <= POR_PAGINA
+                        ? `${total} resultado${total !== 1 ? 's' : ''}`
+                        : `${desde + 1}–${desde + visibles.length} de ${total}`}
                   </span>
                 </div>
 
-                {appointments.length === 0 ? (
+                {visibles.length === 0 ? (
                   <div className="py-16 text-center">
                     <Calendar className="w-10 h-10 text-cafe-border mx-auto mb-3" />
 
                     <p className="text-cafe-muted font-medium text-sm">
-                      {allAppointments.length === 0
+                      {resumen.total === 0
                         ? 'Aún no hay citas registradas'
                         : 'Ninguna cita coincide con los filtros aplicados'}
                     </p>
 
-                    {allAppointments.length > 0 && (filterStatus !== 'all' || filterDate) && (
+                    {resumen.total > 0 && (filterStatus !== 'all' || filterDate) && (
                       <button
                         onClick={() => {
-                          setFilterStatus('all');
-                          setFilterDate('');
+                          aplicarEstado('all');
+                          aplicarFecha('');
                         }}
                         className="mt-3 text-xs font-semibold text-cafe-goldlight hover:underline"
                       >

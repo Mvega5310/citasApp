@@ -170,9 +170,26 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
   que iOS necesita porque no lee los iconos del manifest.
 - **Menú móvil**: el cajón era `z-30` y la barra inferior `z-40`, así que la barra tapaba el perfil y
   Configuración. El cajón pasó a `z-50` y la barra superior a `z-[60]`.
-- **Listado del panel**: paginado de 20 en 20 (eran 528 filas pintadas de una vez). La paginación es
-  **en pantalla**: la petición sigue trayendo todas las citas. Llevarla al servidor exige mover allá
-  los filtros de estado y fecha.
+- **Listado del panel**: paginado de 20 en 20 **en el servidor**. Antes la petición traía todas las
+  citas (528 en la barbería con más histórico) y el navegador filtraba y paginaba; crecía sin techo,
+  así que cuantas más citas acumulara un local, más lento abría su panel. Ahora el estado y la fecha
+  se filtran en la base y solo bajan 20 filas. Detalles que no son obvios:
+  - Las tarjetas de arriba (total, pendientes, confirmadas, completadas) resumen **toda** la
+    barbería, no la página: el conteo por estado viene aparte, sin los filtros de pantalla.
+  - Al cambiar un estado o borrar se recarga la página actual. Con un filtro puesto la cita puede
+    dejar de pertenecer a la página, y al borrar una fila hay que subir otra desde la siguiente.
+  - El filtro por barbero (cuentas vinculadas) va **dentro de la consulta**, no como recorte
+    posterior, y acota también el resumen: ni los totales ajenos salen de la base.
+  - Cambiar de página o de filtro **vacía la selección**: borrar en bloque filas que ya no se ven en
+    pantalla es demasiado fácil de hacer sin querer.
+  - El límite por página está topado en 100 en el servidor, para que nadie pida el histórico entero.
+- **Nombre de cada barbería en los metadatos**: el layout raíz tenía "Marcos BarberShop" escrito a
+  mano, así que toda barbería salía con ese nombre en la pestaña, al compartir el enlace y al
+  instalar la app. Ahora sale de su configuración (`lib/server/marca.ts`). El manifest del panel era
+  un archivo fijo en `public/` y además **nunca cargaba**: `/admin-manifest.json` empieza por
+  `/admin`, así que el middleware lo mandaba al login, y el navegador lo pide sin cookies. Pasó a
+  ser una ruta y está exento del guardia. Si la barbería no se puede resolver, los metadatos caen en
+  "BeautyTurno" y nunca tumban la página: el 404 lo decide la página, no su título.
 - **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
 - **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
   parámetro**, que sería un generador de QR alojado en el dominio propio.

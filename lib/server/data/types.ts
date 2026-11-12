@@ -59,6 +59,27 @@ export type NewAppointment = {
   price?: number | null;
 };
 
+export type AppointmentQuery = {
+  status?: AppointmentRecord['status'];
+  /** Un día concreto, en formato YYYY-MM-DD. */
+  date?: string;
+  /** Limita a un barbero: cuentas vinculadas solo ven lo suyo. */
+  barberId?: string;
+  limit: number;
+  offset: number;
+};
+
+export type AppointmentPage = {
+  rows: AppointmentRecord[];
+  /** Cuántas cumplen el filtro, para saber cuántas páginas hay. */
+  total: number;
+  /**
+   * Conteo por estado **sin aplicar los filtros**: las tarjetas de arriba
+   * resumen la barbería entera, no la página que se está viendo.
+   */
+  resumen: { total: number; pending: number; confirmed: number; completed: number; cancelled: number };
+};
+
 export type AppointmentPatch = Partial<
   Pick<AppointmentRecord, 'status' | 'cancelledAt' | 'cancelledBy' | 'lateCancel' | 'reminderSentAt'>
 >;
@@ -177,6 +198,14 @@ export interface DataStore {
   // ── Citas ──
   /** Todas las citas de la barbería, más recientes primero. */
   listAppointments(slug: string): Promise<AppointmentRecord[]>;
+  /**
+   * Una página del listado del panel, ya filtrada en la base.
+   *
+   * El panel traía las citas completas en cada carga —528 filas en la barbería
+   * con más histórico— para filtrar y paginar en el navegador. Crece sin
+   * techo: cuantas más citas acumula un local, más lento abre su panel.
+   */
+  listAppointmentsPage(slug: string, opciones: AppointmentQuery): Promise<AppointmentPage>;
   appointmentsOnDate(slug: string, date: string): Promise<AppointmentRecord[]>;
   appointmentsInGroup(slug: string, groupId: string): Promise<AppointmentRecord[]>;
   getAppointment(slug: string, id: string): Promise<AppointmentRecord | null>;

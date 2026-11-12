@@ -277,6 +277,60 @@ export const postgresStore: DataStore = {
 
   listAppointments: (slug) => selectAppointments('t.slug = $1', [norm(slug)]),
 
+  async listAppointmentsPage(slug, { status, date, barberId, limit, offset }) {
+    const params: unknown[] = [norm(slug)];
+    // El filtro del barbero va aparte de los de pantalla: acota también el
+    // resumen, porque una cuenta vinculada no debe ver ni los totales ajenos.
+    const alcance = ['t.slug = $1'];
+    if (barberId) {
+      params.push(barberId);
+      alcance.push(`a.barber_id = $${params.length}`);
+    }
+    const base = alcance.join(' AND ');
+
+    const filtros = [...alcance];
+    if (status) {
+      params.push(status);
+      filtros.push(`a.status = $${params.length}`);
+    }
+    if (date) {
+      params.push(date);
+      filtros.push(`a.date = $${params.length}`);
+    }
+
+    params.push(limit, offset);
+    const [pagina, resumen] = await Promise.all([
+      // count(*) OVER() da el total del filtro sin una segunda consulta.
+      query(
+        `SELECT ${APPOINTMENT_COLUMNS}, count(*) OVER() AS total_filtrado
+         FROM appointments a JOIN tenants t ON t.id = a.tenant_id
+         WHERE ${filtros.join(' AND ')}
+         ORDER BY a.created_at DESC
+         LIMIT $${params.length - 1} OFFSET $${params.length}`,
+        params
+      ),
+      query<{ status: string; n: string }>(
+        `SELECT a.status, count(*) AS n FROM appointments a JOIN tenants t ON t.id = a.tenant_id
+         WHERE ${base} GROUP BY a.status`,
+        params.slice(0, barberId ? 2 : 1)
+      ),
+    ]);
+
+    const conteo = { total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+    for (const r of resumen.rows) {
+      const n = Number(r.n);
+      conteo.total += n;
+      if (r.status in conteo) conteo[r.status as keyof typeof conteo] = n;
+    }
+
+    return {
+      rows: pagina.rows.map(toAppointment),
+      // Sin filas no hay ventana de la que leer el total: son cero.
+      total: pagina.rows.length ? Number(pagina.rows[0].total_filtrado) : 0,
+      resumen: conteo,
+    };
+  },
+
   appointmentsOnDate: (slug, date) =>
     selectAppointments('t.slug = $1 AND a.date = $2', [norm(slug), date], 'a.time, a.created_at'),
 
