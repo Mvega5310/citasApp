@@ -1,10 +1,19 @@
 import { MetadataRoute } from 'next';
+import { marcaDeLaPagina } from '@/lib/server/marca';
 
-export default function manifest(): MetadataRoute.Manifest {
+// Lee la barbería de la petición, así que no se puede generar en el build:
+// cada subdominio necesita el suyo.
+export const dynamic = 'force-dynamic';
+
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const { nombre, descripcion } = await marcaDeLaPagina();
+
   return {
-    name: 'Marcos BarberShop - Reservas',
-    short_name: 'Marcos BarberShop',
-    description: 'Reserva tu cita de barbería en Marcos BarberShop de manera fácil y rápida',
+    name: `${nombre} · Reservas`,
+    // El nombre bajo el icono en la pantalla de inicio. Android lo recorta
+    // alrededor de los 12 caracteres, así que va el nombre solo.
+    short_name: nombre,
+    description: descripcion,
     start_url: '/',
     display: 'standalone',
     background_color: '#100E0C',

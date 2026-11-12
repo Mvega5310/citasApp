@@ -61,8 +61,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  // Páginas públicas del panel: iniciar sesión y crear/restablecer contraseña
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login' && pathname !== '/admin/password') {
+  // Páginas públicas del panel: iniciar sesión, crear/restablecer contraseña, y
+  // el manifest. El navegador pide el manifest sin cookies y antes de que haya
+  // sesión, así que exigirla lo dejaba redirigido al login: al instalar el
+  // panel en el teléfono salía sin nombre ni icono. No expone nada privado —
+  // solo el nombre de la barbería, que ya está en su página pública.
+  if (
+    pathname.startsWith('/admin') &&
+    pathname !== '/admin/login' &&
+    pathname !== '/admin/password' &&
+    pathname !== '/admin-manifest.json'
+  ) {
     if ((await getAuthState(request, tenantSlug)) !== 'ok') {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);

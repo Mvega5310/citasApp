@@ -2,43 +2,62 @@ import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'react-hot-toast';
 import WebVitalsClient from '@/components/shared/WebVitalsClient';
 import PWARegister from '@/components/shared/PWARegister';
+import { marcaDeLaPagina } from '@/lib/server/marca';
 import './globals.css';
 
-export const metadata: Metadata = {
-  title: 'Marcos BarberShop - Reserva tu cita',
-  description:
-    'Reserva tu cita de barbería en Marcos BarberShop. Corte, arreglo de barba y más. Sistema de reservas online fácil y rápido.',
-  keywords: 'barbería, barber, corte de cabello, afeitado, reservas, citas, Marcos BarberShop',
-  authors: [{ name: 'Marcos BarberShop' }],
-  manifest: '/manifest.webmanifest',
-  // iOS no lee los iconos del manifest: usa apple-touch-icon. Sin esto, al
-  // añadir la app a la pantalla de inicio en iPhone sale un recuadro vacío.
-  icons: {
-    icon: [{ url: '/icons/logo-192.png', sizes: '192x192', type: 'image/png' }],
-    apple: [{ url: '/icons/logo-180.png', sizes: '180x180', type: 'image/png' }],
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Marcos BarberShop',
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'es_ES',
-    url: 'https://beautyturno.com',
-    title: 'Marcos BarberShop - Barbería Online',
-    description: 'Reserva tu cita de barbería de manera fácil y rápida',
-    siteName: 'Marcos BarberShop',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Marcos BarberShop - Barbería Online',
-    description: 'Reserva tu cita de barbería de manera fácil y rápida',
-  },
-};
+/**
+ * Los metadatos son de cada barbería, no de la plataforma.
+ *
+ * Estaban escritos a mano, así que toda barbería nueva aparecía como "Marcos
+ * BarberShop" en la pestaña del navegador, al compartir su enlace por WhatsApp
+ * y al instalar la app. Ahora salen del nombre que la barbería configuró.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const { nombre, descripcion, ciudad, origen } = await marcaDeLaPagina();
+  const titulo = `${nombre} · Reserva tu cita`;
+
+  return {
+    // Sin esto, Next resuelve las URLs relativas de Open Graph contra
+    // localhost y la vista previa al compartir sale rota en producción.
+    metadataBase: new URL(origen),
+    title: titulo,
+    description: descripcion,
+    keywords: ['barbería', 'corte de cabello', 'barba', 'reservas', 'citas', nombre, ciudad]
+      .filter(Boolean)
+      .join(', '),
+    authors: [{ name: nombre }],
+    manifest: '/manifest.webmanifest',
+    // iOS no lee los iconos del manifest: usa apple-touch-icon. Sin esto, al
+    // añadir la app a la pantalla de inicio en iPhone sale un recuadro vacío.
+    icons: {
+      icon: [{ url: '/icons/logo-192.png', sizes: '192x192', type: 'image/png' }],
+      apple: [{ url: '/icons/logo-180.png', sizes: '180x180', type: 'image/png' }],
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'default',
+      // El nombre bajo el icono en la pantalla de inicio del iPhone: ahí no
+      // cabe un título largo, así que va solo el nombre.
+      title: nombre,
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    openGraph: {
+      type: 'website',
+      locale: 'es_CO',
+      url: origen,
+      title: titulo,
+      description: descripcion,
+      siteName: nombre,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: titulo,
+      description: descripcion,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -57,9 +76,8 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/api/logo?size=32" sizes="32x32" type="image/png" />
         <link rel="apple-touch-icon" href="/api/logo?size=180" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Marcos BarberShop" />
+        {/* apple-mobile-web-app-title lo genera `appleWebApp.title` con el
+            nombre de la barbería; escribirlo aquí lo dejaría fijo otra vez. */}
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#100E0C" />
         <meta name="msapplication-tap-highlight" content="no" />
