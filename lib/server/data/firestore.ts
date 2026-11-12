@@ -150,6 +150,28 @@ export const firestoreStore: DataStore = {
     await settingsDoc(adminDb(), slug).set(settings, { merge: true });
   },
 
+  /**
+   * Firestore guarda el PNG en base64 dentro del documento. Es el respaldo
+   * congelado, así que importa que funcione, no que sea eficiente.
+   */
+  async readLogo(slug) {
+    const doc = await adminDb().collection('tenantLogos').doc(slug).get();
+    const d = doc.data();
+    if (!d?.png) return null;
+    return { png: Buffer.from(String(d.png), 'base64'), updatedAt: String(d.updatedAt ?? '') };
+  },
+
+  async writeLogo(slug, png) {
+    await adminDb()
+      .collection('tenantLogos')
+      .doc(slug)
+      .set({ png: png.toString('base64'), updatedAt: new Date().toISOString() });
+  },
+
+  async deleteLogo(slug) {
+    await adminDb().collection('tenantLogos').doc(slug).delete();
+  },
+
   async listAppointments(slug) {
     const snap = await appointmentsCol(adminDb(), slug).get();
     return snap.docs

@@ -197,6 +197,23 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
   puede deshacer no debe ser lo que se pulsa por descuido. Las pantallas de enlace inválido y de
   cita pasada **no** llevan nombre de barbería: si el enlace no se pudo verificar, no se sabe de
   quién es la cita y ponerlo sería inventarlo.
+- **Logo por barbería** (migración `008`): `/api/logo` servía un PNG fijo de `public/icons/`, así
+  que el logo de Marcos BarberShop salía en **todas** las barberías — encabezado del cliente, panel,
+  login, favicon, pantalla de contraseña y los dos manifests. Ahora cada una sube el suyo desde
+  Configuración.
+  - Va en su propia tabla, no en `tenant_settings`: la configuración se lee en cada página y no
+    tiene por qué arrastrar ~30 KB de imagen donde el logo no se pinta.
+  - **El navegador redimensiona antes de subir** (recorte cuadrado al centro, 512×512 por canvas).
+    No hay `sharp` en el proyecto —dependencia nativa— y no vale la pena añadirla solo para esto.
+    Aun así el servidor revisa los bytes: firma PNG, IHDR, lado entre 64 y 512, cuadrado y 300 KB
+    como tope. El `Content-Type` lo escribe quien sube, así que no se le cree.
+  - **Sin logo propio sale un monograma con las iniciales**, no el PNG comiteado: para otra
+    barbería ese archivo no es un respaldo, es el logo de otro negocio. El PNG sigue siendo el
+    respaldo solo de la barbería por defecto, que es de quien es.
+  - El monograma es SVG. Para el icono del manifest eso puede no renderizar en Android hasta que
+    suban el suyo; es degradación aceptable y además empuja a subirlo.
+  - ETag sobre `updated_at`: al cambiar el logo el navegador revalida barato en vez de quedarse con
+    el viejo hasta que caduque la caché.
 - **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
 - **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
   parámetro**, que sería un generador de QR alojado en el dominio propio.

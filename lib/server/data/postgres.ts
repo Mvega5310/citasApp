@@ -275,6 +275,32 @@ export const postgresStore: DataStore = {
     );
   },
 
+  async readLogo(slug) {
+    const res = await query<{ png: Buffer; updated_at: Date }>(
+      `SELECT l.png, l.updated_at FROM tenant_logos l JOIN tenants t ON t.id = l.tenant_id
+       WHERE t.slug = $1`,
+      [norm(slug)]
+    );
+    const row = res.rows[0];
+    return row ? { png: row.png, updatedAt: iso(row.updated_at) ?? '' } : null;
+  },
+
+  async writeLogo(slug, png) {
+    await query(
+      `INSERT INTO tenant_logos (tenant_id, png, updated_at)
+       SELECT id, $2, now() FROM tenants WHERE slug = $1
+       ON CONFLICT (tenant_id) DO UPDATE SET png = EXCLUDED.png, updated_at = now()`,
+      [norm(slug), png]
+    );
+  },
+
+  async deleteLogo(slug) {
+    await query(
+      'DELETE FROM tenant_logos WHERE tenant_id = (SELECT id FROM tenants WHERE slug = $1)',
+      [norm(slug)]
+    );
+  },
+
   listAppointments: (slug) => selectAppointments('t.slug = $1', [norm(slug)]),
 
   async listAppointmentsPage(slug, { status, date, barberId, limit, offset }) {

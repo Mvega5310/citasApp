@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import QrCard from '@/components/admin/QrCard';
+import LogoUploader from '@/components/admin/LogoUploader';
 import {
   Store, Phone, MapPin, Mail, Instagram, Facebook,
   MessageCircle, Bell, Save, CheckCircle, Settings, QrCode,
@@ -187,7 +188,11 @@ export default function ConfiguracionPage() {
                   <Store className="w-4 h-4 text-cafe-goldlight" />
                   Información del salón
                 </h2>
-                <div className="space-y-4">
+                <div className="space-y-5">
+                  {/* Fuera del formulario en cuanto a guardado: el logo se sube
+                      al momento y no espera al botón "Guardar configuración". */}
+                  <LogoUploader />
+                  <div className="border-t border-cafe-border" />
                   <Field
                     label="Nombre del salón"
                     icon={Store}

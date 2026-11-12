@@ -124,6 +124,47 @@ async function runAsyncTest(name: string, fn: () => Promise<void>) {
 
 (async () => {
   // Resend: se reemplaza fetch, no sale ningún correo real
+  await runAsyncTest('should only accept a square PNG as the barbería logo', async () => {
+    const { revisarLogo } = await import('../lib/server/logoPng');
+    const { readFileSync } = await import('node:fs');
+    const png = readFileSync('public/icons/logo-192.png');
+
+    const bueno = revisarLogo(png);
+    assert.equal(bueno.ok, true);
+    if (bueno.ok) assert.deepEqual([bueno.ancho, bueno.alto], [192, 192]);
+
+    // El Content-Type lo escribe quien sube: hay que mirar los bytes.
+    const jpegDisfrazado = Buffer.from([0xff, 0xd8, 0xff, 0xe0, ...Array(40).fill(0)]);
+    assert.equal(revisarLogo(jpegDisfrazado).ok, false, 'un JPEG renombrado no debe pasar');
+    assert.equal(revisarLogo(Buffer.from('no soy una imagen')).ok, false);
+    assert.equal(revisarLogo(Buffer.alloc(0)).ok, false);
+
+    // 2048×2048 es justo el tamaño del logo original que rompía el generador
+    const enorme = Buffer.from(png);
+    enorme.writeUInt32BE(2048, 16);
+    enorme.writeUInt32BE(2048, 20);
+    assert.equal(revisarLogo(enorme).ok, false, 'no debe aceptar 2048 px');
+
+    // Alargado: se pinta en cuadrados de lado fijo, saldría deformado
+    const alargado = Buffer.from(png);
+    alargado.writeUInt32BE(96, 20);
+    assert.equal(revisarLogo(alargado).ok, false, 'no debe aceptar una imagen no cuadrada');
+
+    assert.equal(revisarLogo(Buffer.concat([png, Buffer.alloc(400 * 1024)])).ok, false, 'tope de peso');
+  });
+
+  await runAsyncTest('should build the fallback monogram from the barbería name, escaped', async () => {
+    const { monogramaSvg } = await import('../lib/server/logoPng');
+    // Iniciales de la barbería, no el logo de otra
+    assert.ok(monogramaSvg('Barbería Sur').includes('>BS<'));
+    assert.ok(monogramaSvg('Norte Premium').includes('>NP<'));
+    // Un solo nombre, y el caso sin nombre
+    assert.ok(monogramaSvg('Figaro').includes('>F<'));
+    assert.ok(monogramaSvg('   ').includes('>BT<'));
+    // El nombre lo escribe la barbería y acaba dentro del SVG
+    assert.ok(!monogramaSvg('<script>x</script>').includes('<script'));
+  });
+
   await runAsyncTest('should send emails through Resend when RESEND_API_KEY is set', async () => {
     const { sendReminderEmail } = await import('../lib/server/email');
     const calls: { url: string; init: RequestInit }[] = [];

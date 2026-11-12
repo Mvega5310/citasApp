@@ -195,6 +195,17 @@ export interface DataStore {
   readSettings(slug: string): Promise<Partial<SalonSettings> | null>;
   writeSettings(slug: string, settings: SalonSettings): Promise<void>;
 
+  // ── Logo ──
+  /**
+   * Logo propio de la barbería, o null si no ha subido ninguno.
+   *
+   * Aparte de `readSettings` porque la configuración se lee en cada página y
+   * no tiene por qué arrastrar la imagen donde no se pinta.
+   */
+  readLogo(slug: string): Promise<{ png: Buffer; updatedAt: string } | null>;
+  writeLogo(slug: string, png: Buffer): Promise<void>;
+  deleteLogo(slug: string): Promise<void>;
+
   // ── Citas ──
   /** Todas las citas de la barbería, más recientes primero. */
   listAppointments(slug: string): Promise<AppointmentRecord[]>;
