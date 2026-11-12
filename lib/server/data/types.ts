@@ -146,6 +146,11 @@ export type TenantSummary = {
   /** Citas registradas. Con alguna, la barbería ya no se puede borrar. */
   appointments: number;
   createdAt: string | null;
+  /**
+   * Plan acordado. El **estado** (en prueba, al día, vencida) no se guarda:
+   * se deduce de estos datos en `lib/server/suscripcion.ts`.
+   */
+  plan: { hasta: string | null; precio: number; nota: string };
 };
 
 /** La barbería tiene citas: borrarla perdería el historial de clientes reales. */
@@ -183,6 +188,11 @@ export interface DataStore {
   lookupTenant(slug: string): Promise<TenantLookupResult>;
   /** Todas las barberías, para el panel de plataforma. */
   listTenants(): Promise<TenantSummary[]>;
+  /** Cambia el plan acordado con una barbería. No cobra ni corta nada. */
+  updateTenantPlan(
+    slug: string,
+    plan: { hasta: string | null; precio: number; nota: string }
+  ): Promise<boolean>;
   /** Crea la barbería. Lanza TenantExistsError si el slug ya está tomado. */
   createTenant(input: { slug: string; name: string }): Promise<void>;
   /** Activa o suspende. Suspendida, el resolutor devuelve 403 a sus visitantes. */

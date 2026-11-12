@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
-import { Building2, Plus, ExternalLink, Check, Pause, Play, Trash2 } from 'lucide-react';
+import { Building2, Plus, ExternalLink, Check, Pause, Play, Trash2, CalendarClock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
+import PlanDialog from '@/components/admin/PlanDialog';
+
+type EstadoPlan = 'cortesia' | 'prueba' | 'al_dia' | 'por_vencer' | 'gracia' | 'vencida';
 
 type Tenant = {
   slug: string;
@@ -14,7 +17,31 @@ type Tenant = {
   admins: number;
   appointments: number;
   createdAt: string | null;
+  plan: { hasta: string | null; precio: number; nota: string };
+  /** Lo calcula el servidor a partir de las fechas; nunca está guardado. */
+  suscripcion: { estado: EstadoPlan; diasRestantes: number | null };
 };
+
+/** Cómo se ve cada estado. El color dice qué necesita atención. */
+const PLAN_ESTILO: Record<EstadoPlan, { label: string; clase: string }> = {
+  cortesia: { label: 'cortesía', clase: 'text-cafe-muted bg-cafe-soft' },
+  prueba: { label: 'en prueba', clase: 'text-sky-300 bg-sky-400/10' },
+  al_dia: { label: 'al día', clase: 'text-cafe-green bg-cafe-green/10' },
+  por_vencer: { label: 'por vencer', clase: 'text-amber-300 bg-amber-400/10' },
+  gracia: { label: 'vencida', clase: 'text-orange-300 bg-orange-400/10' },
+  vencida: { label: 'vencida', clase: 'text-red-300 bg-red-400/10' },
+};
+
+const pesos = (n: number) => `$${n.toLocaleString('es-CO')}`;
+
+/** "faltan 12 días" / "venció hace 3 días", que es como se lee de un vistazo. */
+function plazoEnPalabras(dias: number | null): string {
+  if (dias === null) return 'sin plazo';
+  if (dias === 0) return 'vence hoy';
+  if (dias > 0) return `faltan ${dias} día${dias === 1 ? '' : 's'}`;
+  const atraso = Math.abs(dias);
+  return `venció hace ${atraso} día${atraso === 1 ? '' : 's'}`;
+}
 
 const VACIO = { slug: '', name: '', adminName: '', adminEmail: '' };
 
@@ -42,6 +69,7 @@ export default function BarberiasPage() {
   const [creando, setCreando] = useState(false);
   const [dominio, setDominio] = useState('');
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const [editando, setEditando] = useState<Tenant | null>(null);
   const { confirmar, dialogo } = useConfirmacion();
 
   useEffect(() => {
@@ -311,6 +339,19 @@ export default function BarberiasPage() {
                       <p className="text-xs text-cafe-subtle font-mono truncate">
                         {t.slug}.{dominio || 'citas.proyects.store'}
                       </p>
+                      {t.plan.hasta && (
+                        <p
+                          className={`text-xs mt-0.5 ${
+                            t.suscripcion.estado === 'vencida' || t.suscripcion.estado === 'gracia'
+                              ? 'text-orange-300'
+                              : 'text-cafe-subtle'
+                          }`}
+                        >
+                          {plazoEnPalabras(t.suscripcion.diasRestantes)}
+                          {t.plan.precio > 0 && ` · ${pesos(t.plan.precio)}/mes`}
+                          {t.plan.nota && ` · ${t.plan.nota}`}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs text-cafe-muted hidden sm:inline">
@@ -326,6 +367,23 @@ export default function BarberiasPage() {
                         {t.status === 'active' ? <Check className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
                         {t.status === 'active' ? 'activa' : 'suspendida'}
                       </span>
+
+                      {/* El plan es aparte del acceso: vencerse no suspende. */}
+                      <button
+                        type="button"
+                        onClick={() => setEditando(t)}
+                        title={
+                          t.plan.hasta
+                            ? `Plan hasta ${t.plan.hasta} · ${plazoEnPalabras(t.suscripcion.diasRestantes)}`
+                            : 'Sin plazo. Clic para fijar uno'
+                        }
+                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded transition hover:ring-1 hover:ring-cafe-gold/40 ${
+                          PLAN_ESTILO[t.suscripcion.estado].clase
+                        }`}
+                      >
+                        <CalendarClock className="w-3 h-3" />
+                        {PLAN_ESTILO[t.suscripcion.estado].label}
+                      </button>
                       <a
                         href={`https://${t.slug}.${dominio || 'citas.proyects.store'}`}
                         target="_blank"
@@ -367,6 +425,13 @@ export default function BarberiasPage() {
           </div>
         </div>
       </div>
+      {editando && (
+        <PlanDialog
+          barberia={editando}
+          onCerrar={() => setEditando(null)}
+          onGuardado={cargar}
+        />
+      )}
       {dialogo}
     </div>
   );

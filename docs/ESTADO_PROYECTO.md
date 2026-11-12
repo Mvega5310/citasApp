@@ -214,6 +214,24 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
     suban el suyo; es degradación aceptable y además empuja a subirlo.
   - ETag sobre `updated_at`: al cambiar el logo el navegador revalida barato en vez de quedarse con
     el viejo hasta que caduque la caché.
+- **Plan de cada barbería** (migración `009`): registra hasta cuándo está cubierta, qué se acordó
+  pagar y cómo paga. **No hay cobro ni pasarela**, y a propósito — ver "Descartado".
+  - **El estado no se guarda, se deduce** (`lib/server/suscripcion.ts`). Una columna que dijera
+    'activa' se volvería mentira sola el día que venciera, y nadie estaría mirando ese día. Los
+    estados salen de las fechas: cortesía, en prueba, al día, por vencer, vencida (en gracia),
+    vencida.
+  - **Vencerse no suspende.** `tenants.status` sigue siendo una decisión manual y aparte: una
+    barbería con citas reservadas para el sábado no puede quedarse sin panel un miércoles por una
+    mensualidad. Hay 8 días de gracia y luego sale en rojo en el panel de plataforma, pero cortar
+    lo decide una persona.
+  - Renovar desde el vencimiento si sigue vigente, y desde hoy si ya venció: renovar tarde no
+    regala los días de atraso, y renovar a tiempo tampoco los quita.
+  - `sumarMeses` respeta el fin de mes (31 ene + 1 mes = 28 feb, o 29 en bisiesto), que es donde
+    suele romperse este tipo de cuenta.
+- **Diálogos por encima de la barra del móvil**: los modales estaban en `z-50` y la barra superior
+  del panel es `z-[60]`, así que en el teléfono el encabezado del modal quedaba tapado. Pasan a
+  `z-[70]`, como `useConfirmacion`, y con `max-h-[90vh] overflow-y-auto` para que rueden por dentro
+  en vez de salirse de la pantalla.
 - **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
 - **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
   parámetro**, que sería un generador de QR alojado en el dominio propio.
@@ -282,7 +300,13 @@ falta un despliegue nuevo.
 - **Modo claro** — 11 nov 2026. A Marcos le gusta el aspecto oscuro actual y no quiere la variante
   clara. Si algún día se retoma: son tokens `cafe-*` en 17 archivos, y hacerlo bien es convertirlos
   en variables que cambien según el tema, no duplicar clases.
-- **Cualquier cosa relacionada con pagos** — 11 nov 2026. Se construyó el abono para confirmar la
+- **Cobrar dentro de la app** — 11 nov 2026. Sigue descartado el pago del cliente a la barbería.
+  La **suscripción de las barberías a la plataforma** sí queda (migración `009`), pero por ahora
+  solo como registro: planes de $15.000–$20.000 al mes, con tres meses de prueba para ver
+  rendimiento. Sin pasarela: en esos tres meses no hay nada que cobrar, y el cobro recurrente
+  automático exige tarjeta tokenizada —Nequi y PSE son de un solo disparo—, justo lo que menos
+  tiene este mercado. Además Wompi sobre $15.000 se lleva ~8,7% por los $700 fijos.
+- **Cualquier cosa relacionada con pagos del cliente** — 11 nov 2026. Se construyó el abono para confirmar la
   cita (commit `732923a`) y se revirtió entero (`7b72d86`). El cliente se entiende directo con la
   barbería por WhatsApp y acuerdan ahí el medio de pago. Dato por si vuelve a salir: Wompi cobra
   2,65 % + $700 + IVA por transacción, que sobre un abono de $7.000 es el 15 % — la parte fija es

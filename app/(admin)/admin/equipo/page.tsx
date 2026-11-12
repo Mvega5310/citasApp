@@ -313,10 +313,11 @@ export default function EquipoPage() {
         </div>
       </div>
 
-      {/* Modal: New admin */}
+      {/* Modal: New admin. z-[70] y no z-50: la barra superior del móvil es
+          z-[60] y tapaba el encabezado de este modal. */}
       {showForm && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-cafe-card rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-cafe-card rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-cafe-text">Agregar administrador</h2>
               <button onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }} className="text-cafe-subtle hover:text-cafe-muted">

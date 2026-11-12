@@ -93,6 +93,11 @@ export const firestoreStore: DataStore = {
           admins: admins.docs.filter((a) => adminTenantOf(a.data() ?? {}) === doc.id).length,
           appointments: (await appointmentsCol(adminDb(), doc.id).count().get()).data().count,
           createdAt: toIso(d.createdAt),
+          plan: {
+            hasta: d.planHasta ? String(d.planHasta).slice(0, 10) : null,
+            precio: Number(d.planPrecio ?? 0),
+            nota: String(d.planNota ?? ''),
+          },
         };
       })
     );
@@ -170,6 +175,16 @@ export const firestoreStore: DataStore = {
 
   async deleteLogo(slug) {
     await adminDb().collection('tenantLogos').doc(slug).delete();
+  },
+
+  async updateTenantPlan(slug, plan) {
+    const ref = adminDb().collection('tenants').doc(slug);
+    if (!(await ref.get()).exists) return false;
+    await ref.set(
+      { planHasta: plan.hasta, planPrecio: plan.precio, planNota: plan.nota },
+      { merge: true }
+    );
+    return true;
   },
 
   async listAppointments(slug) {

@@ -5,6 +5,7 @@ import { AuthError, appOrigin, auth } from '@/lib/server/auth';
 import { sendAdminInvitation } from '@/lib/server/email';
 import { emailContextFor, tenantFromSlug } from '@/lib/server/settings';
 import { logger } from '@/lib/server/logger';
+import { estadoDelPlan } from '@/lib/server/suscripcion';
 
 /** Mismo formato que acepta el resolutor y que valida el CHECK del esquema. */
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -27,7 +28,12 @@ export async function GET(request: Request) {
   if (!authorized.ok) return authorized.response;
 
   try {
-    return NextResponse.json({ tenants: await store().listTenants() });
+    const tenants = await store().listTenants();
+    // El estado del plan se calcula aquí y no se guarda: así no puede quedar
+    // desactualizado el día que una barbería vence.
+    return NextResponse.json({
+      tenants: tenants.map((t) => ({ ...t, suscripcion: estadoDelPlan(t.plan) })),
+    });
   } catch (error) {
     logger.error('tenants_list_failed', { error: error instanceof Error ? error.message : 'unknown' });
     return NextResponse.json({ error: 'No se pudieron cargar las barberías' }, { status: 503 });

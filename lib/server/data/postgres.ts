@@ -165,8 +165,12 @@ export const postgresStore: DataStore = {
   },
 
   async listTenants() {
-    const res = await query<{ slug: string; name: string; status: string; admins: number; appointments: number; created_at: Date | null }>(
+    const res = await query<{
+      slug: string; name: string; status: string; admins: number; appointments: number;
+      created_at: Date | null; plan_hasta: Date | null; plan_precio: number; plan_nota: string;
+    }>(
       `SELECT t.slug, t.name, t.status, t.created_at,
+              t.plan_hasta, t.plan_precio, t.plan_nota,
               (SELECT count(*)::int FROM admins a WHERE a.tenant_id = t.id) AS admins,
               (SELECT count(*)::int FROM appointments ap WHERE ap.tenant_id = t.id) AS appointments
        FROM tenants t ORDER BY t.created_at`
@@ -178,7 +182,23 @@ export const postgresStore: DataStore = {
       admins: r.admins,
       appointments: r.appointments,
       createdAt: iso(r.created_at),
+      plan: {
+        // Solo la fecha: `plan_hasta` es un `date`, y pasarlo por ISO completo
+        // le añadiría una hora que no significa nada y puede correr el día.
+        hasta: r.plan_hasta ? iso(r.plan_hasta)?.slice(0, 10) ?? null : null,
+        precio: r.plan_precio ?? 0,
+        nota: r.plan_nota ?? '',
+      },
     }));
+  },
+
+  async updateTenantPlan(slug, plan) {
+    const res = await query(
+      `UPDATE tenants SET plan_hasta = $2, plan_precio = $3, plan_nota = $4, updated_at = now()
+       WHERE slug = $1`,
+      [norm(slug), plan.hasta, plan.precio, plan.nota]
+    );
+    return (res.rowCount ?? 0) > 0;
   },
 
   async createTenant({ slug, name }) {

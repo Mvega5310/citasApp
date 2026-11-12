@@ -124,6 +124,45 @@ async function runAsyncTest(name: string, fn: () => Promise<void>) {
 
 (async () => {
   // Resend: se reemplaza fetch, no sale ningún correo real
+  await runAsyncTest('should derive the subscription state from the dates, never store it', async () => {
+    const { estadoDelPlan, DIAS_DE_GRACIA } = await import('../lib/server/suscripcion');
+    const hoy = '2026-11-12';
+    const plan = (hasta: string | null, precio = 0) => ({ hasta, precio, nota: '' });
+
+    // Sin plazo no vence nunca
+    assert.equal(estadoDelPlan(plan(null), hoy).estado, 'cortesia');
+
+    // Sin precio acordado es una prueba; con precio, una suscripción al día
+    assert.equal(estadoDelPlan(plan('2027-02-12'), hoy).estado, 'prueba');
+    assert.equal(estadoDelPlan(plan('2027-02-12', 15000), hoy).estado, 'al_dia');
+
+    // Avisa antes de que venza
+    assert.equal(estadoDelPlan(plan('2026-11-16', 15000), hoy).estado, 'por_vencer');
+    assert.equal(estadoDelPlan(plan('2026-11-12', 15000), hoy).estado, 'por_vencer', 'el mismo día aún cuenta');
+
+    // Vencida pero en gracia: nada se corta todavía
+    assert.equal(estadoDelPlan(plan('2026-11-11', 15000), hoy).estado, 'gracia');
+    assert.equal(estadoDelPlan(plan('2026-11-05', 15000), hoy).estado, 'gracia', `${DIAS_DE_GRACIA} días de margen`);
+    assert.equal(estadoDelPlan(plan('2026-11-03', 15000), hoy).estado, 'vencida');
+
+    // Los días restantes son de calendario, no de husos horarios
+    assert.equal(estadoDelPlan(plan('2026-11-19'), hoy).diasRestantes, 7);
+    assert.equal(estadoDelPlan(plan('2026-11-10'), hoy).diasRestantes, -2);
+  });
+
+  await runAsyncTest('should renew by months without the calendar drifting', async () => {
+    const { sumarMeses } = await import('../lib/server/suscripcion');
+
+    assert.equal(sumarMeses('2026-11-12', 3), '2027-02-12', 'los tres meses de prueba');
+    assert.equal(sumarMeses('2026-11-30', 1), '2026-12-30');
+    // Fin de mes: no debe saltar al mes siguiente
+    assert.equal(sumarMeses('2026-01-31', 1), '2026-02-28');
+    assert.equal(sumarMeses('2028-01-31', 1), '2028-02-29', 'año bisiesto');
+    assert.equal(sumarMeses('2026-10-31', 1), '2026-11-30');
+    // Y cruzar el año
+    assert.equal(sumarMeses('2026-12-15', 1), '2027-01-15');
+  });
+
   await runAsyncTest('should only accept a square PNG as the barbería logo', async () => {
     const { revisarLogo } = await import('../lib/server/logoPng');
     const { readFileSync } = await import('node:fs');
