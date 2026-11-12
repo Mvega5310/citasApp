@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 export default function CancelButton({ token }: { token: string }) {
   const [status, setStatus] = useState<'idle' | 'confirming' | 'loading' | 'done' | 'error'>('idle');
@@ -29,17 +30,17 @@ export default function CancelButton({ token }: { token: string }) {
 
   if (status === 'done') {
     return (
-      <div className="rounded-xl bg-gray-50 border border-gray-200 p-6 text-center">
-        <div className="text-4xl mb-3">✅</div>
-        <p className="text-gray-700 font-semibold text-lg">Cita cancelada</p>
-        <p className="text-gray-500 text-sm mt-1">
+      <div className="rounded-xl bg-cafe-soft border border-cafe-border p-6 text-center">
+        <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" aria-hidden="true" />
+        <p className="text-cafe-text font-semibold">Cita cancelada</p>
+        <p className="text-sm text-cafe-muted mt-1.5 leading-relaxed">
           Te enviamos un correo de confirmación. Puedes volver a reservar cuando quieras.
         </p>
         <a
           href="/"
-          className="mt-4 inline-block text-sm text-primary-600 underline underline-offset-2"
+          className="mt-4 inline-block text-sm font-semibold text-cafe-goldlight hover:text-cafe-gold transition"
         >
-          Volver al inicio
+          Reservar otro turno
         </a>
       </div>
     );
@@ -47,12 +48,12 @@ export default function CancelButton({ token }: { token: string }) {
 
   if (status === 'error') {
     return (
-      <div className="rounded-xl bg-red-50 border border-red-200 p-6 text-center">
-        <div className="text-4xl mb-3">⚠️</div>
-        <p className="text-red-700 font-semibold">{message}</p>
+      <div className="rounded-xl bg-red-400/10 border border-red-400/25 p-6 text-center">
+        <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" aria-hidden="true" />
+        <p className="text-sm text-red-300 font-semibold leading-relaxed">{message}</p>
         <button
           onClick={() => setStatus('idle')}
-          className="mt-4 text-sm text-red-600 underline underline-offset-2"
+          className="mt-4 text-sm font-semibold text-cafe-goldlight hover:text-cafe-gold transition"
         >
           Intentar de nuevo
         </button>
@@ -62,22 +63,24 @@ export default function CancelButton({ token }: { token: string }) {
 
   if (status === 'confirming') {
     return (
-      <div className="rounded-xl bg-amber-50 border border-amber-200 p-6 text-center space-y-4">
-        <p className="text-amber-800 font-semibold">
-          ¿Confirmas que deseas cancelar esta cita?
+      <div className="rounded-xl bg-cafe-soft border border-cafe-border p-5 space-y-4">
+        <p className="text-sm text-cafe-text font-semibold text-center">
+          ¿Seguro que quieres cancelar esta cita?
         </p>
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={handleCancel}
-            className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors"
-          >
-            Sí, cancelar
-          </button>
+        <div className="flex gap-3">
+          {/* Conservar va primero y con más peso visual: el camino que no se
+              puede deshacer no debe ser el que se pulsa por descuido. */}
           <button
             onClick={() => setStatus('idle')}
-            className="px-5 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition-colors"
+            className="flex-1 py-2.5 rounded-lg bg-cafe-gold hover:bg-cafe-goldlight text-cafe-bg font-semibold text-sm transition"
           >
-            No, conservar
+            No, conservarla
+          </button>
+          <button
+            onClick={handleCancel}
+            className="flex-1 py-2.5 rounded-lg border border-red-400/40 text-red-300 hover:bg-red-400/10 font-semibold text-sm transition"
+          >
+            Sí, cancelar
           </button>
         </div>
       </div>
@@ -88,7 +91,7 @@ export default function CancelButton({ token }: { token: string }) {
     <button
       onClick={() => setStatus('confirming')}
       disabled={status === 'loading'}
-      className="w-full py-3 rounded-xl border border-gray-300 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+      className="w-full py-3 rounded-xl border border-cafe-border text-cafe-muted hover:text-cafe-text hover:border-cafe-gold/40 font-semibold text-sm transition disabled:opacity-50"
     >
       {status === 'loading' ? 'Cancelando...' : 'Cancelar mi cita'}
     </button>

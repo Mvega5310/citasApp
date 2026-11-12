@@ -190,6 +190,13 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
   `/admin`, así que el middleware lo mandaba al login, y el navegador lo pide sin cookies. Pasó a
   ser una ruta y está exento del guardia. Si la barbería no se puede resolver, los metadatos caen en
   "BeautyTurno" y nunca tumban la página: el 404 lo decide la página, no su título.
+- **Pantalla de cancelación** (`/cancelar/[token]`): era la última en el tema claro antiguo —gris,
+  blanco y emoji— y es la que ve el cliente al abrir el enlace de su correo. Pasó al café/dorado,
+  con el sello y el nombre de **su** barbería, igual que la tirilla que recibió al reservar. En la
+  confirmación, *conservar* va primero y en dorado, y *cancelar* queda como borde rojo: lo que no se
+  puede deshacer no debe ser lo que se pulsa por descuido. Las pantallas de enlace inválido y de
+  cita pasada **no** llevan nombre de barbería: si el enlace no se pudo verificar, no se sabe de
+  quién es la cita y ponerlo sería inventarlo.
 - **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
 - **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
   parámetro**, que sería un generador de QR alojado en el dominio propio.
@@ -250,21 +257,26 @@ falta un despliegue nuevo.
    único acceso a la base desde fuera de Railway.
 
 **Pendiente de construir:**
-- **Modo claro.** Toda la interfaz está sobre tokens `cafe-*` oscuros por definición, en 17
-  archivos. Hacerlo bien es convertirlos en variables que cambien según el tema, no duplicar clases.
-- **Borrar barberías** desde el panel de plataforma: hoy solo se pueden crear y listar.
-- **Título y metadatos por barbería**: `app/layout.tsx` los tiene fijos. Arreglarlo obliga a volver
-  dinámico ese layout, y eso convierte 11 páginas estáticas en dinámicas — decisión de rendimiento
-  aparte.
-- **Paginación en el servidor** del listado de citas (hoy es solo en pantalla).
+- Cuenta opcional de cliente (ver y cancelar sus citas desde un enlace al correo). Reservar sin
+  cuenta tiene que seguir funcionando igual.
+- Página pública o directorio de barberías.
+
+**Descartado:**
+- **Modo claro** — 11 nov 2026. A Marcos le gusta el aspecto oscuro actual y no quiere la variante
+  clara. Si algún día se retoma: son tokens `cafe-*` en 17 archivos, y hacerlo bien es convertirlos
+  en variables que cambien según el tema, no duplicar clases.
+- **Cualquier cosa relacionada con pagos** — 11 nov 2026. Se construyó el abono para confirmar la
+  cita (commit `732923a`) y se revirtió entero (`7b72d86`). El cliente se entiende directo con la
+  barbería por WhatsApp y acuerdan ahí el medio de pago. Dato por si vuelve a salir: Wompi cobra
+  2,65 % + $700 + IVA por transacción, que sobre un abono de $7.000 es el 15 % — la parte fija es
+  la que no cuadra con un ticket de barrio.
 
 ## Después del cambio (backlog)
 
 - **Barberos**: cada barbería con sus barberos; cada uno maneja su horario; el cliente elige barbero o
   "cualquiera disponible" según disponibilidad.
 - Cuenta opcional de cliente (ver/cancelar sus citas, acceso por enlace al correo) — reservar sin cuenta debe seguir.
-- Página pública o directorio de barberías; superadmin para crear barberías.
-- Rediseñar `/cancelar/[token]` (aún con el estilo claro antiguo).
+- Página pública o directorio de barberías.
 
 ### Cerrado el 9 nov 2026 (auditoría previa al cambio)
 
