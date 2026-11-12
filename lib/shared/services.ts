@@ -102,7 +102,18 @@ export type PublicCatalog = Catalog & {
   salonName: string;
   /** Equipo activo. Vacío si la barbería no usa barberos. */
   barbers: { id: string; name: string }[];
+  /**
+   * Abono que la barbería pide para confirmar la cita. `null` = no pide.
+   * La cita se crea igual; lo que cambia es que queda pendiente hasta que la
+   * barbería confirme que el abono llegó.
+   */
+  deposito: { porcentaje: number; medio: string } | null;
 };
+
+/** Lo que el cliente debe transferir por una cita de ese precio. */
+export function montoDelAbono(precio: number, porcentaje: number): number {
+  return Math.round((precio * porcentaje) / 100);
+}
 
 // Horarios por día de la semana (0=Domingo...6=Sábado)
 export const workingSchedule: WeekSchedule = {

@@ -256,6 +256,9 @@ export const postgresStore: DataStore = {
       whatsapp: r.whatsapp,
       notifyClient: r.notify_client,
       notifyAdmin: r.notify_admin,
+      depositoActivo: r.deposito_activo === true,
+      depositoPorcentaje: Number(r.deposito_porcentaje ?? 50),
+      depositoMedio: r.deposito_medio ?? '',
     } satisfies SalonSettings;
   },
 
@@ -263,15 +266,18 @@ export const postgresStore: DataStore = {
     const tid = await tenantId(db, slug);
     await query(
       `INSERT INTO tenant_settings (tenant_id, salon_name, phone, address, city, contact_email,
-         instagram, facebook, whatsapp, notify_client, notify_admin, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now())
+         instagram, facebook, whatsapp, notify_client, notify_admin,
+         deposito_activo, deposito_porcentaje, deposito_medio, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, now())
        ON CONFLICT (tenant_id) DO UPDATE SET
          salon_name = EXCLUDED.salon_name, phone = EXCLUDED.phone, address = EXCLUDED.address,
          city = EXCLUDED.city, contact_email = EXCLUDED.contact_email, instagram = EXCLUDED.instagram,
          facebook = EXCLUDED.facebook, whatsapp = EXCLUDED.whatsapp, notify_client = EXCLUDED.notify_client,
-         notify_admin = EXCLUDED.notify_admin, updated_at = now()`,
+         notify_admin = EXCLUDED.notify_admin, deposito_activo = EXCLUDED.deposito_activo,
+         deposito_porcentaje = EXCLUDED.deposito_porcentaje, deposito_medio = EXCLUDED.deposito_medio,
+         updated_at = now()`,
       [tid, s.salonName, s.phone, s.address, s.city, s.contactEmail, s.instagram, s.facebook, s.whatsapp,
-        s.notifyClient, s.notifyAdmin]
+        s.notifyClient, s.notifyAdmin, s.depositoActivo, s.depositoPorcentaje, s.depositoMedio]
     );
   },
 

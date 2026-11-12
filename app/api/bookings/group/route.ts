@@ -123,6 +123,12 @@ export async function POST(request: NextRequest) {
         })),
         cancelUrl,
         brand: emailCtx.brand,
+        // Un solo abono por todo el grupo: al cliente le sirve una cifra que
+        // pueda transferir de una vez, no una por cita.
+        abono: (() => {
+          const total = validated.reduce((suma, b) => suma + (precioDe(b.serviceId) ?? 0), 0);
+          return emailCtx.abono(total);
+        })(),
       }, emailCtx.recipients);
     } catch (error) {
       logger.warn('group_booking_email_failed', {

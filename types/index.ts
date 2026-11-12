@@ -20,6 +20,12 @@ export interface Appointment {
   groupId?: string;
   /** Barbero asignado. Ausente en las citas anteriores a que existieran. */
   barberId?: string | null;
+  /**
+   * Precio congelado al reservar. Ausente en las citas anteriores a la
+   * migración 005: de ahí que sea opcional y nunca se estime con el catálogo
+   * de hoy, que daría una cifra que cambia cada vez que se ajustan precios.
+   */
+  price?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -34,5 +34,8 @@ export async function getPageCatalogWithName(): Promise<PublicCatalog> {
     ...catalogFor(result.tenant),
     salonName: settings.salonName,
     barbers: barbers.filter((b) => b.active).map(({ id, name }) => ({ id, name })),
+    deposito: settings.depositoActivo
+      ? { porcentaje: settings.depositoPorcentaje, medio: settings.depositoMedio }
+      : null,
   };
 }

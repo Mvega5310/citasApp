@@ -1,6 +1,6 @@
 import { isStoreConfigured, store } from './data';
 import { DEFAULT_TENANT_SLUG, getTenantConfig, type RequestTenant } from './tenant';
-import { DEFAULT_BRAND, type EmailBrand, type NotifyRecipients } from './email';
+import { DEFAULT_BRAND, type AbonoPendiente, type EmailBrand, type NotifyRecipients } from './email';
 import { logger } from './logger';
 
 export type SalonSettings = {
@@ -14,6 +14,17 @@ export type SalonSettings = {
   whatsapp: string;
   notifyClient: boolean;
   notifyAdmin: boolean;
+  /**
+   * Pedir un abono por adelantado para confirmar la cita.
+   *
+   * No hay pasarela: el cliente transfiere por su cuenta y la barbería
+   * confirma a mano en el panel. Ver la migración 008 para el porqué.
+   */
+  depositoActivo: boolean;
+  /** Qué parte del precio se pide (1-100). 50 es lo habitual. */
+  depositoPorcentaje: number;
+  /** A dónde transfiere, tal cual: "Nequi 300 123 4567". */
+  depositoMedio: string;
 };
 
 // Valores iniciales de la barbería por defecto (los mismos que había antes)
@@ -28,12 +39,18 @@ export const DEFAULTS: SalonSettings = {
   whatsapp: '',
   notifyClient: true,
   notifyAdmin: true,
+  depositoActivo: false,
+  depositoPorcentaje: 50,
+  depositoMedio: '',
 };
 
 export const TEXT_FIELDS = [
   'salonName', 'phone', 'address', 'city', 'contactEmail', 'instagram', 'facebook', 'whatsapp',
+  'depositoMedio',
 ] as const;
-export const BOOLEAN_FIELDS = ['notifyClient', 'notifyAdmin'] as const;
+export const BOOLEAN_FIELDS = ['notifyClient', 'notifyAdmin', 'depositoActivo'] as const;
+/** Campos numéricos y su rango válido. */
+export const NUMBER_FIELDS = { depositoPorcentaje: { min: 1, max: 100 } } as const;
 export const MAX_TEXT_LENGTH = 200;
 
 // Valores iniciales de una barbería: los de su ficha en tenants/, si existe.
@@ -51,6 +68,9 @@ export function defaultsFor(tenant: RequestTenant): SalonSettings {
     whatsapp: c.whatsapp ?? '',
     notifyClient: true,
     notifyAdmin: true,
+    depositoActivo: false,
+    depositoPorcentaje: 50,
+    depositoMedio: '',
   };
 }
 
@@ -132,15 +152,33 @@ function recipientsFrom(tenant: RequestTenant, settings: SalonSettings): NotifyR
 }
 
 /** Todo lo que necesita un correo de esta barbería, con una sola lectura de su Configuración. */
-export async function emailContextFor(
-  tenant: RequestTenant
-): Promise<{ recipients: NotifyRecipients; brand: EmailBrand; businessEmail: string | null }> {
+export async function emailContextFor(tenant: RequestTenant): Promise<{
+  recipients: NotifyRecipients;
+  brand: EmailBrand;
+  businessEmail: string | null;
+  /**
+   * El abono de una cita de ese precio, o `null` si la barbería no pide.
+   * Es una función y no un valor porque el monto depende del servicio, y el
+   * precio lo conoce quien está creando la cita.
+   */
+  abono: (precio: number | null) => AbonoPendiente | null;
+}> {
   const settings = await getSettingsSafe(tenant);
   const businessEmail = businessEmailFrom(tenant, settings);
+  const porcentaje = settings?.depositoPorcentaje ?? DEFAULTS.depositoPorcentaje;
+  const medio = (settings?.depositoMedio ?? '').trim();
+  const pide = settings?.depositoActivo === true && medio !== '';
+
   return {
     recipients: recipientsFrom(tenant, settings),
     brand: brandFrom(tenant, settings),
     businessEmail: EMAIL_RE.test(businessEmail ?? '') ? businessEmail : null,
+    // Sin precio no hay monto que pedir: las citas anteriores a la migración
+    // 005 no lo tienen, y un "transfiere $0" sería peor que no decir nada.
+    abono: (precio) =>
+      pide && typeof precio === 'number' && precio > 0
+        ? { monto: Math.round((precio * porcentaje) / 100), medio, porcentaje }
+        : null,
   };
 }
 
