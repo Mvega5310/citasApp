@@ -162,35 +162,6 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
 - Igual que el %, las dos cifras son el acuerdo vigente y no se guardan por cita: cambiarlas hace que
   un periodo ya pagado muestre otro número al volver a consultarlo.
 
-### 11.2 Abono para confirmar la cita
-
-Contra la inasistencia, que es el costo real de una barbería: el hueco ya no se llena y nadie
-responde por él. **Opcional y apagado por defecto** (migración `008`): quien no lo active no nota
-ningún cambio.
-
-- **No hay pasarela de pago, y es a propósito.** El público son barberos informales de barrio que ya
-  cobran por Nequi o Daviplata. Una pasarela les cobraría comisión por cita y les pediría papeles
-  que muchos no tienen. El flujo es el que ya usan: el cliente transfiere, manda el comprobante, y
-  la barbería confirma a mano en el panel.
-- **No se inventa un estado "abonado".** La cita ya nacía `pending` y pasa a `confirmed` cuando la
-  barbería la confirma; el abono no cambia los estados, cambia lo que se le dice al cliente. Un
-  estado de pago que nadie puede verificar automáticamente sería mentirle al panel.
-- Se configura en **Configuración → Abono**: cuánto (30/50/100 % o el que sea) y a dónde transferir,
-  texto libre porque cada local cobra por donde puede y una lista cerrada de bancos envejecería mal.
-  No deja activarlo sin indicar a dónde: pedir abono sin decir dónde pagarlo deja al cliente sin
-  saber qué hacer y su cita colgada en pendiente.
-- **El aviso aparece antes de reservar**, no solo después: el botón dice "Apartar mi turno" y debajo
-  va el monto. La tirilla dice *Turno Apartado*, no *Confirmado* — prometerle al cliente una cita
-  confirmada que la barbería todavía no ha dado por buena es la forma de que llegue y no haya turno.
-- En el correo el bloque del abono va **arriba** de los datos de la cita: enterrarlo al final es la
-  forma segura de que nadie lo vea. El correo al negocio también lo dice, para que sepa qué espera.
-- El monto sale del **precio congelado en la cita**, no del catálogo de hoy: si el corte sube, lo que
-  el cliente ya transfirió no cambia. Sin precio (citas anteriores a la migración 005) no se pide
-  abono: un "transfiere $0" sería peor que no decir nada.
-- En una reserva de familiares se pide **un solo abono por el grupo**: al cliente le sirve una cifra
-  que pueda transferir de una vez, no una por cita.
-- El panel marca las pendientes con *espera abono de $X*, que es donde el dueño confirma.
-
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

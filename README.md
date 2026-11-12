@@ -137,8 +137,7 @@ beautyturno/
 │   ├── Header.tsx         # Header de navegación
 │   ├── Footer.tsx         # Footer
 │   ├── ServiceSelector.tsx # Selector de servicios
-│   ├── Calendar.tsx       # Calendario interactivo
-│   └── BookingForm.tsx    # Formulario de reserva
+│   └── Calendar.tsx       # Calendario interactivo
 ├── lib/                   # Utilidades y configuración
 │   ├── firebase.ts        # Configuración de Firebase
 │   └── services.ts        # Datos de servicios

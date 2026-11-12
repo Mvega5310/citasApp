@@ -29,11 +29,6 @@ export async function GET(request: Request) {
       salonName: settings.salonName,
       // Solo los activos: el cliente no debe ver a quien ya no atiende
       barbers: barbers.filter((b) => b.active).map(({ id, name }) => ({ id, name })),
-      // El abono es información que la barbería quiere que el cliente vea:
-      // cuánto transferir y a dónde. Solo viaja si está activo.
-      deposito: settings.depositoActivo
-        ? { porcentaje: settings.depositoPorcentaje, medio: settings.depositoMedio }
-        : null,
     },
     { headers: { 'Cache-Control': 'no-store' } }
   );

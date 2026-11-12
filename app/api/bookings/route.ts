@@ -128,9 +128,6 @@ export async function POST(request: NextRequest) {
         // sepa con quién va. Puede ser otro del pedido si hubo reintento.
         barberName: asignado ? await nombreDeBarbero(tenantSlug, asignado) : barbero.barberName,
         brand: emailCtx.brand,
-        // El abono se calcula aquí, que es donde se conoce el precio con el que
-        // quedó congelada la cita; el correo solo lo muestra.
-        abono: emailCtx.abono(precioDe(booking.serviceId)),
       }, emailCtx.recipients);
     } catch (error) {
       logger.warn('booking_email_failed', {

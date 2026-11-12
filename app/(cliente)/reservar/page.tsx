@@ -12,14 +12,13 @@ import {
   Loader2,
   Plus,
   Users,
-  Wallet,
   X,
 } from 'lucide-react';
 import Header from '@/components/cliente/Header';
 import Calendar from '@/components/shared/Calendar';
 import ServiceIcon from '@/components/shared/ServiceIcon';
 import BottomNav from '@/components/cliente/BottomNav';
-import { getAvailableHoursForDate, montoDelAbono } from '@/lib/shared/services';
+import { getAvailableHoursForDate } from '@/lib/shared/services';
 import { useCatalog } from '@/lib/shared/useCatalog';
 import { normalizeBookingPayload, validateBookingPayload } from '@/lib/server/booking';
 import { logger } from '@/lib/server/logger';
@@ -108,7 +107,6 @@ function Tirilla({
   additionalTimes = [],
   email,
   salonName,
-  deposito,
   onReset,
 }: {
   result: BookingResult;
@@ -118,7 +116,6 @@ function Tirilla({
   additionalTimes?: string[];
   email: string;
   salonName: string;
-  deposito: { porcentaje: number; medio: string } | null;
   onReset: () => void;
 }) {
   const code = btCode(result.id);
@@ -131,12 +128,6 @@ function Tirilla({
   });
 
   const timesLabel = allTimes.join(', ');
-  // Con abono el turno todavía no está confirmado: decir que sí sería
-  // prometerle al cliente algo que la barbería aún no ha dado por bueno.
-  const abono = deposito ? montoDelAbono(service.price, deposito.porcentaje) * allTimes.length : 0;
-  const waText = encodeURIComponent(
-    `${deposito ? 'Aparté' : '¡Reservé'} mi turno en ${salonName}${deposito ? '' : '!'}\n\nServicio: ${service.name}\nFecha: ${formatDateLabel(date)}\n${isGroup ? `Horas: ${timesLabel}` : `Hora: ${time}`}\nCódigo: ${code}${result.cancelUrl ? `\n\n${isGroup ? 'Gestionar citas' : 'Cancelar'}: ${result.cancelUrl}` : ''}`
-  );
   // Iniciales del nombre para el sello de la tirilla
   const iniciales = salonName
     .split(/\s+/)
@@ -145,6 +136,9 @@ function Tirilla({
     .slice(0, 2)
     .join('')
     .toUpperCase();
+  const waText = encodeURIComponent(
+    `¡Reservé mi turno en ${salonName}!\n\nServicio: ${service.name}\nFecha: ${formatDateLabel(date)}\n${isGroup ? `Horas: ${timesLabel}` : `Hora: ${time}`}\nCódigo: ${code}${result.cancelUrl ? `\n\n${isGroup ? 'Gestionar citas' : 'Cancelar'}: ${result.cancelUrl}` : ''}`
+  );
 
   return (
     <div className="animate-bt-pop max-w-sm mx-auto">
@@ -166,13 +160,7 @@ function Tirilla({
           <p className="text-white font-semibold text-lg font-display">{salonName}</p>
           <p className="text-cafe-goldlight text-sm mt-0.5 inline-flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4" width={16} height={16} aria-hidden="true" />
-            {deposito
-              ? isGroup
-                ? `${allTimes.length} Turnos Apartados`
-                : 'Turno Apartado'
-              : isGroup
-                ? `${allTimes.length} Turnos Confirmados`
-                : 'Turno Confirmado'}
+            {isGroup ? `${allTimes.length} Turnos Confirmados` : 'Turno Confirmado'}
           </p>
         </div>
 
@@ -238,27 +226,6 @@ function Tirilla({
 
         {/* Footer */}
         <div className="px-6 py-5">
-          {deposito && (
-            <div
-              className="rounded-[14px] p-4 mb-4"
-              style={{ background: '#2E241B', border: '1px solid #C69B62' }}
-            >
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#C69B62' }}>
-                Falta un paso
-              </p>
-              <p className="text-sm leading-relaxed" style={{ color: '#F4EEE5' }}>
-                Transfiere{' '}
-                <strong style={{ color: '#C69B62' }}>${abono.toLocaleString('es-CO')}</strong> a{' '}
-                <strong>{deposito.medio}</strong> y manda el comprobante. Tu turno queda apartado y{' '}
-                {salonName} lo confirma en cuanto lo reciba.
-              </p>
-              <p className="text-xs mt-2" style={{ color: '#B8AA99' }}>
-                Es el {deposito.porcentaje}% de {isGroup ? 'las citas' : 'la cita'}. El resto se paga en el
-                local.
-              </p>
-            </div>
-          )}
-
           <div className="flex items-center gap-2 mb-4">
             <CalendarCheck className="w-4 h-4 shrink-0" style={{ color: '#24845E' }} />
             <p className="text-xs" style={{ color: '#B8AA99' }}>
@@ -304,8 +271,6 @@ export default function BookingPage() {
   // Servicios y horario de la barbería actual
   const { catalog, loading: catalogLoading } = useCatalog();
   const services = catalog?.services ?? [];
-  // Si la barbería pide abono, el turno queda apartado y no confirmado.
-  const deposito = catalog?.deposito ?? null;
 
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -898,33 +863,6 @@ export default function BookingPage() {
                 )}
               </div>
 
-              {/* Que el abono no sea una sorpresa después de reservar */}
-              {deposito && selectedService && (
-                <div
-                  className="rounded-[14px] p-4"
-                  style={{ background: '#2E241B', border: '1px solid #403328' }}
-                >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Wallet className="w-4 h-4 shrink-0" style={{ color: '#C69B62' }} />
-                    <p className="text-sm font-semibold" style={{ color: '#F4EEE5' }}>
-                      Para confirmar tu turno
-                    </p>
-                  </div>
-                  <p className="text-xs leading-relaxed" style={{ color: '#B8AA99' }}>
-                    Al reservar, transfiere{' '}
-                    <strong style={{ color: '#C69B62' }}>
-                      $
-                      {(
-                        montoDelAbono(selectedService.price, deposito.porcentaje) *
-                        (1 + additionalTimes.length)
-                      ).toLocaleString('es-CO')}
-                    </strong>{' '}
-                    ({deposito.porcentaje}%) a <strong style={{ color: '#F4EEE5' }}>{deposito.medio}</strong> y
-                    manda el comprobante. El resto se paga en el local.
-                  </p>
-                </div>
-              )}
-
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -936,9 +874,7 @@ export default function BookingPage() {
                     Confirmando reserva...
                   </>
                 ) : additionalTimes.length > 0 ? (
-                  `${deposito ? 'Apartar' : 'Confirmar'} ${1 + additionalTimes.length} citas`
-                ) : deposito ? (
-                  'Apartar mi turno'
+                  `Confirmar ${1 + additionalTimes.length} citas`
                 ) : (
                   'Confirmar Reserva'
                 )}
@@ -957,7 +893,6 @@ export default function BookingPage() {
             additionalTimes={additionalTimes}
             email={confirmedEmail}
             salonName={catalog?.salonName ?? 'BeautyTurno'}
-            deposito={deposito}
             onReset={handleReset}
           />
         )}

@@ -6,7 +6,7 @@ import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import QrCard from '@/components/admin/QrCard';
 import {
   Store, Phone, MapPin, Mail, Instagram, Facebook,
-  MessageCircle, Bell, Save, CheckCircle, Settings, QrCode, Wallet,
+  MessageCircle, Bell, Save, CheckCircle, Settings, QrCode,
 } from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
@@ -22,16 +22,12 @@ type SalonSettings = {
   whatsapp: string;
   notifyClient: boolean;
   notifyAdmin: boolean;
-  depositoActivo: boolean;
-  depositoPorcentaje: number;
-  depositoMedio: string;
 };
 
 const ACCESOS = [
   { id: 'salon', label: 'Inf. salón', Icon: Store },
   { id: 'redes', label: 'Redes sociales', Icon: Instagram },
   { id: 'correos', label: 'Not. email', Icon: Bell },
-  { id: 'abono', label: 'Abono', Icon: Wallet },
   { id: 'qr', label: 'Código QR', Icon: QrCode },
 ] as const;
 
@@ -46,9 +42,6 @@ const DEFAULTS: SalonSettings = {
   whatsapp: '',
   notifyClient: true,
   notifyAdmin: true,
-  depositoActivo: false,
-  depositoPorcentaje: 50,
-  depositoMedio: '',
 };
 
 function Field({
@@ -289,91 +282,6 @@ export default function ConfiguracionPage() {
                     checked={settings.notifyAdmin}
                     onChange={(v) => set('notifyAdmin', v)}
                   />
-                </div>
-              </div>
-
-              {/* Abono para confirmar */}
-              <div id="abono" className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6 scroll-mt-32">
-                <h2 className="text-base font-semibold text-cafe-text mb-1.5 flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-cafe-goldlight" />
-                  Abono para confirmar
-                </h2>
-                <p className="text-xs text-cafe-muted mb-5 leading-relaxed">
-                  Contra las citas que nadie cumple: el cliente transfiere una parte y tú confirmas la cita en
-                  el panel cuando te llegue. No hay pasarela de pago ni comisiones — el cliente transfiere a
-                  donde tú le digas, como ya lo haces hoy.
-                </p>
-
-                <div className="space-y-5">
-                  <Toggle
-                    label="Pedir abono por adelantado"
-                    description="La cita queda pendiente hasta que confirmes que el abono llegó"
-                    checked={settings.depositoActivo}
-                    onChange={(v) => set('depositoActivo', v)}
-                  />
-
-                  {settings.depositoActivo && (
-                    <>
-                      <div className="border-t border-cafe-border" />
-
-                      <div>
-                        <label className="block text-sm font-medium text-cafe-text mb-1.5">
-                          Cuánto se abona
-                        </label>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {[30, 50, 100].map((v) => (
-                            <button
-                              key={v}
-                              type="button"
-                              onClick={() => set('depositoPorcentaje', v)}
-                              aria-pressed={settings.depositoPorcentaje === v}
-                              className={`px-3.5 py-2 rounded-full text-xs font-semibold transition ${
-                                settings.depositoPorcentaje === v
-                                  ? 'bg-cafe-gold text-cafe-bg'
-                                  : 'bg-cafe-soft text-cafe-muted border border-cafe-border hover:text-cafe-text'
-                              }`}
-                            >
-                              {v === 100 ? 'Todo' : `${v}%`}
-                            </button>
-                          ))}
-                          <label className="flex items-center gap-1.5 text-xs text-cafe-subtle">
-                            <span>o</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={100}
-                              value={settings.depositoPorcentaje}
-                              onChange={(e) =>
-                                set(
-                                  'depositoPorcentaje',
-                                  Math.max(1, Math.min(100, Math.round(Number(e.target.value) || 1)))
-                                )
-                              }
-                              aria-label="Porcentaje del abono"
-                              className="w-16 bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1.5 text-sm text-cafe-text text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
-                            />
-                            <span>%</span>
-                          </label>
-                        </div>
-                        <p className="mt-2 text-xs text-cafe-subtle">
-                          Sobre el precio del servicio. Un corte de $20.000 al {settings.depositoPorcentaje}% son{' '}
-                          <strong className="text-cafe-muted">
-                            ${Math.round((20000 * settings.depositoPorcentaje) / 100).toLocaleString('es-CO')}
-                          </strong>
-                          .
-                        </p>
-                      </div>
-
-                      <Field
-                        label="A dónde transfiere"
-                        icon={Wallet}
-                        value={settings.depositoMedio}
-                        onChange={(v) => set('depositoMedio', v)}
-                        placeholder="Nequi 300 123 4567"
-                        hint="Se le muestra al cliente tal como lo escribas. Revisa el número: es el que va a ver."
-                      />
-                    </>
-                  )}
                 </div>
               </div>
 

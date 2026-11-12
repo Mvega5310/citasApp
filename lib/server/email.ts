@@ -104,12 +104,6 @@ function getToDefault() {
  */
 export type NotifyRecipients = { admin: string | null; client: boolean };
 
-/**
- * Abono pendiente, ya calculado en pesos por quien conoce el precio.
- * `null` = la barbería no pide abono y la cita queda confirmada sin más.
- */
-export type AbonoPendiente = { monto: number; medio: string; porcentaje: number };
-
 function adminRecipient(recipients?: NotifyRecipients): string {
   return recipients ? recipients.admin ?? '' : getToDefault();
 }
@@ -241,7 +235,6 @@ function buildAdminBookingEmail(payload: {
   date: string;
   time: string;
   barberName?: string | null;
-  abono?: AbonoPendiente | null;
 }) {
   const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
@@ -272,11 +265,7 @@ function buildAdminBookingEmail(payload: {
           ${buildRow('Hora', payload.time)}
           <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
             <p style="margin:0; font-size:13px; color:#9d174d;">
-              ${
-                payload.abono
-                  ? `💰 Queda pendiente el abono de <strong>$${payload.abono.monto.toLocaleString('es-CO')}</strong>. Cuando te llegue, confirma la cita en el panel.`
-                  : '💡 Recuerda confirmar la cita al cliente para garantizar su asistencia.'
-              }
+              💡 Recuerda confirmar la cita al cliente para garantizar su asistencia.
             </p>
           </div>
         </div>
@@ -296,7 +285,6 @@ function buildClientConfirmationEmail(payload: {
   time: string;
   cancelUrl?: string;
   barberName?: string | null;
-  abono?: AbonoPendiente | null;
 }) {
   const b = brandOf(payload);
   const dateFormatted = new Date(payload.date + 'T12:00:00').toLocaleDateString('es-ES', {
@@ -318,44 +306,18 @@ function buildClientConfirmationEmail(payload: {
       </div>`
     : '';
 
-  const a = payload.abono;
-  // El bloque del abono va ARRIBA de los datos: es lo que el cliente tiene que
-  // hacer, y enterrarlo al final es la forma segura de que nadie lo vea.
-  const abonoBlock = a
-    ? `<div style="margin:0 0 24px; padding:16px; background:#fffbeb; border-radius:8px; border-left:4px solid #d97706;">
-        <p style="margin:0 0 8px; font-size:15px; font-weight:700; color:#92400e;">
-          Falta un paso para confirmar
-        </p>
-        <p style="margin:0; font-size:14px; color:#78350f; line-height:1.6;">
-          Transfiere <strong>$${a.monto.toLocaleString('es-CO')}</strong> a
-          <strong>${a.medio}</strong> y envía el comprobante.
-          Tu turno queda apartado y lo confirmamos en cuanto lo recibamos.
-        </p>
-        <p style="margin:8px 0 0; font-size:12px; color:#92400e;">
-          Es el ${a.porcentaje}% del servicio. El resto se paga en el local.
-        </p>
-      </div>`
-    : '';
-
   return `
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
-          <div style="font-size:32px; margin-bottom:8px;">${a ? '⏳' : '✨'}</div>
-          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">
-            ${a ? 'Turno apartado' : '¡Cita Confirmada!'}
-          </h1>
+          <div style="font-size:32px; margin-bottom:8px;">✨</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Cita Confirmada!</h1>
           <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 24px; font-size:16px;">
-            ${
-              a
-                ? `Hola <strong>${payload.clientName}</strong>, apartamos tu turno.`
-                : `Hola <strong>${payload.clientName}</strong>, tu reserva ha sido registrada con éxito. 🎉`
-            }
+            Hola <strong>${payload.clientName}</strong>, tu reserva ha sido registrada con éxito. 🎉
           </p>
-          ${abonoBlock}
           ${buildRow('Servicio', payload.serviceName)}
           ${payload.barberName ? buildRow('Te atiende', payload.barberName) : ''}
           ${buildRow('Fecha', dateFormatted)}
@@ -558,7 +520,6 @@ export async function sendBookingNotification(payload: {
   time: string;
   cancelUrl?: string;
   barberName?: string | null;
-  abono?: AbonoPendiente | null;
 }, recipients?: NotifyRecipients): Promise<{ sentToDefault: boolean; sentToClient: boolean }> {
   const transporter = mailerFor(payload.brand);
   const from = senderFor(payload.brand);
@@ -584,9 +545,7 @@ export async function sendBookingNotification(payload: {
           .sendMail({
             from,
             to: payload.clientEmail,
-            subject: payload.abono
-              ? `Falta el abono para confirmar tu cita — ${payload.serviceName}`
-              : `✅ Confirmación de tu cita — ${payload.serviceName}`,
+            subject: `✅ Confirmación de tu cita — ${payload.serviceName}`,
             html: buildClientConfirmationEmail(esc(payload)),
           })
           .then(() => true)
@@ -662,26 +621,8 @@ function buildGroupBookingClientEmail(payload: {
   clientName: string;
   appointments: GroupAppointmentInfo[];
   cancelUrl?: string;
-  /** Suma de los abonos de todas las citas del grupo. */
-  abono?: AbonoPendiente | null;
 }) {
   const b = brandOf(payload);
-  const a = payload.abono;
-  const abonoBlock = a
-    ? `<div style="margin:0 0 20px; padding:16px; background:#fffbeb; border-radius:8px; border-left:4px solid #d97706;">
-        <p style="margin:0 0 8px; font-size:15px; font-weight:700; color:#92400e;">
-          Falta un paso para confirmar
-        </p>
-        <p style="margin:0; font-size:14px; color:#78350f; line-height:1.6;">
-          Transfiere <strong>$${a.monto.toLocaleString('es-CO')}</strong> a
-          <strong>${a.medio}</strong> y envía el comprobante.
-          Los turnos quedan apartados y los confirmamos en cuanto lo recibamos.
-        </p>
-        <p style="margin:8px 0 0; font-size:12px; color:#92400e;">
-          Es el ${a.porcentaje}% del total de las citas. El resto se paga en el local.
-        </p>
-      </div>`
-    : '';
   const cancelBlock = payload.cancelUrl
     ? `<div style="text-align:center; margin-top:24px;">
         <a href="${payload.cancelUrl}"
@@ -698,21 +639,14 @@ function buildGroupBookingClientEmail(payload: {
     <div style="${baseStyle}">
       <div style="${cardStyle}">
         <div style="${headerStyle}">
-          <div style="font-size:32px; margin-bottom:8px;">${a ? '⏳' : '✨'}</div>
-          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">
-            ${a ? 'Turnos apartados' : '¡Citas Confirmadas!'}
-          </h1>
+          <div style="font-size:32px; margin-bottom:8px;">✨</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">¡Citas Confirmadas!</h1>
           <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">${b.name}</p>
         </div>
         <div style="${bodyStyle}">
           <p style="color:#374151; margin:0 0 20px; font-size:16px;">
-            ${
-              a
-                ? `Hola <strong>${payload.clientName}</strong>, apartamos <strong>${payload.appointments.length} turnos</strong>.`
-                : `Hola <strong>${payload.clientName}</strong>, reservamos <strong>${payload.appointments.length} citas</strong> con éxito. 🎉`
-            }
+            Hola <strong>${payload.clientName}</strong>, reservamos <strong>${payload.appointments.length} citas</strong> con éxito. 🎉
           </p>
-          ${abonoBlock}
           ${buildGroupAppointmentList(payload.appointments)}
           <div style="margin-top:24px; padding:16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
             <p style="margin:0; font-size:13px; color:#9d174d;">
@@ -732,7 +666,6 @@ function buildGroupBookingClientEmail(payload: {
 }
 
 export async function sendGroupBookingNotification(payload: {
-  abono?: AbonoPendiente | null;
   brand?: EmailBrand;
   clientName: string;
   clientEmail: string;

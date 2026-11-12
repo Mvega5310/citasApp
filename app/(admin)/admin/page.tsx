@@ -23,7 +23,6 @@ import {
   XCircle,
   Save,
   Loader2,
-  Wallet,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
@@ -106,8 +105,6 @@ const iconBtnCls = 'p-1.5 rounded-lg transition-colors';
 /** Filas por página en el listado de citas. */
 const POR_PAGINA = 20;
 
-const pesos = (n: number) => `$${n.toLocaleString('es-CO')}`;
-
 export default function AdminPage() {
   const { confirmar, dialogo } = useConfirmacion();
   const router = useRouter();
@@ -117,8 +114,6 @@ export default function AdminPage() {
   // id -> nombre, incluidos los inactivos: una cita vieja puede ser de alguien
   // que ya no está en el equipo y aun así hay que poder leer su nombre.
   const [nombresBarbero, setNombresBarbero] = useState<Record<string, string>>({});
-  /** Si la barbería pide abono, una cita pendiente está esperando la plata. */
-  const [deposito, setDeposito] = useState<{ porcentaje: number; medio: string } | null>(null);
   // Solo si la barbería usa barberos tiene sentido avisar de "sin asignar":
   // donde no los hay, todas las citas lo estarían y sería puro ruido.
   const usaBarberos = Object.keys(nombresBarbero).length > 0;
@@ -205,13 +200,6 @@ export default function AdminPage() {
   useEffect(() => {
     fetchAppointments();
   }, [fetchAppointments]);
-
-  useEffect(() => {
-    fetch('/api/catalog')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setDeposito(d?.deposito ?? null))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     fetch('/api/admin/barbers')
@@ -423,14 +411,6 @@ export default function AdminPage() {
   // Las tarjetas resumen la barbería entera, no la página que se está viendo:
   // los conteos vienen de la base sin aplicar los filtros de pantalla.
   const stats = resumen;
-
-  // Cuánto se le pidió a esta cita. Sale del precio congelado al reservar, no
-  // del catálogo de hoy: si el corte subió, el abono que transfirió no cambió.
-  const abonoDe = (apt: Appointment): number | null => {
-    const precio = typeof apt.price === 'number' ? apt.price : null;
-    if (!deposito || precio === null || precio <= 0) return null;
-    return Math.round((precio * deposito.porcentaje) / 100);
-  };
 
   const formatAppointmentDate = (date: Appointment['date']) => {
     return new Date(typeof date === 'string' ? date + 'T12:00:00' : date).toLocaleDateString('es-ES', {
@@ -720,21 +700,13 @@ export default function AdminPage() {
                               </p>
 
                               <div className="flex items-center justify-between gap-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span
-                                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold ${
-                                      STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
-                                    }`}
-                                  >
-                                    {STATUS_LABELS[apt.status] ?? apt.status}
-                                  </span>
-                                  {deposito && apt.status === 'pending' && (
-                                    <span className="inline-flex items-center gap-1 text-xs text-cafe-goldlight">
-                                      <Wallet className="w-3.5 h-3.5 shrink-0" />
-                                      espera abono{abonoDe(apt) ? ` de ${pesos(abonoDe(apt)!)}` : ''}
-                                    </span>
-                                  )}
-                                </div>
+                                <span
+                                  className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold ${
+                                    STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
+                                  }`}
+                                >
+                                  {STATUS_LABELS[apt.status] ?? apt.status}
+                                </span>
 
                                 {!isEditing && (
                                   <button
@@ -948,21 +920,13 @@ export default function AdminPage() {
                                     </button>
                                   </div>
                                 ) : (
-                                  <div className="flex flex-col gap-1 items-start">
-                                    <span
-                                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                        STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
-                                      }`}
-                                    >
-                                      {STATUS_LABELS[apt.status] ?? apt.status}
-                                    </span>
-                                    {deposito && apt.status === 'pending' && (
-                                      <span className="inline-flex items-center gap-1 text-[11px] text-cafe-goldlight whitespace-nowrap">
-                                        <Wallet className="w-3 h-3 shrink-0" />
-                                        espera abono{abonoDe(apt) ? ` ${pesos(abonoDe(apt)!)}` : ''}
-                                      </span>
-                                    )}
-                                  </div>
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                      STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
+                                    }`}
+                                  >
+                                    {STATUS_LABELS[apt.status] ?? apt.status}
+                                  </span>
                                 )}
                               </td>
 

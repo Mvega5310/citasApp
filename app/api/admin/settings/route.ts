@@ -5,7 +5,6 @@ import { authorizeAdmin } from '@/lib/server/authorization';
 import {
   BOOLEAN_FIELDS,
   MAX_TEXT_LENGTH,
-  NUMBER_FIELDS,
   TEXT_FIELDS,
   defaultsFor,
   readSettings,
@@ -32,24 +31,8 @@ function sanitize(body: unknown): { ok: true; update: Partial<SalonSettings> } |
     if (typeof input[key] !== 'boolean') return { ok: false, error: `El campo ${key} debe ser sí/no` };
     update[key] = input[key] as boolean;
   }
-  for (const [key, rango] of Object.entries(NUMBER_FIELDS)) {
-    if (!(key in input)) continue;
-    const n = Number(input[key]);
-    if (!Number.isInteger(n) || n < rango.min || n > rango.max) {
-      return { ok: false, error: `El campo ${key} debe ser un número entre ${rango.min} y ${rango.max}` };
-    }
-    (update as Record<string, unknown>)[key] = n;
-  }
   if (update.salonName !== undefined && update.salonName.length < 2) {
     return { ok: false, error: 'El nombre del negocio debe tener al menos 2 caracteres' };
-  }
-  // Pedir abono sin decir a dónde transferir deja al cliente sin saber qué
-  // hacer, y su cita colgada en pendiente.
-  if (update.depositoActivo === true && (update.depositoMedio ?? '').trim() === '') {
-    return {
-      ok: false,
-      error: 'Para pedir abono hay que indicar a dónde transferir (Nequi, Daviplata, cuenta…).',
-    };
   }
   return { ok: true, update };
 }
