@@ -177,7 +177,7 @@ export default function AdminSidebar() {
           <img
             src="/api/logo?size=72"
             alt={tenantName}
-            className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border"
+            className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border bg-cafe-bg"
           />
           <div>
             <p className="text-cafe-text font-medium text-base font-display leading-tight">{tenantName}</p>
@@ -196,7 +196,7 @@ export default function AdminSidebar() {
           <img
             src="/api/logo?size=56"
             alt={tenantName}
-            className="w-8 h-8 rounded-lg object-cover ring-1 ring-cafe-border"
+            className="w-8 h-8 rounded-lg object-cover ring-1 ring-cafe-border bg-cafe-bg"
           />
           <span className="text-cafe-text font-medium text-sm font-display">{tenantName} Admin</span>
         </div>

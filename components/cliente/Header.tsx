@@ -43,7 +43,11 @@ export default function Header() {
               alt={catalog?.salonName || NOMBRE_GENERICO}
               width={36}
               height={36}
-              className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border"
+              // bg-cafe-soft: mientras el PNG descarga (LTE lenta, caché fría)
+              // el <img> no pinta nada, solo el ring se ve — un hueco negro
+              // idéntico al fondo de la página. Con fondo propio se ve como
+              // un placeholder a propósito, no como un logo roto.
+              className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border bg-cafe-soft"
             />
             <span className="font-display text-lg font-medium tracking-tight text-cafe-text hidden min-[420px]:block">
               {catalog?.salonName ?? ''}

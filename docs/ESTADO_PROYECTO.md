@@ -261,6 +261,14 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
   `crear()` enviaba `form.slug`, vacío si no se tocaba el campo. El servidor respondía "solo
   admite minúsculas, números y guiones" junto a un campo que se veía correcto.
 - **Todo borrado confirma**: faltaba `/admin/barberos`, que quitaba al tocar la papelera.
+- **Fondo de respaldo en el logo mientras descarga**: Marcos reportó el logo como un círculo
+  vacío en el teléfono. El servidor estaba bien —`curl` y la carga en el navegador confirmaron un
+  PNG completo con contenido real—; era un hueco visual real durante la carga: el `<img>` no tiene
+  fondo propio, así que mientras el PNG viaja (LTE lenta, caché fría, arranque en frío tras un
+  despliegue) solo se pinta el `ring` del borde, indistinguible del fondo oscuro de la página. Los
+  seis usos de `/api/logo` (encabezado del cliente, panel de escritoro y móvil, login, pantalla de
+  contraseña) ganaron un fondo neutro (`bg-cafe-soft` / `bg-cafe-bg`) para que durante ese instante
+  se vea un placeholder a propósito, no un logo roto.
 - **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
 - **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
   parámetro**, que sería un generador de QR alojado en el dominio propio.

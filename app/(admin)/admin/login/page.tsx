@@ -206,7 +206,7 @@ export default function AdminLoginPage() {
           <img
             src="/api/logo?size=128"
             alt={nombre || NOMBRE_GENERICO}
-            className="inline-flex w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover"
+            className="inline-flex w-16 h-16 rounded-2xl shadow-lg mb-4 object-cover bg-cafe-soft"
           />
           <h1 className="text-2xl font-bold text-cafe-text font-serif">{nombre}</h1>
           <p className="text-cafe-muted text-sm mt-1">Panel de Administración</p>
