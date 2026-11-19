@@ -30,6 +30,11 @@ export type AppointmentRecord = {
    * se guardara: cruzarlas con el catálogo de hoy daría una cifra inventada.
    */
   price?: number | null;
+  /**
+   * El precio no se capturó al reservar: se reconstruyó después con el
+   * catálogo del momento (migración 010). Distingue lo medido de lo deducido.
+   */
+  priceEstimated?: boolean;
   habeasDataAccepted?: boolean;
   notificationsAccepted?: boolean;
   reminderSent?: boolean;

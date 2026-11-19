@@ -50,7 +50,7 @@ const APPOINTMENT_COLUMNS = `
   a.id, t.slug AS tenant_slug, a.service_id, a.service_name, a.client_name, a.client_email,
   a.client_whatsapp, a.date, a.time, a.status, a.group_id, a.habeas_data_accepted,
   a.notifications_accepted, a.reminder_sent_at, a.cancelled_at, a.cancelled_by, a.late_cancel,
-  a.source, a.barber_id, a.price, a.created_at, a.updated_at`;
+  a.source, a.barber_id, a.price, a.price_estimado, a.created_at, a.updated_at`;
 
 type AppointmentRow = Record<string, unknown>;
 
@@ -69,6 +69,7 @@ function toAppointment(r: AppointmentRow): AppointmentRecord {
     groupId: (r.group_id as string | null) ?? null,
     barberId: (r.barber_id as string | null) ?? null,
     price: (r.price as number | null) ?? null,
+    priceEstimated: r.price_estimado === true,
     habeasDataAccepted: r.habeas_data_accepted as boolean,
     notificationsAccepted: r.notifications_accepted as boolean,
     reminderSent: r.reminder_sent_at != null,

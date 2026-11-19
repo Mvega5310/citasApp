@@ -27,6 +27,8 @@ type Informe = {
     cancelacionesTarde: number;
     pendientes: number;
     sinPrecio: number;
+    /** Cuántas de las que suman traen precio reconstruido, no capturado. */
+    estimadas: number;
     ticketPromedio: number;
   };
   porBarbero: LineaBarbero[];
@@ -258,6 +260,17 @@ export default function InformePage() {
                     </div>
                   ))}
                 </div>
+
+                {datos.resumen.estimadas > 0 && (
+                  <p className="text-xs text-cafe-muted mt-4 leading-relaxed border-t border-cafe-border pt-4">
+                    <strong className="text-cafe-goldlight">
+                      {datos.resumen.estimadas} de estas citas
+                    </strong>{' '}
+                    no guardaron su precio al reservarse: se reconstruyó con el catálogo del día en
+                    que se rellenaron. Suman al total, pero no es necesariamente lo que cobraste — si
+                    hiciste algún descuento, no está reflejado.
+                  </p>
+                )}
 
                 {datos.resumen.sinPrecio > 0 && (
                   <p className="text-xs text-cafe-muted mt-4 leading-relaxed border-t border-cafe-border pt-4">

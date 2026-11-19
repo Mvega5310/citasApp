@@ -7,6 +7,7 @@ import ServiceIcon from '@/components/shared/ServiceIcon';
 import {
   ChevronDown, Clock, Loader2, Plus, RotateCcw, Save, Scissors, Trash2,
 } from 'lucide-react';
+import CampoNumero from '@/components/admin/CampoNumero';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
@@ -445,25 +446,24 @@ export default function ServiciosAdminPage() {
                           </div>
                           <label className="text-xs text-cafe-muted">
                             Duración (min)
-                            <input
-                              type="number"
+                            <CampoNumero
                               min={5}
                               max={480}
                               step={5}
                               value={svc.duration}
-                              onChange={(e) => updateService(svc.key, { duration: Number(e.target.value) })}
+                              onChange={(n) => updateService(svc.key, { duration: n })}
                               disabled={!canEdit}
                               className={`${inputCls} mt-1`}
                             />
                           </label>
                           <label className="text-xs text-cafe-muted">
                             Precio (COP)
-                            <input
-                              type="number"
+                            <CampoNumero
                               min={0}
+                              max={10000000}
                               step={500}
                               value={svc.price}
-                              onChange={(e) => updateService(svc.key, { price: Number(e.target.value) })}
+                              onChange={(n) => updateService(svc.key, { price: n })}
                               disabled={!canEdit}
                               className={`${inputCls} mt-1`}
                             />

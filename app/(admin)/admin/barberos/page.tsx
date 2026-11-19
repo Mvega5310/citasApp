@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { UserRound, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
+import CampoNumero from '@/components/admin/CampoNumero';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
@@ -263,17 +264,12 @@ export default function BarberosPage() {
                       {b.modalidad === 'comision' ? (
                         <label className="flex items-center gap-1.5 text-xs text-cafe-subtle">
                           <span>le queda el</span>
-                          <input
-                            type="number"
+                          <CampoNumero
                             min={0}
                             max={100}
                             step={1}
                             value={b.commission}
-                            onChange={(e) =>
-                              cambiar(i, {
-                                commission: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))),
-                              })
-                            }
+                            onChange={(n) => cambiar(i, { commission: n })}
                             aria-label={`Porcentaje de ${b.name}`}
                             className="w-14 bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1 text-sm text-cafe-text text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
                           />
@@ -283,20 +279,12 @@ export default function BarberosPage() {
                       ) : (
                         <label className="flex items-center gap-1.5 text-xs text-cafe-subtle">
                           <span>paga</span>
-                          <input
-                            type="number"
+                          <CampoNumero
                             min={0}
                             max={10000000}
                             step={1000}
                             value={b.tarifaDiaria}
-                            onChange={(e) =>
-                              cambiar(i, {
-                                tarifaDiaria: Math.max(
-                                  0,
-                                  Math.min(10000000, Math.round(Number(e.target.value) || 0))
-                                ),
-                              })
-                            }
+                            onChange={(n) => cambiar(i, { tarifaDiaria: n })}
                             aria-label={`Tarifa diaria de ${b.name}`}
                             className="w-28 bg-cafe-soft border border-cafe-border rounded-lg px-2 py-1 text-sm text-cafe-text text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
                           />

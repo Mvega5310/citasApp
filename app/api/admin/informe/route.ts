@@ -67,11 +67,18 @@ export async function GET(request: Request) {
 
     let total = 0;
     let sinPrecio = 0;
+    // Citas cuyo precio se reconstruyó después, no se capturó al reservar.
+    // Suman al total, pero el panel lo dice para no confundir lo medido con
+    // lo deducido.
+    let estimadas = 0;
 
     for (const c of completadas) {
       const precio = typeof c.price === 'number' ? c.price : null;
       if (precio === null) sinPrecio++;
-      else total += precio;
+      else {
+        total += precio;
+        if (c.priceEstimated) estimadas++;
+      }
 
       const bid = c.barberId ?? '__sin__';
       const datos = c.barberId ? datosBarbero.get(c.barberId) : undefined;
@@ -145,6 +152,7 @@ export async function GET(request: Request) {
         cancelacionesTarde: canceladas.filter((c) => c.lateCancel === true).length,
         pendientes: delPeriodo.filter((c) => c.status === 'pending' || c.status === 'confirmed').length,
         sinPrecio,
+        estimadas,
         ticketPromedio: completadas.length - sinPrecio > 0 ? Math.round(total / (completadas.length - sinPrecio)) : 0,
       },
       porBarbero: ordenar(porBarbero).map(sinSet),

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, CalendarClock, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CampoNumero from '@/components/admin/CampoNumero';
 
 type Plan = { hasta: string | null; precio: number; nota: string };
 
@@ -119,13 +120,13 @@ export default function PlanDialog({
             <label htmlFor="plan-precio" className="block text-sm font-medium text-cafe-text mb-1.5">
               Mensualidad acordada
             </label>
-            <input
+            <CampoNumero
               id="plan-precio"
-              type="number"
               min={0}
+              max={10000000}
               step={1000}
               value={precio}
-              onChange={(e) => setPrecio(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+              onChange={setPrecio}
               className="w-full bg-cafe-soft border border-cafe-border rounded-lg px-4 py-2.5 text-sm text-cafe-text tabular-nums focus:outline-none focus:ring-2 focus:ring-cafe-gold/50"
             />
             <p className="text-xs text-cafe-subtle mt-1.5">

@@ -245,6 +245,22 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
     vacía el conjunto de abiertos: las claves se regeneran y quedarían apuntando a nada, con lo que
     el botón diría "Recoger todos" sin haber nada abierto.
   - Arriba, fila de accesos rápidos con ancla a Horario de atención, igual que en Configuración.
+- **Precios rellenados con trazabilidad** (migración `010`): las citas anteriores a la 005 no
+  guardaron precio, así que una semana con 25 citas completadas mostraba $0 facturado. Se
+  rellenaron con el catálogo del momento, pero eso **no es lo que se cobró**, es una
+  reconstrucción: por eso va marcada en `appointments.price_estimado`, y el cierre avisa de
+  cuántas citas del total traen precio deducido. Sin la marca, en seis meses nadie sabría qué
+  cifras se midieron y cuáles se dedujeron. Las citas de un servicio ya borrado se quedan sin
+  precio: inventarles uno sería peor que dejarlas fuera.
+- **Campo numérico propio** (`components/admin/CampoNumero.tsx`): con un `input type="number"`
+  atado a un número, borrar el contenido lo volvía 0 al instante y el cero no se podía quitar —
+  había que mover el cursor y teclear encima. Ahora el texto que se escribe vive aparte del
+  número: puede quedar vacío mientras se edita y se normaliza al salir. Lo usan los cinco campos
+  de cifras (duración, precio, porcentaje, tarifa y mensualidad).
+- **Registro de barberías arreglado**: la dirección sugerida a partir del nombre solo se pintaba;
+  `crear()` enviaba `form.slug`, vacío si no se tocaba el campo. El servidor respondía "solo
+  admite minúsculas, números y guiones" junto a un campo que se veía correcto.
+- **Todo borrado confirma**: faltaba `/admin/barberos`, que quitaba al tocar la papelera.
 - **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
 - **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
   parámetro**, que sería un generador de QR alojado en el dominio propio.
