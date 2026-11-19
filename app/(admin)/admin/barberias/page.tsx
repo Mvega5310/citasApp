@@ -56,8 +56,10 @@ function sugerirSlug(nombre: string): string {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40);
+    .slice(0, 40)
+    // Después de recortar, no antes: si el corte cae sobre un guión, el
+    // servidor rechaza la dirección por terminar en guión.
+    .replace(/^-+|-+$/g, '');
 }
 
 export default function BarberiasPage() {
@@ -102,10 +104,14 @@ export default function BarberiasPage() {
     e.preventDefault();
     setCreando(true);
     try {
+      // `slugFinal`, no `form.slug`: la dirección sugerida a partir del
+      // nombre solo se pintaba en pantalla. Quien no tocara ese campo a mano
+      // enviaba la dirección vacía y el servidor respondía "solo admite
+      // minúsculas, números y guiones" junto a un campo que se veía correcto.
       const res = await fetch('/api/admin/tenants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, slug: slugFinal }),
       });
       const body = await res.json();
       if (!res.ok) {

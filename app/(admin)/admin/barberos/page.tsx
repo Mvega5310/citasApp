@@ -6,6 +6,7 @@ import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { UserRound, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
+import { useConfirmacion } from '@/components/admin/useConfirmacion';
 
 type Modalidad = 'comision' | 'puesto';
 type Barbero = {
@@ -44,6 +45,7 @@ const MODALIDADES = [
 ];
 
 export default function BarberosPage() {
+  const { confirmar, dialogo } = useConfirmacion();
   const [barberos, setBarberos] = useState<Barbero[]>([]);
   const [original, setOriginal] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -114,6 +116,22 @@ export default function BarberosPage() {
     } finally {
       setGuardando(false);
     }
+  };
+
+  /**
+   * Quitar a alguien del equipo no preguntaba nada: un toque en el bote de
+   * basura y desaparecía. En un teléfono eso se hace sin querer con facilidad.
+   */
+  const quitar = async (b: Barbero) => {
+    const seguro = await confirmar({
+      titulo: `¿Quitar a ${b.name || 'este barbero'} del equipo?`,
+      mensaje:
+        'Sus citas ya registradas no se borran. Si solo deja de atender por un tiempo, desmárcalo como activo en vez de quitarlo.',
+      aceptar: 'Quitar',
+      peligro: true,
+    });
+    if (!seguro) return;
+    setBarberos((prev) => prev.filter((x) => x.id !== b.id));
   };
 
   const cambiar = (i: number, patch: Partial<Barbero>) => {
@@ -211,7 +229,7 @@ export default function BarberosPage() {
 
                       <button
                         type="button"
-                        onClick={() => setBarberos(barberos.filter((x) => x.id !== b.id))}
+                        onClick={() => quitar(b)}
                         aria-label={`Quitar a ${b.name}`}
                         className="p-1.5 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
                       >
@@ -335,6 +353,7 @@ export default function BarberosPage() {
           </div>
         </div>
       </div>
+      {dialogo}
     </div>
   );
 }
