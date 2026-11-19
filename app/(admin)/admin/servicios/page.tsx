@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import ServiceIcon from '@/components/shared/ServiceIcon';
-import { Clock, Loader2, Plus, RotateCcw, Save, Scissors, Trash2 } from 'lucide-react';
+import {
+  ChevronDown, Clock, Loader2, Plus, RotateCcw, Save, Scissors, Trash2,
+} from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
@@ -108,6 +110,22 @@ export default function ServiciosAdminPage() {
   const [canEdit, setCanEdit] = useState(false);
   // Servicio recién agregado: se lleva a la vista y se enfoca su nombre
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  /**
+   * Qué servicios están abiertos para editar. Plegados por defecto.
+   *
+   * Se pliega cada servicio y no la sección entera: plegar el bloque completo
+   * obliga a desplegarlo para tocar uno solo, y se vuelve al mismo scroll. Así
+   * la lista cabe de un vistazo y el horario queda siempre a la mano.
+   */
+  const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
+
+  const alternar = (key: string) =>
+    setAbiertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const load = async () => {
     setLoading(true);
@@ -121,6 +139,9 @@ export default function ServiciosAdminPage() {
       const data = await catalogRes.json();
       const loaded: EditableService[] = data.services.map((s: Omit<EditableService, 'key'>) => ({ ...s, key: nextKey() }));
       setServices(loaded);
+      // Las claves se regeneran al cargar, así que el conjunto anterior
+      // apuntaría a servicios que ya no existen.
+      setAbiertos(new Set());
       setHours(data.workingHours);
       setSnapshot(JSON.stringify({ services: loaded.map(({ key: _k, ...s }) => s), hours: data.workingHours }));
       const me = meRes.ok ? await meRes.json() : null;
@@ -150,6 +171,8 @@ export default function ServiciosAdminPage() {
       ...prev,
       { key, id: '', name: '', description: '', duration: 30, price: 0, active: true, isNew: true },
     ]);
+    // Nace abierto: un servicio nuevo está vacío y hay que llenarlo.
+    setAbiertos((prev) => new Set(prev).add(key));
     setJustAdded(key);
   };
 
@@ -178,6 +201,11 @@ export default function ServiciosAdminPage() {
       if (!seguro) return;
     }
     setServices((prev) => prev.filter((s) => s.key !== svc.key));
+    setAbiertos((prev) => {
+      const next = new Set(prev);
+      next.delete(svc.key);
+      return next;
+    });
   };
 
   const updateDay = (day: DayKey, patch: Partial<Hours[DayKey]>) =>
@@ -200,6 +228,8 @@ export default function ServiciosAdminPage() {
       }
       const saved: EditableService[] = data.services.map((s: Omit<EditableService, 'key'>) => ({ ...s, key: nextKey() }));
       setServices(saved);
+      // Guardar cierra todo: las claves cambian y, además, ya terminó de editar.
+      setAbiertos(new Set());
       setHours(data.workingHours);
       setSnapshot(JSON.stringify({ services: saved.map(({ key: _k, ...s }) => s), hours: data.workingHours }));
       // El catálogo lo leen Horarios y el sitio del cliente: sin esto se
@@ -268,8 +298,42 @@ export default function ServiciosAdminPage() {
                 </p>
               )}
 
+              {/* Accesos rápidos: con varios servicios el horario queda muy
+                  abajo, y bajar a buscarlo era el reclamo principal. */}
+              <nav className="flex flex-wrap gap-2 -mb-2">
+                {[
+                  { id: 'servicios', label: `Servicios (${services.length})`, icon: Scissors },
+                  { id: 'horario', label: 'Horario de atención', icon: Clock },
+                ].map(({ id, label, icon: Icono }) => (
+                  <a
+                    key={id}
+                    href={`#${id}`}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-full bg-cafe-soft border border-cafe-border text-cafe-muted hover:text-cafe-text hover:border-cafe-gold/40 transition"
+                  >
+                    <Icono className="w-3.5 h-3.5" />
+                    {label}
+                  </a>
+                ))}
+                {services.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAbiertos((prev) =>
+                        prev.size > 0 ? new Set() : new Set(services.map((x) => x.key))
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-full bg-cafe-soft border border-cafe-border text-cafe-muted hover:text-cafe-text hover:border-cafe-gold/40 transition ml-auto"
+                  >
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${abiertos.size > 0 ? 'rotate-180' : ''}`}
+                    />
+                    {abiertos.size > 0 ? 'Recoger todos' : 'Desplegar todos'}
+                  </button>
+                )}
+              </nav>
+
               {/* Servicios */}
-              <section>
+              <section id="servicios" className="scroll-mt-32">
                 <div className="flex items-end justify-between gap-4 mb-4">
                   <div>
                     <h2 className="font-display text-xl font-medium">Servicios</h2>
@@ -312,7 +376,16 @@ export default function ServiciosAdminPage() {
                           Nuevo
                         </span>
                       )}
-                      <div className="flex items-start gap-3">
+
+                      {/* Cabecera: lo que se ve plegado. Resume el servicio en
+                          una línea para no tener que abrirlo solo por mirar. */}
+                      <button
+                        type="button"
+                        onClick={() => alternar(svc.key)}
+                        aria-expanded={abiertos.has(svc.key)}
+                        aria-controls={`svc-cuerpo-${svc.key}`}
+                        className="w-full flex items-center gap-3 text-left"
+                      >
                         <div
                           className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-cafe-soft border border-cafe-border ${
                             svc.active ? 'text-cafe-gold' : 'text-cafe-subtle'
@@ -320,6 +393,33 @@ export default function ServiciosAdminPage() {
                         >
                           <ServiceIcon serviceId={svc.id} size={20} />
                         </div>
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`text-sm font-medium truncate ${
+                              svc.active ? 'text-cafe-text' : 'text-cafe-muted'
+                            }`}
+                          >
+                            {svc.name || 'Servicio sin nombre'}
+                          </p>
+                          <p className="text-xs text-cafe-subtle tabular-nums">
+                            {svc.duration} min · ${svc.price.toLocaleString('es-CO')}
+                            {!svc.active && ' · inactivo'}
+                          </p>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 text-cafe-subtle shrink-0 transition-transform ${
+                            abiertos.has(svc.key) ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+
+                      {/* Se desmonta en vez de ocultarse con `hidden`: el
+                          atributo pone display:none, pero la clase `flex` lo
+                          pisa y la tarjeta seguía ocupando su alto entero. Los
+                          campos son controlados, así que no se pierde nada. */}
+                      {abiertos.has(svc.key) && (
+                      <div id={`svc-cuerpo-${svc.key}`} className="flex items-start gap-3 mt-4">
+                        <div className="w-11 shrink-0 hidden sm:block" aria-hidden="true" />
 
                         <div className="flex-1 min-w-0 grid gap-3 sm:grid-cols-[1fr_110px_140px]">
                           <div className="sm:col-span-3 grid gap-2 sm:grid-cols-2">
@@ -390,13 +490,14 @@ export default function ServiciosAdminPage() {
                           </div>
                         </div>
                       </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </section>
 
               {/* Horario general */}
-              <section>
+              <section id="horario" className="scroll-mt-32">
                 <div className="mb-4">
                   <h2 className="font-display text-xl font-medium flex items-center gap-2">
                     <Clock className="w-5 h-5 text-cafe-gold" />

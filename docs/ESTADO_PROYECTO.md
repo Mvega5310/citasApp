@@ -232,6 +232,19 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
   del panel es `z-[60]`, así que en el teléfono el encabezado del modal quedaba tapado. Pasan a
   `z-[70]`, como `useConfirmacion`, y con `max-h-[90vh] overflow-y-auto` para que rueden por dentro
   en vez de salirse de la pantalla.
+- **Servicios plegables** (`/admin/servicios`, que es "Servicios y horario"): el horario de atención
+  va debajo de la lista, así que cada servicio nuevo lo empujaba más abajo. Con 9 servicios el
+  horario quedaba a 3.876 px; ahora a 1.158 — **2.718 px menos de scroll**.
+  - Se pliega **cada servicio**, no la sección entera: plegar el bloque completo obliga a
+    desplegarlo para tocar uno solo, y se vuelve al mismo scroll. Plegado, cada uno es una línea
+    con nombre, duración y precio, que además deja ver el catálogo de un vistazo.
+  - El cuerpo se **desmonta**, no se oculta con `hidden`: ese atributo pone `display:none` pero la
+    clase `flex` de Tailwind lo pisa, y la tarjeta seguía ocupando su alto entero. Los campos son
+    controlados, así que plegar no pierde lo que se estaba editando.
+  - Un servicio nuevo nace abierto (está vacío y hay que llenarlo). Al cargar, guardar o borrar se
+    vacía el conjunto de abiertos: las claves se regeneran y quedarían apuntando a nada, con lo que
+    el botón diría "Recoger todos" sin haber nada abierto.
+  - Arriba, fila de accesos rápidos con ancla a Horario de atención, igual que en Configuración.
 - **Configuración**: fila de accesos rápidos arriba, porque el código QR quedaba al final.
 - **Código QR** (`/api/qr`): la dirección la arma el servidor; la ruta **no acepta una URL por
   parámetro**, que sería un generador de QR alojado en el dominio propio.
