@@ -314,11 +314,31 @@ falta un despliegue nuevo.
 
 **Pendiente de Marcos:**
 1. Probar de punta a punta: reservar, cancelar, recordatorio.
-2. Rotar lo que quedó expuesto en el chat: llave del service account de Firebase (ya se puede, la
-   copia terminó), contraseña de Postgres, y revocar la contraseña de aplicación de Gmail, que ya no
-   se usa.
-3. Quitar el proxy TCP público de Postgres y vaciar `citas_test`. **Déjalo para el final**: es el
-   único acceso a la base desde fuera de Railway.
+2. **Verificar `ADMIN_SECRET` en Railway.** En el chat quedó pegado un valor débil; después se
+   generaron otros hexadecimales, y Railway no deja leer los valores por API, así que no se pudo
+   confirmar cuál quedó. Firma las sesiones del panel **y** los enlaces de cancelación: con él se
+   puede falsificar una sesión de administrador de cualquier barbería. Si hay que cambiarlo, al
+   hacerlo se cierran todas las sesiones y los enlaces de cancelación ya enviados dejan de servir.
+
+**Cerrado el 19 nov 2026:**
+- Llave del service account de Firebase (`turnos-de-belleza`) revocada. No estaba en producción:
+  el panel autentica con contraseñas en Postgres, porque `auth()` devuelve `passwordAuth` cuando
+  `DATA_BACKEND=postgres`. Con ella dejan de funcionar `db:copy` y `db:compare`, que ya no hacen
+  falta.
+- Contraseña de aplicación de Gmail revocada. Tampoco estaba en producción: `getTransporter()` da
+  prioridad a Resend y SMTP era solo el respaldo.
+- **Proxy TCP público de Postgres eliminado** (`shinkansen.proxy.rlwy.net:25359`). Antes de
+  quitarlo se comprobó en el log de despliegue que la app conecta por `postgres.railway.internal`,
+  la red privada, así que no dependía del proxy. Con esto la contraseña de Postgres que quedó
+  expuesta en el chat ya no le sirve a nadie desde fuera, y rotarla pasa a ser opcional.
+
+> **Consecuencia que hay que tener presente:** ya **no se puede llegar a la base desde fuera de
+> Railway**. `npm run db:migrate:test`, `db:copy`, `db:compare` y cualquier script contra
+> `citas_test` dejan de funcionar. Las migraciones nuevas ya no se pueden ensayar contra un
+> Postgres real antes de producción: se validan solo en el `preDeployCommand`, que al menos detiene
+> el despliegue si fallan y deja sirviendo la versión anterior. Para volver a tener banco de
+> pruebas hay dos caminos: levantar un Postgres local (Docker) y apuntar ahí `DATABASE_URL`, o
+> recrear el proxy un rato y volver a quitarlo.
 
 **Pendiente de construir:**
 - Cuenta opcional de cliente (ver y cancelar sus citas desde un enlace al correo). Reservar sin
