@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import QrCard from '@/components/admin/QrCard';
+import ClientesBloqueados from '@/components/admin/ClientesBloqueados';
 import LogoUploader from '@/components/admin/LogoUploader';
 import {
   Store, Phone, MapPin, Mail, Instagram, Facebook,
-  MessageCircle, Bell, Save, CheckCircle, Settings, QrCode,
+  MessageCircle, Bell, Save, CheckCircle, Settings, QrCode, UserX,
 } from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
@@ -30,6 +31,7 @@ const ACCESOS = [
   { id: 'redes', label: 'Redes sociales', Icon: Instagram },
   { id: 'correos', label: 'Not. email', Icon: Bell },
   { id: 'qr', label: 'Código QR', Icon: QrCode },
+  { id: 'bloqueados', label: 'Clientes bloqueados', Icon: UserX },
 ] as const;
 
 const DEFAULTS: SalonSettings = {
@@ -310,6 +312,10 @@ export default function ConfiguracionPage() {
 
             <div id="qr" className="mt-6 scroll-mt-32">
               <QrCard />
+            </div>
+
+            <div className="mt-6">
+              <ClientesBloqueados />
             </div>
             </>
           )}

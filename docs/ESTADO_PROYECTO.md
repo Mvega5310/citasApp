@@ -162,6 +162,38 @@ suyo. **Todo esto es opcional** — por defecto nada cambia: `modalidad` nace en
 - Igual que el %, las dos cifras son el acuerdo vigente y no se guardan por cita: cambiarlas hace que
   un periodo ya pagado muestre otro número al volver a consultarlo.
 
+### 11.2 Adicionales y clientes bloqueados
+
+Dos pedidos de Marcos desde el uso real: cortes que no pasan por la reserva (no llegó quien apartó y
+se atendió a otra persona, o alcanzó el tiempo para uno más), y clientes que apartan y no llegan.
+
+- **Registrar un adicional** (`/api/admin/appointments/manual`, botón "Registrar adicional" arriba
+  del listado): entra directo como `completed` — ya sucedió, no reserva un horario futuro — y se
+  marca `source: 'manual'` reutilizando una columna que existía sin uso desde la migración 001. **Sin
+  migración nueva para esto.** El panel lo distingue con una etiqueta "Adicional" junto al estado, y
+  sin correo ni WhatsApp (no se pidió consentimiento a nadie que solo pasó a cortarse el pelo) las
+  filas de contacto simplemente no se muestran, en vez de salir vacías. Entra al Cierre exactamente
+  igual que cualquier cita completada: no hizo falta tocar `informe/route.ts`.
+  - No pasa por `createAppointments` (el de la reserva pública): ese siempre inserta `pending` y
+    pisa `source` con `'postgres'`/`'firebase'`, pensado para el flujo con consentimiento. Es un
+    método aparte, `createManualAppointment`.
+  - Solo rol `admin`: afecta la facturación, no es para quien solo mira.
+- **Clientes bloqueados** (migración `011`, tabla `blocked_clients`; sección en Configuración): quien
+  no llegó deja de poder reservar solo — el sitio le pide que se comunique con la barbería. **Es una
+  barrera de fricción, no un control de identidad**: sin cuentas de cliente, nada impide volver con
+  otro correo. Para esta barbería informal basta.
+  - La comprobación está en las dos rutas de reserva (`/api/bookings` y `/api/bookings/group`,
+    `lib/server/clientBlock.ts`) y **falla abierto**: al revés que `alcance.ts`, donde un fallo de
+    lectura restringe. Aquí fallar cerrado tumbaría la reserva de todo el mundo por un error
+    transitorio de la base; aceptar una reserva de más es mucho más barato que eso.
+  - Bloquear y desbloquear son acciones de un clic, sin diálogo de confirmación: a diferencia de
+    borrar, las dos se deshacen instantáneamente la una a la otra.
+  - **Esta migración no se probó contra una base real.** Desde que se cerró el proxy público de
+    Postgres no hay forma de ensayar contra `citas_test`, y no hay Docker en esta máquina para un
+    Postgres local. El DDL es `CREATE TABLE IF NOT EXISTS` puro, sin tocar tablas existentes, mismo
+    patrón que `tenant_logos` (migración 008, que sí se verificó en su momento) — pero queda
+    pendiente confirmarla en caliente la primera vez que se despliegue.
+
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

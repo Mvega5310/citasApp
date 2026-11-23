@@ -23,9 +23,11 @@ import {
   XCircle,
   Save,
   Loader2,
+  PlusCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
+import AgregarAdicionalDialog from '@/components/admin/AgregarAdicionalDialog';
 
 type FilterStatus = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
@@ -134,6 +136,7 @@ export default function AdminPage() {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [mostrarAdicional, setMostrarAdicional] = useState(false);
 
   // Los filtros y la paginación los resuelve la base: el panel pide una
   // página, no el histórico entero.
@@ -475,6 +478,20 @@ export default function AdminPage() {
             </div>
           ) : (
             <>
+              {/* Para un corte que no pasó por la reserva: no llegó quien
+                  apartó y se atendió a otra persona, o alcanzó el tiempo para
+                  uno más. Arriba de todo y en ancho completo en el móvil,
+                  porque es lo que se usa al cerrar la jornada. */}
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={() => setMostrarAdicional(true)}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-full border border-cafe-gold/40 bg-cafe-gold/10 text-cafe-goldlight hover:bg-cafe-gold/20 transition"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Registrar adicional
+                </button>
+              </div>
+
               {/* Estadísticas */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
                 {[
@@ -652,15 +669,22 @@ export default function AdminPage() {
                               <div className="flex-1 min-w-0">
                                 <p className="font-bold text-cafe-text text-base">{apt.clientName}</p>
 
-                                <p className="text-sm text-cafe-muted flex items-center gap-2 mt-1 break-all">
-                                  <Mail className="w-4 h-4 shrink-0" />
-                                  {apt.clientEmail}
-                                </p>
+                                {/* Un adicional no tiene correo ni WhatsApp: no
+                                    se pidió consentimiento para nadie que solo
+                                    pasó a cortarse el pelo sin reservar. */}
+                                {apt.clientEmail && (
+                                  <p className="text-sm text-cafe-muted flex items-center gap-2 mt-1 break-all">
+                                    <Mail className="w-4 h-4 shrink-0" />
+                                    {apt.clientEmail}
+                                  </p>
+                                )}
 
-                                <p className="text-sm text-cafe-muted flex items-center gap-2 mt-1">
-                                  <Phone className="w-4 h-4 shrink-0" />
-                                  {apt.clientWhatsApp}
-                                </p>
+                                {apt.clientWhatsApp && (
+                                  <p className="text-sm text-cafe-muted flex items-center gap-2 mt-1">
+                                    <Phone className="w-4 h-4 shrink-0" />
+                                    {apt.clientWhatsApp}
+                                  </p>
+                                )}
                               </div>
                             </div>
 
@@ -700,13 +724,20 @@ export default function AdminPage() {
                               </p>
 
                               <div className="flex items-center justify-between gap-3">
-                                <span
-                                  className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold ${
-                                    STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
-                                  }`}
-                                >
-                                  {STATUS_LABELS[apt.status] ?? apt.status}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span
+                                    className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-bold ${
+                                      STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
+                                    }`}
+                                  >
+                                    {STATUS_LABELS[apt.status] ?? apt.status}
+                                  </span>
+                                  {apt.source === 'manual' && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold bg-cafe-soft text-cafe-subtle border border-cafe-border">
+                                      Adicional
+                                    </span>
+                                  )}
+                                </div>
 
                                 {!isEditing && (
                                   <button
@@ -847,15 +878,19 @@ export default function AdminPage() {
                               <td className="px-5 py-4">
                                 <p className="text-sm font-semibold text-cafe-text">{apt.clientName}</p>
 
-                                <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
-                                  <Mail className="w-3 h-3" />
-                                  {apt.clientEmail}
-                                </p>
+                                {apt.clientEmail && (
+                                  <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
+                                    <Mail className="w-3 h-3" />
+                                    {apt.clientEmail}
+                                  </p>
+                                )}
 
-                                <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
-                                  <Phone className="w-3 h-3" />
-                                  {apt.clientWhatsApp}
-                                </p>
+                                {apt.clientWhatsApp && (
+                                  <p className="text-xs text-cafe-muted flex items-center gap-1 mt-0.5">
+                                    <Phone className="w-3 h-3" />
+                                    {apt.clientWhatsApp}
+                                  </p>
+                                )}
                               </td>
 
                               <td className="px-5 py-4">
@@ -920,13 +955,20 @@ export default function AdminPage() {
                                     </button>
                                   </div>
                                 ) : (
-                                  <span
-                                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                                      STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
-                                    }`}
-                                  >
-                                    {STATUS_LABELS[apt.status] ?? apt.status}
-                                  </span>
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span
+                                      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                        STATUS_COLORS[apt.status] ?? STATUS_FALLBACK
+                                      }`}
+                                    >
+                                      {STATUS_LABELS[apt.status] ?? apt.status}
+                                    </span>
+                                    {apt.source === 'manual' && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-cafe-soft text-cafe-subtle border border-cafe-border">
+                                        Adicional
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
                               </td>
 
@@ -988,6 +1030,12 @@ export default function AdminPage() {
         </div>
       </div>
       {dialogo}
+      {mostrarAdicional && (
+        <AgregarAdicionalDialog
+          onCerrar={() => setMostrarAdicional(false)}
+          onCreado={() => fetchAppointments(true)}
+        />
+      )}
     </div>
   );
 }

@@ -276,6 +276,63 @@ export const firestoreStore: DataStore = {
     return true;
   },
 
+  async createManualAppointment(slug, item) {
+    const db = adminDb();
+    const ref = appointmentsCol(db, slug).doc();
+    const now = new Date().toISOString();
+    const doc: Record<string, unknown> = {
+      serviceId: item.serviceId,
+      serviceName: item.serviceName,
+      clientName: item.clientName,
+      clientEmail: '',
+      clientWhatsApp: '',
+      date: item.date,
+      time: item.time,
+      status: 'completed',
+      habeasDataAccepted: false,
+      notificationsAccepted: false,
+      source: 'manual',
+      tenantSlug: slug,
+      price: item.price,
+      createdAt: now,
+      updatedAt: now,
+    };
+    if (item.barberId) doc.barberId = item.barberId;
+    await ref.set(doc);
+    return toAppointment(await ref.get(), slug);
+  },
+
+  async listBlockedClients(slug) {
+    const snap = await adminDb().collection('tenants').doc(slug).collection('blockedClients').get();
+    return snap.docs.map((d) => {
+      const x = d.data();
+      return {
+        email: d.id,
+        reason: String(x.reason ?? ''),
+        blockedAt: toIso(x.blockedAt),
+        blockedBy: (x.blockedBy as string | null) ?? null,
+      };
+    });
+  },
+
+  async blockClient(slug, email, reason, blockedBy) {
+    await adminDb()
+      .collection('tenants')
+      .doc(slug)
+      .collection('blockedClients')
+      .doc(email)
+      .set({ reason, blockedBy, blockedAt: new Date().toISOString() });
+  },
+
+  async unblockClient(slug, email) {
+    await adminDb().collection('tenants').doc(slug).collection('blockedClients').doc(email).delete();
+  },
+
+  async isClientBlocked(slug, email) {
+    const doc = await adminDb().collection('tenants').doc(slug).collection('blockedClients').doc(email).get();
+    return doc.exists;
+  },
+
   async reminderCandidates(dates) {
     const db = adminDb();
     // listDocuments incluye barberías sin documento propio pero con citas (p. ej. la por defecto)

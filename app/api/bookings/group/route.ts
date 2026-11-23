@@ -11,6 +11,7 @@ import { appOrigin } from '@/lib/server/auth';
 import { resolveRequestTenant } from '@/lib/server/tenant';
 import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
+import { clienteBloqueado } from '@/lib/server/clientBlock';
 
 export async function POST(request: NextRequest) {
   const tenantResult = await resolveRequestTenant(request);
@@ -51,6 +52,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Todas las citas del grupo deben ser del mismo cliente.' },
         { status: 400 }
+      );
+    }
+
+    if (await clienteBloqueado(tenantSlug, first.clientEmail)) {
+      return NextResponse.json(
+        { error: 'No podemos procesar tu reserva por este medio. Comunícate directamente con la barbería para agendar.' },
+        { status: 403 }
       );
     }
 

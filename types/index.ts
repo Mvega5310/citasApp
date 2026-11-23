@@ -20,6 +20,8 @@ export interface Appointment {
   groupId?: string;
   /** Barbero asignado. Ausente en las citas anteriores a que existieran. */
   barberId?: string | null;
+  /** 'manual' = registrada como adicional desde el panel, no por reserva. */
+  source?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -450,6 +450,64 @@ export const postgresStore: DataStore = {
     return (res.rowCount ?? 0) > 0;
   },
 
+  async createManualAppointment(slug, item) {
+    const res = await query<{ id: string }>(
+      `INSERT INTO appointments (
+         tenant_id, service_id, service_name, client_name, client_email, client_whatsapp,
+         date, time, status, habeas_data_accepted, notifications_accepted, source, barber_id, price
+       )
+       SELECT id, $2, $3, $4, '', '', $5, $6, 'completed', false, false, 'manual', $7, $8
+       FROM tenants WHERE slug = $1
+       RETURNING id`,
+      [norm(slug), item.serviceId, item.serviceName, item.clientName, item.date, item.time,
+        item.barberId ?? null, item.price]
+    );
+    const creada = await postgresStore.getAppointment(slug, res.rows[0].id);
+    if (!creada) throw new Error('No se pudo leer el adicional recién creado');
+    return creada;
+  },
+
+  async listBlockedClients(slug) {
+    const res = await query<{ email: string; reason: string; blocked_at: Date; blocked_by: string | null }>(
+      `SELECT b.email, b.reason, b.blocked_at, b.blocked_by
+       FROM blocked_clients b JOIN tenants t ON t.id = b.tenant_id
+       WHERE t.slug = $1 ORDER BY b.blocked_at DESC`,
+      [norm(slug)]
+    );
+    return res.rows.map((r) => ({
+      email: r.email,
+      reason: r.reason,
+      blockedAt: iso(r.blocked_at),
+      blockedBy: r.blocked_by,
+    }));
+  },
+
+  async blockClient(slug, email, reason, blockedBy) {
+    await query(
+      `INSERT INTO blocked_clients (tenant_id, email, reason, blocked_by)
+       SELECT id, $2, $3, $4 FROM tenants WHERE slug = $1
+       ON CONFLICT (tenant_id, email) DO UPDATE
+         SET reason = EXCLUDED.reason, blocked_by = EXCLUDED.blocked_by, blocked_at = now()`,
+      [norm(slug), email, reason, blockedBy]
+    );
+  },
+
+  async unblockClient(slug, email) {
+    await query(
+      `DELETE FROM blocked_clients WHERE tenant_id = (SELECT id FROM tenants WHERE slug = $1) AND email = $2`,
+      [norm(slug), email]
+    );
+  },
+
+  async isClientBlocked(slug, email) {
+    const res = await query<{ n: number }>(
+      `SELECT count(*)::int n FROM blocked_clients b JOIN tenants t ON t.id = b.tenant_id
+       WHERE t.slug = $1 AND b.email = $2`,
+      [norm(slug), email]
+    );
+    return res.rows[0].n > 0;
+  },
+
   reminderCandidates: (dates) =>
     // A propósito sin filtro de barbería: el recordatorio recorre todas
     selectAppointments(

@@ -10,6 +10,7 @@ import { catalogFor } from '@/lib/server/catalog';
 import { emailContextFor } from '@/lib/server/settings';
 import { isSlotBlocked, isSlotTaken } from '@/lib/server/appointments';
 import { resolverBarbero, nombreDeBarbero } from '@/lib/server/barbers';
+import { clienteBloqueado } from '@/lib/server/clientBlock';
 
 
 export async function POST(request: NextRequest) {
@@ -27,6 +28,13 @@ export async function POST(request: NextRequest) {
     }
 
     const booking = validation.data;
+
+    if (await clienteBloqueado(tenantSlug, booking.clientEmail)) {
+      return NextResponse.json(
+        { error: 'No podemos procesar tu reserva por este medio. Comunícate directamente con la barbería para agendar.' },
+        { status: 403 }
+      );
+    }
 
     const blocked = await isSlotBlocked(booking.date, booking.time, tenantSlug);
     if (blocked) {

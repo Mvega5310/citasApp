@@ -64,6 +64,24 @@ export type NewAppointment = {
   price?: number | null;
 };
 
+export type ManualAppointment = {
+  serviceId: string;
+  serviceName: string;
+  /** Si no se escribe nada, queda "Cliente sin reserva". */
+  clientName: string;
+  date: string;
+  time: string;
+  barberId?: string | null;
+  price: number;
+};
+
+export type BlockedClient = {
+  email: string;
+  reason: string;
+  blockedAt: string | null;
+  blockedBy: string | null;
+};
+
 export type AppointmentQuery = {
   status?: AppointmentRecord['status'];
   /** Un día concreto, en formato YYYY-MM-DD. */
@@ -237,9 +255,24 @@ export interface DataStore {
   getAppointment(slug: string, id: string): Promise<AppointmentRecord | null>;
   /** Guarda todas o ninguna. Lanza SlotTakenError si un horario ya estaba ocupado. */
   createAppointments(slug: string, items: NewAppointment[]): Promise<string[]>;
+  /**
+   * Un corte que no pasó por la reserva: no llegó quien apartó y el barbero
+   * atendió a otra persona, o le alcanzó el tiempo para uno más. Entra directo
+   * como completada -no reserva un horario, ya sucedió- y marcada con
+   * `source: 'manual'` para distinguirla en el Cierre de las que sí vinieron
+   * por la web.
+   */
+  createManualAppointment(slug: string, item: ManualAppointment): Promise<AppointmentRecord>;
   /** false si la cita no existe en esta barbería. */
   updateAppointment(slug: string, id: string, patch: AppointmentPatch): Promise<boolean>;
   deleteAppointment(slug: string, id: string): Promise<boolean>;
+
+  // ── Clientes bloqueados ──
+  listBlockedClients(slug: string): Promise<BlockedClient[]>;
+  blockClient(slug: string, email: string, reason: string, blockedBy: string): Promise<void>;
+  unblockClient(slug: string, email: string): Promise<void>;
+  /** Para el momento de reservar: ¿este correo ya no puede agendar solo? */
+  isClientBlocked(slug: string, email: string): Promise<boolean>;
   /** Citas activas sin recordatorio en esas fechas, de todas las barberías. */
   reminderCandidates(dates: string[]): Promise<AppointmentRecord[]>;
 
