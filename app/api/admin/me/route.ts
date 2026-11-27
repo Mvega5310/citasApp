@@ -19,6 +19,9 @@ export async function GET(request: Request) {
           // De la base y no del token: si se le retira la marca, el panel deja
           // de ofrecer la sección sin esperar a que caduque la sesión.
           platformAdmin: data.platformAdmin === true,
+          // Si está vinculada a un barbero, el panel le ofrece gestionar su
+          // propio QR de cobro sin depender de un admin.
+          barberId: data.barberId ?? null,
         });
       }
     } catch {}

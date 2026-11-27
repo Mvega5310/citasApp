@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import { UserRound, Plus, Trash2, Save, CheckCircle } from 'lucide-react';
 import CampoNumero from '@/components/admin/CampoNumero';
+import PagoQrUploader from '@/components/admin/PagoQrUploader';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
@@ -144,6 +145,16 @@ export default function BarberosPage() {
   const hayCambios = JSON.stringify(barberos) !== original;
   const hayPuesto = barberos.some((b) => b.modalidad === 'puesto');
   const activos = barberos.filter((b) => b.active).length;
+
+  // Un barbero recién agregado en este borrador todavía no existe en el
+  // servidor: subir su QR ahí daría 404. Se puede en cuanto se guarda el equipo.
+  const guardados = useMemo(() => {
+    try {
+      return new Set<string>((JSON.parse(original || '[]') as Barbero[]).map((b) => b.id));
+    } catch {
+      return new Set<string>();
+    }
+  }, [original]);
 
   return (
     <div className="flex min-h-screen bg-cafe-bg text-cafe-text pb-14 md:pb-0">
@@ -293,6 +304,20 @@ export default function BarberosPage() {
                             <span className="text-cafe-muted">· {pesos(b.tarifaDiaria)}</span>
                           )}
                         </label>
+                      )}
+                    </div>
+
+                    {/* QR de cobro propio, para que no pase todo por una
+                        pasarela con comisión. Solo si ya existe en el
+                        servidor: uno recién agregado en este borrador aún no
+                        tiene dónde guardarlo. */}
+                    <div className="pl-1">
+                      {guardados.has(b.id) ? (
+                        <PagoQrUploader endpoint={`/api/admin/barbers/${b.id}/pago-qr`} etiqueta={b.name || b.id} compacto />
+                      ) : (
+                        <p className="text-xs text-cafe-subtle">
+                          Guarda el equipo para poder subir su QR de cobro.
+                        </p>
                       )}
                     </div>
                   </li>

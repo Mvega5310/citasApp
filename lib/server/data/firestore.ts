@@ -177,6 +177,52 @@ export const firestoreStore: DataStore = {
     await adminDb().collection('tenantLogos').doc(slug).delete();
   },
 
+  async readPaymentQr(slug) {
+    const doc = await adminDb().collection('tenantPaymentQrs').doc(slug).get();
+    const png = doc.data()?.png;
+    return png ? Buffer.from(String(png), 'base64') : null;
+  },
+
+  async writePaymentQr(slug, png) {
+    await adminDb()
+      .collection('tenantPaymentQrs')
+      .doc(slug)
+      .set({ png: png.toString('base64'), updatedAt: new Date().toISOString() });
+  },
+
+  async deletePaymentQr(slug) {
+    await adminDb().collection('tenantPaymentQrs').doc(slug).delete();
+  },
+
+  async readBarberPaymentQr(slug, barberId) {
+    const doc = await adminDb()
+      .collection('tenants')
+      .doc(slug)
+      .collection('barberPaymentQrs')
+      .doc(barberId)
+      .get();
+    const png = doc.data()?.png;
+    return png ? Buffer.from(String(png), 'base64') : null;
+  },
+
+  async writeBarberPaymentQr(slug, barberId, png) {
+    await adminDb()
+      .collection('tenants')
+      .doc(slug)
+      .collection('barberPaymentQrs')
+      .doc(barberId)
+      .set({ png: png.toString('base64'), updatedAt: new Date().toISOString() });
+  },
+
+  async deleteBarberPaymentQr(slug, barberId) {
+    await adminDb()
+      .collection('tenants')
+      .doc(slug)
+      .collection('barberPaymentQrs')
+      .doc(barberId)
+      .delete();
+  },
+
   async updateTenantPlan(slug, plan) {
     const ref = adminDb().collection('tenants').doc(slug);
     if (!(await ref.get()).exists) return false;

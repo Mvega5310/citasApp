@@ -21,6 +21,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import CompartirBoton from '@/components/admin/CompartirBoton';
 
 type AdminProfile = { name: string; email: string; role?: string; platformAdmin?: boolean };
 
@@ -179,10 +180,13 @@ export default function AdminSidebar() {
             alt={tenantName}
             className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border bg-cafe-bg"
           />
-          <div>
-            <p className="text-cafe-text font-medium text-base font-display leading-tight">{tenantName}</p>
+          <div className="min-w-0">
+            <p className="text-cafe-text font-medium text-base font-display leading-tight truncate">{tenantName}</p>
             <p className="text-cafe-gold text-[11px] font-semibold uppercase tracking-[0.2em] mt-0.5">Administración</p>
           </div>
+          {/* Acceso directo: antes compartir el sitio pedía entrar a
+              Configuración y bajar hasta el QR. */}
+          <CompartirBoton className="ml-auto p-2 rounded-lg text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-hover transition shrink-0" />
         </div>
 
         <NavLinks />
@@ -191,23 +195,26 @@ export default function AdminSidebar() {
 
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-cafe-bg/95 backdrop-blur-md border-b border-cafe-border flex items-center justify-between px-4 h-14">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/api/logo?size=56"
             alt={tenantName}
-            className="w-8 h-8 rounded-lg object-cover ring-1 ring-cafe-border bg-cafe-bg"
+            className="w-8 h-8 rounded-lg object-cover ring-1 ring-cafe-border bg-cafe-bg shrink-0"
           />
-          <span className="text-cafe-text font-medium text-sm font-display">{tenantName} Admin</span>
+          <span className="text-cafe-text font-medium text-sm font-display truncate">{tenantName} Admin</span>
         </div>
-        <button
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
-          aria-expanded={mobileOpen}
-          className="text-cafe-muted hover:text-cafe-text p-2 -mr-1 rounded-lg"
-        >
-          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <CompartirBoton className="text-cafe-muted hover:text-cafe-text p-2 rounded-lg transition" />
+          <button
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={mobileOpen}
+            className="text-cafe-muted hover:text-cafe-text p-2 rounded-lg"
+          >
+            {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}

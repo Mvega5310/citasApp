@@ -28,6 +28,7 @@ import {
 import toast from 'react-hot-toast';
 import { useConfirmacion } from '@/components/admin/useConfirmacion';
 import AgregarAdicionalDialog from '@/components/admin/AgregarAdicionalDialog';
+import PagoQrUploader from '@/components/admin/PagoQrUploader';
 
 type FilterStatus = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
@@ -119,6 +120,9 @@ export default function AdminPage() {
   // Solo si la barbería usa barberos tiene sentido avisar de "sin asignar":
   // donde no los hay, todas las citas lo estarían y sería puro ruido.
   const usaBarberos = Object.keys(nombresBarbero).length > 0;
+  // Si esta cuenta está vinculada a un barbero, puede gestionar su propio QR
+  // de cobro aquí mismo, sin depender de un admin ni poder entrar a Barberos.
+  const [miBarberId, setMiBarberId] = useState<string | null>(null);
   /** Cuántas cumplen el filtro actual: de ahí salen las páginas. */
   const [total, setTotal] = useState(0);
   /** Conteo por estado de TODA la barbería, para las tarjetas de arriba. */
@@ -213,6 +217,13 @@ export default function AdminPage() {
         for (const b of d.barbers as { id: string; name: string }[]) mapa[b.id] = b.name;
         setNombresBarbero(mapa);
       })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/admin/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setMiBarberId(d?.barberId ?? null))
       .catch(() => {});
   }, []);
 
@@ -491,6 +502,22 @@ export default function AdminPage() {
                   Registrar adicional
                 </button>
               </div>
+
+              {/* Solo si esta cuenta está vinculada a un barbero: gestiona su
+                  propio QR de cobro sin depender de un admin ni poder entrar
+                  a Barberos, que es solo para quien administra. */}
+              {miBarberId && (
+                <div className="bg-cafe-card rounded-2xl border border-cafe-border p-4 mb-4">
+                  <p className="text-sm font-semibold text-cafe-text mb-1">Tu QR de cobro</p>
+                  <p className="text-xs text-cafe-muted mb-3">
+                    Para Nequi, Daviplata o lo que uses, sin pasarela. Solo tú ves este bloque.
+                  </p>
+                  <PagoQrUploader
+                    endpoint={`/api/admin/barbers/${miBarberId}/pago-qr`}
+                    etiqueta={nombresBarbero[miBarberId] ?? 'ti'}
+                  />
+                </div>
+              )}
 
               {/* Estadísticas */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">

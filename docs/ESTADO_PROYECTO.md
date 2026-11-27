@@ -194,6 +194,62 @@ se atendió a otra persona, o alcanzó el tiempo para uno más), y clientes que 
     patrón que `tenant_logos` (migración 008, que sí se verificó en su momento) — pero queda
     pendiente confirmarla en caliente la primera vez que se despliegue.
 
+### 11.3 Compartir de un toque, y QR de cobro por barbero
+
+Dos pedidos más de Marcos. El primero, arreglar un bug real; el segundo, una funcionalidad nueva.
+
+**El QR tenía un bug de verdad en iOS**, no solo "podría mejorar". `/api/qr` generaba SVG y lo
+servía para descargar con `Content-Disposition: inline` — justo lo contrario de lo que pide un botón
+de descarga —, y en pantalla se inyectaba como markup crudo (`dangerouslySetInnerHTML`), no como una
+imagen real. En iOS eso significa que no hay nada que "mantener presionado para guardar": no es una
+foto, es texto XML disfrazado. Arreglado generando PNG real (`lib/server/qrImage.ts`,
+`QRCode.toBuffer`) y mostrándolo como `<img>` de verdad:
+- `/api/qr` (admin) ahora separa los dos usos que antes compartían una sola respuesta: sin parámetro
+  es `inline` (para el `<img src>` en pantalla, habilita guardar con mantener presionado);
+  `&descargar=1` es `attachment` (para el botón de descarga explícito en desktop).
+- `QrCard.tsx` (Configuración) pasó de SVG inyectado a `<img>`, con el aviso "mantén presionado para
+  guardar" en vez de depender de que `<a download>` funcione (en iOS, no funciona).
+- Quedaron tests puros cubriendo esto: que el PNG generado tenga la firma real de PNG (no texto), y
+  que el saneador de nombre de archivo escape acentos/comillas sin romper la cabecera HTTP.
+
+**Acceso directo para compartir** (`components/shared/CompartirDialog.tsx`): antes, compartir tomaba
+varios pasos — perfil → Configuración → bajar hasta el QR → copiar o descargar → pegar a mano en
+WhatsApp. Ahora es un botón fijo (barra superior del panel, y en el sitio del cliente junto al
+horario) que abre el QR + "Copiar enlace" + "Compartir" (nativo del teléfono) en un solo diálogo, sin
+navegar a ningún lado. Ni el admin ni el cliente necesitan sesión para que esto funcione del lado del
+cliente:
+- `/api/qr/publico` (nueva, sin sesión): el QR de inicio de ESTA barbería, nada más. No acepta
+  elegir página — ni siquiera eso —, por la misma razón que ya documentaba `/api/qr`: aceptar un
+  destino por fuera lo convertiría en un generador de QR alojado en el dominio propio, ideal para
+  una estafa. Reutiliza `marcaDeLaPagina()` para el nombre y el origen.
+- **El cliente también puede compartir**, no solo quien administra — era parte del pedido.
+
+**QR de cobro por barbero y por el negocio** (migración `012`, tablas `tenant_payment_qrs` y
+`barber_payment_qrs`): la pasarela de pago cobra comisión alta para un local informal (ver nota más
+abajo sobre Wompi). La alternativa es la que ya usan a mano — Nequi o Daviplata directo —, y esto
+solo guarda la IMAGEN del QR: la app nunca procesa, ve ni toca un pago real, mismo patrón que el
+logo.
+- **Sí pueden convivir los dos**, que era la pregunta de Marcos: cada barbero puede tener su propio
+  QR, y el del negocio queda como respaldo en Configuración.
+- Quién puede subir el de un barbero: un admin, para cualquiera — los administra —, o la propia
+  cuenta si está vinculada a ESE barbero (`barberoDeLaCuenta`), sin pasar por un admin. Esto último
+  vive directo en el Panel (`/admin`), no en Barberos — una cuenta vinculada puede tener rol
+  `viewer` y ese nav es solo `admin`.
+- **El recorte NO es igual al del logo.** `LogoUploader` recorta al centro, que está bien para una
+  marca decorativa; para un QR, recortar podría comerse una esquina del patrón y dejarlo inservible.
+  `PagoQrUploader` usa un lienzo "contener" en vez de "cubrir": encaja la imagen entera con relleno
+  blanco en los bordes que sobren, nunca recorta.
+- Un barbero recién agregado en el formulario de Barberos (sin guardar todavía) no tiene dónde
+  guardar su QR: la fila muestra "Guarda el equipo para poder subir su QR" en vez del subidor.
+- **Deliberadamente no se muestra en ninguna página pública todavía.** Mostrarlo en la tirilla de
+  confirmación de la reserva se parece demasiado al abono que se construyó y se revirtió por
+  decisión explícita de Marcos ("nada de pagos en la app"); se evitó cruzar esa línea sin
+  preguntar. Por ahora es solo para que admin/barbero lo tengan a mano y lo muestren ellos mismos
+  (en persona, por chat) cuando el cliente pregunta cómo pagar.
+- **Esta migración tampoco se probó contra una base real**, mismo motivo que la 011: sin proxy
+  público no hay `citas_test` alcanzable, y no hay Docker en esta máquina. DDL puro, sin tocar
+  tablas existentes.
+
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

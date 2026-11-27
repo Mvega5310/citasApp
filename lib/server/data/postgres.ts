@@ -322,6 +322,57 @@ export const postgresStore: DataStore = {
     );
   },
 
+  async readPaymentQr(slug) {
+    const res = await query<{ png: Buffer }>(
+      `SELECT q.png FROM tenant_payment_qrs q JOIN tenants t ON t.id = q.tenant_id
+       WHERE t.slug = $1`,
+      [norm(slug)]
+    );
+    return res.rows[0]?.png ?? null;
+  },
+
+  async writePaymentQr(slug, png) {
+    await query(
+      `INSERT INTO tenant_payment_qrs (tenant_id, png, updated_at)
+       SELECT id, $2, now() FROM tenants WHERE slug = $1
+       ON CONFLICT (tenant_id) DO UPDATE SET png = EXCLUDED.png, updated_at = now()`,
+      [norm(slug), png]
+    );
+  },
+
+  async deletePaymentQr(slug) {
+    await query(
+      'DELETE FROM tenant_payment_qrs WHERE tenant_id = (SELECT id FROM tenants WHERE slug = $1)',
+      [norm(slug)]
+    );
+  },
+
+  async readBarberPaymentQr(slug, barberId) {
+    const res = await query<{ png: Buffer }>(
+      `SELECT q.png FROM barber_payment_qrs q JOIN tenants t ON t.id = q.tenant_id
+       WHERE t.slug = $1 AND q.barber_id = $2`,
+      [norm(slug), barberId]
+    );
+    return res.rows[0]?.png ?? null;
+  },
+
+  async writeBarberPaymentQr(slug, barberId, png) {
+    await query(
+      `INSERT INTO barber_payment_qrs (tenant_id, barber_id, png, updated_at)
+       SELECT id, $2, $3, now() FROM tenants WHERE slug = $1
+       ON CONFLICT (tenant_id, barber_id) DO UPDATE SET png = EXCLUDED.png, updated_at = now()`,
+      [norm(slug), barberId, png]
+    );
+  },
+
+  async deleteBarberPaymentQr(slug, barberId) {
+    await query(
+      `DELETE FROM barber_payment_qrs
+       WHERE tenant_id = (SELECT id FROM tenants WHERE slug = $1) AND barber_id = $2`,
+      [norm(slug), barberId]
+    );
+  },
+
   listAppointments: (slug) => selectAppointments('t.slug = $1', [norm(slug)]),
 
   async listAppointmentsPage(slug, { status, date, barberId, limit, offset }) {

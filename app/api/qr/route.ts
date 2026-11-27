@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import QRCode from 'qrcode';
 import { authorizeAdmin } from '@/lib/server/authorization';
 import { appOrigin, AuthError } from '@/lib/server/auth';
+import { generarQrPng } from '@/lib/server/qrImage';
 
 /**
  * Código QR de la página pública de la barbería, para imprimir y pegar en el local.
@@ -45,30 +45,28 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  // Oscuro sobre blanco siempre: hay lectores que no reconocen un QR invertido.
-  // El margen (quiet zone) es parte del estándar, sin él muchos no enfocan.
-  const svg = await QRCode.toString(destino, {
-    type: 'svg',
-    errorCorrectionLevel: 'M',
-    margin: 2,
-    color: { dark: '#100E0C', light: '#FFFFFF' },
-  });
-
-  // El panel pide json para mostrar también la dirección debajo del código;
-  // por defecto sale la imagen, para que sirva en <img> y al descargar.
+  // El panel pide json solo para mostrar la dirección debajo del código; la
+  // imagen la trae el propio <img>, pidiendo esta misma ruta sin ese parámetro.
   if (searchParams.get('formato') === 'json') {
     return NextResponse.json(
-      { destino, svg },
+      { destino },
       { headers: { 'Cache-Control': 'private, max-age=3600' } }
     );
   }
 
-  return new NextResponse(svg, {
+  const png = await generarQrPng(destino);
+
+  // `inline` para mostrarlo en un <img> (habilita "mantener presionado para
+  // guardar" en el teléfono); `attachment` solo cuando lo pide el botón de
+  // descargar explícito. Antes era siempre `inline` incluso para el enlace de
+  // descarga, que es justo lo contrario de lo que ese botón necesitaba.
+  const descarga = searchParams.get('descargar') === '1';
+  return new NextResponse(new Uint8Array(png), {
     headers: {
-      'Content-Type': 'image/svg+xml; charset=utf-8',
+      'Content-Type': 'image/png',
       // Privado: depende de la sesión, no debe quedar en caché compartida
       'Cache-Control': 'private, max-age=3600',
-      'Content-Disposition': `inline; filename="qr-${pagina}.svg"`,
+      'Content-Disposition': `${descarga ? 'attachment' : 'inline'}; filename="qr-${pagina}.png"`,
     },
   });
 }

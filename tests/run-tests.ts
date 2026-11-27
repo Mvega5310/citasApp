@@ -163,6 +163,28 @@ async function runAsyncTest(name: string, fn: () => Promise<void>) {
     assert.equal(sumarMeses('2026-12-15', 1), '2027-01-15');
   });
 
+  await runAsyncTest('should generate a real PNG for the QR, not SVG text', async () => {
+    const { generarQrPng } = await import('../lib/server/qrImage');
+    const png = await generarQrPng('https://ejemplo.citas.proyects.store/');
+    // Firma PNG: sin esto, el bug de iOS (descargar como texto, no como foto)
+    // vuelve a aparecer aunque el Content-Type diga image/png.
+    const FIRMA_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    assert.ok(png.subarray(0, 8).equals(FIRMA_PNG), 'debe empezar con la firma PNG');
+    assert.ok(png.length > 500, 'un QR real pesa más que un archivo vacío');
+  });
+
+  await runAsyncTest('should sanitize a name for a filename and an HTTP header', async () => {
+    const { nombreDeArchivo } = await import('../lib/server/qrImage');
+    // Nada de acentos, espacios ni mayúsculas sueltas en un nombre de archivo
+    assert.equal(nombreDeArchivo('Barbería Norte'), 'barberia-norte');
+    assert.equal(nombreDeArchivo('Sálon "Él Corte"'), 'salon-el-corte');
+    // Sin nombre, un valor de respaldo: un archivo "qr-.png" se ve roto
+    assert.equal(nombreDeArchivo(''), 'barberia');
+    assert.equal(nombreDeArchivo('   '), 'barberia');
+    // Nada que permita escapar las comillas de Content-Disposition
+    assert.ok(!nombreDeArchivo('a"; x=y').includes('"'));
+  });
+
   await runAsyncTest('should only accept a square PNG as the barbería logo', async () => {
     const { revisarLogo } = await import('../lib/server/logoPng');
     const { readFileSync } = await import('node:fs');

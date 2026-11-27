@@ -6,9 +6,10 @@ import AdminBottomNav from '@/components/admin/AdminBottomNav';
 import QrCard from '@/components/admin/QrCard';
 import ClientesBloqueados from '@/components/admin/ClientesBloqueados';
 import LogoUploader from '@/components/admin/LogoUploader';
+import PagoQrUploader from '@/components/admin/PagoQrUploader';
 import {
   Store, Phone, MapPin, Mail, Instagram, Facebook,
-  MessageCircle, Bell, Save, CheckCircle, Settings, QrCode, UserX,
+  MessageCircle, Bell, Save, CheckCircle, Settings, QrCode, UserX, Wallet,
 } from 'lucide-react';
 import { invalidateCatalog } from '@/lib/shared/useCatalog';
 import toast from 'react-hot-toast';
@@ -31,6 +32,7 @@ const ACCESOS = [
   { id: 'redes', label: 'Redes sociales', Icon: Instagram },
   { id: 'correos', label: 'Not. email', Icon: Bell },
   { id: 'qr', label: 'Código QR', Icon: QrCode },
+  { id: 'pago', label: 'QR de cobro', Icon: Wallet },
   { id: 'bloqueados', label: 'Clientes bloqueados', Icon: UserX },
 ] as const;
 
@@ -312,6 +314,20 @@ export default function ConfiguracionPage() {
 
             <div id="qr" className="mt-6 scroll-mt-32">
               <QrCard />
+            </div>
+
+            <div id="pago" className="mt-6 scroll-mt-32 bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
+              <h2 className="text-base font-semibold text-cafe-text mb-1 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-cafe-goldlight" />
+                QR de cobro del negocio
+              </h2>
+              <p className="text-xs text-cafe-muted mb-5 leading-relaxed">
+                Para Nequi, Daviplata o lo que uses, sin que una pasarela de pago se quede con
+                comisión. La app solo guarda la imagen: nunca procesa ni ve el pago real. Es el
+                respaldo cuando un barbero en particular no tiene el suyo propio — cada uno puede
+                subir el suyo desde Barberos.
+              </p>
+              <PagoQrUploader endpoint="/api/admin/pago-qr" etiqueta="el negocio" />
             </div>
 
             <div className="mt-6">

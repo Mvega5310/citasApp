@@ -239,6 +239,20 @@ export interface DataStore {
   writeLogo(slug: string, png: Buffer): Promise<void>;
   deleteLogo(slug: string): Promise<void>;
 
+  // ── QR de cobro ──
+  /**
+   * Para pagos informales (Nequi/Daviplata) sin pasarela: la app solo guarda
+   * la imagen, nunca procesa ni ve el pago real. El del negocio es el
+   * respaldo cuando un barbero no subió el suyo.
+   */
+  readPaymentQr(slug: string): Promise<Buffer | null>;
+  writePaymentQr(slug: string, png: Buffer): Promise<void>;
+  deletePaymentQr(slug: string): Promise<void>;
+
+  readBarberPaymentQr(slug: string, barberId: string): Promise<Buffer | null>;
+  writeBarberPaymentQr(slug: string, barberId: string, png: Buffer): Promise<void>;
+  deleteBarberPaymentQr(slug: string, barberId: string): Promise<void>;
+
   // ── Citas ──
   /** Todas las citas de la barbería, más recientes primero. */
   listAppointments(slug: string): Promise<AppointmentRecord[]>;

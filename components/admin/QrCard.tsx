@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { QrCode, Copy, Download, Check } from 'lucide-react';
+import { QrCode, Copy, Download, Check, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const PAGINAS = [
@@ -14,10 +14,12 @@ type Pagina = (typeof PAGINAS)[number]['id'];
 export default function QrCard() {
   const [pagina, setPagina] = useState<Pagina>('inicio');
   const [destino, setDestino] = useState('');
-  const [svg, setSvg] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [copiado, setCopiado] = useState(false);
+  // Cambia la URL de la imagen al cambiar de página: si no, el navegador
+  // podría seguir mostrando la del código anterior desde su caché.
+  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     let vigente = true;
@@ -29,7 +31,7 @@ export default function QrCard() {
         if (!res.ok) throw new Error(body?.error ?? 'No se pudo generar el código');
         if (!vigente) return;
         setDestino(body.destino);
-        setSvg(body.svg);
+        setVersion((v) => v + 1);
       })
       .catch((e: unknown) => {
         if (vigente) setError(e instanceof Error ? e.message : 'No se pudo generar el código');
@@ -90,11 +92,14 @@ export default function QrCard() {
             {cargando ? (
               <div className="w-6 h-6 border-2 border-cafe-border border-t-cafe-gold rounded-full animate-spin" />
             ) : (
-              <div
-                className="w-full h-full [&>svg]:w-full [&>svg]:h-full"
-                aria-label={`Código QR que lleva a ${destino}`}
-                role="img"
-                dangerouslySetInnerHTML={{ __html: svg }}
+              // Una <img> de verdad, no SVG inyectado como markup: eso es lo
+              // que iOS y Android saben guardar y ampliar con solo mantener
+              // presionado. El texto crudo de un SVG en el DOM no se puede.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`/api/qr?pagina=${pagina}&v=${version}`}
+                alt={`Código QR que lleva a ${destino}`}
+                className="w-full h-full object-contain"
               />
             )}
           </div>
@@ -115,8 +120,8 @@ export default function QrCard() {
               </button>
 
               <a
-                href={`/api/qr?pagina=${pagina}`}
-                download={`qr-${pagina}.svg`}
+                href={`/api/qr?pagina=${pagina}&descargar=1`}
+                download={`qr-${pagina}.png`}
                 className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition"
               >
                 <Download className="w-3.5 h-3.5" />
@@ -124,10 +129,14 @@ export default function QrCard() {
               </a>
             </div>
 
-            <p className="text-xs text-cafe-subtle mt-4 leading-relaxed">
-              Se descarga en formato vectorial: se puede ampliar a cualquier tamaño sin que se
-              pixele. Al imprimirlo, deja el borde blanco que trae — sin ese margen muchos
-              lectores no lo enfocan.
+            <p className="text-xs text-cafe-subtle mt-3 flex items-start gap-1.5 leading-relaxed">
+              <Smartphone className="w-3.5 h-3.5 shrink-0 mt-0.5" aria-hidden="true" />
+              En el teléfono es más fácil mantener presionado el código de arriba y elegir
+              &ldquo;Guardar imagen&rdquo;.
+            </p>
+            <p className="text-xs text-cafe-subtle mt-2 leading-relaxed">
+              Al imprimirlo, deja el borde blanco que trae — sin ese margen muchos lectores no lo
+              enfocan.
             </p>
           </div>
         </div>
