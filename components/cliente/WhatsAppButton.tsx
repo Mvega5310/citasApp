@@ -1,9 +1,19 @@
-const WHATSAPP = '573024075828';
+'use client';
+
+import { useCatalog } from '@/lib/shared/useCatalog';
 
 export default function WhatsAppButton() {
+  const { catalog } = useCatalog();
+  // Solo dígitos para el enlace: wa.me no acepta espacios ni el "+". El
+  // número era fijo -el de Marcos- y aparecía igual en cualquier barbería;
+  // ahora sale de la Configuración de cada una, y si no lo han puesto
+  // todavía el botón simplemente no se muestra, en vez de escribirle a otro.
+  const digitos = (catalog?.contact.whatsapp ?? '').replace(/\D/g, '');
+  if (!digitos) return null;
+
   return (
     <a
-      href={`https://wa.me/${WHATSAPP}?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20informaci%C3%B3n%20sobre%20sus%20servicios.`}
+      href={`https://wa.me/${digitos}?text=Hola%2C%20me%20gustar%C3%ADa%20obtener%20informaci%C3%B3n%20sobre%20sus%20servicios.`}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Contactar por WhatsApp"

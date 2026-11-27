@@ -250,6 +250,42 @@ logo.
   público no hay `citas_test` alcanzable, y no hay Docker en esta máquina. DDL puro, sin tocar
   tablas existentes.
 
+### 11.4 Contacto por barbería, no el de Marcos para todas
+
+Bug real encontrado al decidir dónde mostrar el QR de pago (11.3): `app/(cliente)/contacto/page.tsx`
+tenía el WhatsApp, teléfono, correo y dirección **de Marcos escritos a mano** en constantes — y
+resultó no ser el único sitio. Cualquier otra barbería (Darlyn, o la que sea) le mostraba a sus
+propios clientes los datos de contacto personales de Marcos en vez de los suyos. Una búsqueda
+completa encontró **cuatro** instancias del mismo patrón:
+- `app/(cliente)/contacto/page.tsx` — WhatsApp, teléfono, correo, dirección y hasta el enlace de
+  Google Maps (apuntando a un lugar físico real en Bella Vista) y el horario, todo fijo.
+- `components/cliente/WhatsAppButton.tsx` — el botón flotante de WhatsApp, visible en inicio y
+  servicios.
+- `app/(cliente)/page.tsx` — el CTA "¿Preguntas? Escríbenos" de la portada, mismo número fijo.
+
+La causa raíz: estos datos **ya existían correctamente por barbería** en `SalonSettings`
+(`phone`, `whatsapp`, `contactEmail`, `address`, `city`) desde el principio — `defaultsFor()` ya
+devuelve cadena vacía para cualquier barbería que no sea la por defecto, nunca el dato de otra. El
+problema era que `PublicCatalog` (lo que expone `/api/catalog` y `getPageCatalogWithName()`) nunca
+los incluía, así que esas tres pantallas no tenían de dónde leerlos y alguien los escribió a mano
+en su momento.
+
+Arreglado ampliando `PublicCatalog` con un campo `contact` (mismos campos de `SalonSettings`, menos
+`salonName` que ya viajaba aparte) en los dos sitios que lo construyen (`/api/catalog/route.ts` y
+`getPageCatalogWithName()`), y haciendo que las tres pantallas lean de ahí:
+- **Cadena vacía esconde la tarjeta/botón**, nunca muestra un valor de respaldo: sin WhatsApp
+  configurado no hay CTA de WhatsApp; sin dirección no hay tarjeta de dirección ni mapa. Mostrar
+  "algo" ahí sería inventar un dato o volver a filtrar el de otra barbería.
+- El enlace de Google Maps pasó de apuntar a un lugar fijo a construirse con la dirección
+  configurada (`maps/search/?api=1&query=...`), genérico para cualquier dirección.
+- El horario pasó de una tabla escrita a mano (`Lun–Sáb 9–19`, `Domingo 9–17`) a calcularse de
+  verdad desde `catalog.schedule` con `resumenSemanal()` (`lib/shared/services.ts`), que agrupa
+  días consecutivos con el mismo horario en una fila legible — con pruebas puras cubriendo el caso
+  de un día cerrado en medio de la semana, que es donde se rompe una agrupación hecha a mano.
+- El formulario de contacto (`/api/contact`) **ya estaba bien**: siempre enviaba al correo de la
+  barbería del remitente (`emailContextFor`), nunca al de Marcos. El bug era solo de pantalla, los
+  mensajes de verdad nunca llegaron a la bandeja equivocada.
+
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

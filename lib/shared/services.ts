@@ -102,6 +102,23 @@ export type PublicCatalog = Catalog & {
   salonName: string;
   /** Equipo activo. Vacío si la barbería no usa barberos. */
   barbers: { id: string; name: string }[];
+  /**
+   * Contacto público de ESTA barbería. Cadena vacía = todavía no lo
+   * configuró, nunca el dato de otra: `/contacto` tenía el WhatsApp, correo
+   * y dirección de Marcos escritos a mano, así que cualquier otra barbería
+   * (p. ej. Darlyn) le mostraba a sus clientes los datos personales de
+   * Marcos. Estos campos existen desde el principio en `SalonSettings`, lo
+   * que faltaba era exponerlos aquí.
+   */
+  contact: {
+    phone: string;
+    whatsapp: string;
+    email: string;
+    address: string;
+    city: string;
+    instagram: string;
+    facebook: string;
+  };
 };
 
 // Horarios por día de la semana (0=Domingo...6=Sábado)
@@ -161,6 +178,39 @@ export const isOpenDay = (date: Date, schedule: WeekSchedule = workingSchedule):
   const rule = schedule[date.getDay()];
   return !!(rule && !rule.closed);
 };
+
+const ABREVIATURA_DIA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+/** Lunes a domingo: es como la gente de aquí espera leer un horario. */
+const ORDEN_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
+/**
+ * El horario de la semana, agrupado en filas legibles ("Lun – Sáb: 9:00 –
+ * 19:00", "Domingo: Cerrado") en vez de un renglón por día.
+ *
+ * Usado en `/contacto`, que antes tenía el horario escrito a mano -el mismo
+ * problema que el resto del contacto: no era por barbería-.
+ */
+export function resumenSemanal(schedule: WeekSchedule): { dias: string; texto: string }[] {
+  const clave = (dia: number) => {
+    const d = schedule[dia];
+    return !d || d.closed ? 'cerrado' : `${d.start}-${d.end}`;
+  };
+
+  const filas: { dias: string; texto: string }[] = [];
+  let i = 0;
+  while (i < ORDEN_SEMANA.length) {
+    const actual = clave(ORDEN_SEMANA[i]);
+    let j = i;
+    while (j + 1 < ORDEN_SEMANA.length && clave(ORDEN_SEMANA[j + 1]) === actual) j++;
+
+    const nombres = ORDEN_SEMANA.slice(i, j + 1).map((d) => ABREVIATURA_DIA[d]);
+    const dias = nombres.length === 1 ? nombres[0] : `${nombres[0]} – ${nombres[nombres.length - 1]}`;
+    const d = schedule[ORDEN_SEMANA[i]];
+    filas.push({ dias, texto: actual === 'cerrado' ? 'Cerrado' : `${d.start} – ${d.end}` });
+    i = j + 1;
+  }
+  return filas;
+}
 
 /** Catálogo de la barbería por defecto (el que existía antes del multi-tenant). */
 export const defaultCatalog: Catalog = { services, schedule: workingSchedule };

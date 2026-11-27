@@ -29,6 +29,15 @@ export async function GET(request: Request) {
       salonName: settings.salonName,
       // Solo los activos: el cliente no debe ver a quien ya no atiende
       barbers: barbers.filter((b) => b.active).map(({ id, name }) => ({ id, name })),
+      contact: {
+        phone: settings.phone,
+        whatsapp: settings.whatsapp,
+        email: settings.contactEmail,
+        address: settings.address,
+        city: settings.city,
+        instagram: settings.instagram,
+        facebook: settings.facebook,
+      },
     },
     { headers: { 'Cache-Control': 'no-store' } }
   );

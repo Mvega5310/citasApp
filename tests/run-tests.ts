@@ -4,7 +4,9 @@ import {
   getServiceById,
   getServiceDuration,
   getServicePrice,
+  resumenSemanal,
   services,
+  type WeekSchedule,
 } from '../lib/shared/services';
 import { validateBookingPayload } from '../lib/server/booking';
 import { cleanOptionalText, isValidEmail, isValidPhone, parsePaginationParams } from '../lib/server/api';
@@ -44,6 +46,43 @@ runTest('should trim late slots when the service no longer fits in the schedule'
   const slots = getAvailableHoursForDate('2026-03-21', 75);
   assert.ok(!slots.includes('18:00'));
   assert.equal(slots.at(-1), '17:30');
+});
+
+runTest('should group the weekly schedule into readable rows, not one per day', () => {
+  const uniforme: WeekSchedule = {
+    0: { start: '09:00', end: '17:00' },
+    1: { start: '09:00', end: '19:00' },
+    2: { start: '09:00', end: '19:00' },
+    3: { start: '09:00', end: '19:00' },
+    4: { start: '09:00', end: '19:00' },
+    5: { start: '09:00', end: '19:00' },
+    6: { start: '09:00', end: '19:00' },
+  };
+  const filas = resumenSemanal(uniforme);
+  assert.deepEqual(filas, [
+    { dias: 'Lun – Sáb', texto: '09:00 – 19:00' },
+    { dias: 'Dom', texto: '09:00 – 17:00' },
+  ]);
+
+  // Un día cerrado en medio de la semana no debe fundirse con sus vecinos
+  const conCierre: WeekSchedule = {
+    0: { start: '', end: '', closed: true },
+    1: { start: '09:00', end: '19:00' },
+    2: { start: '09:00', end: '19:00' },
+    3: { start: '', end: '', closed: true },
+    4: { start: '09:00', end: '19:00' },
+    5: { start: '09:00', end: '19:00' },
+    6: { start: '09:00', end: '19:00' },
+  };
+  assert.deepEqual(resumenSemanal(conCierre), [
+    { dias: 'Lun – Mar', texto: '09:00 – 19:00' },
+    { dias: 'Mié', texto: 'Cerrado' },
+    { dias: 'Jue – Sáb', texto: '09:00 – 19:00' },
+    { dias: 'Dom', texto: 'Cerrado' },
+  ]);
+
+  // Un día sin regla en absoluto (barbería recién creada) cuenta como cerrado
+  assert.equal(resumenSemanal({})[0].texto, 'Cerrado');
 });
 
 runTest('should validate a correct booking payload', () => {

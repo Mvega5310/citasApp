@@ -7,18 +7,8 @@ import Footer from '@/components/cliente/Footer';
 import BottomNav from '@/components/cliente/BottomNav';
 import { ArrowRight, ArrowUpRight, MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
 import { useState } from 'react';
-
-const WHATSAPP = '573024075828';
-const PHONE = '+57 302 407 5828';
-const EMAIL = 'marcosvega5310@gmail.com';
-const ADDRESS = 'Bella Vista, Colombia';
-const MAPS_URL =
-  'https://www.google.com/maps/place/Centro+De+Vida+Bella+Vista/@10.3710068,-75.506578,17z/data=!4m14!1m7!3m6!1s0x8ef6272ed668921b:0x10f68528a6dc159!2sCentro+De+Vida+Bella+Vista!8m2!3d10.3710015!4d-75.5040031!16s%2Fg%2F11y1trpzsh!3m5!1s0x8ef6272ed668921b:0x10f68528a6dc159!8m2!3d10.3710015!4d-75.5040031!16s%2Fg%2F11y1trpzsh?entry=ttu';
-
-const hours = [
-  { day: 'Lun – Sáb', hours: '9:00 – 19:00' },
-  { day: 'Domingo', hours: '9:00 – 17:00' },
-];
+import { useCatalog } from '@/lib/shared/useCatalog';
+import { resumenSemanal } from '@/lib/shared/services';
 
 type ContactFormData = {
   name: string;
@@ -30,6 +20,7 @@ type ContactFormData = {
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const { catalog } = useCatalog();
 
   const {
     register,
@@ -58,6 +49,26 @@ export default function ContactPage() {
     }
   };
 
+  // Antes cada uno de estos venía escrito a mano con el WhatsApp, teléfono,
+  // correo y dirección de Marcos: cualquier otra barbería le mostraba a sus
+  // clientes los datos personales de Marcos en vez de los suyos. Ahora salen
+  // de su propia Configuración, y nunca hay un valor de respaldo con el dato
+  // de otra: si no lo ha configurado, esa tarjeta simplemente no aparece.
+  const contact = catalog?.contact;
+  const whatsappDigitos = (contact?.whatsapp ?? '').replace(/\D/g, '');
+  const direccion = [contact?.address, contact?.city].filter(Boolean).join(', ');
+  const mapsUrl = direccion
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`
+    : '';
+
+  const infoCards = [
+    contact?.phone && { icon: Phone, label: 'Teléfono', value: contact.phone, href: `tel:${contact.phone.replace(/\s/g, '')}` },
+    contact?.email && { icon: Mail, label: 'Correo', value: contact.email, href: `mailto:${contact.email}` },
+    direccion && { icon: MapPin, label: 'Dirección', value: direccion, href: mapsUrl },
+  ].filter((c): c is { icon: typeof Phone; label: string; value: string; href: string } => Boolean(c));
+
+  const horario = catalog ? resumenSemanal(catalog.schedule) : [];
+
   return (
     <div className="min-h-screen pb-16 md:pb-0" style={{ background: '#100E0C' }}>
       <Header />
@@ -73,92 +84,96 @@ export default function ContactPage() {
           </p>
         </div>
 
-        {/* WhatsApp CTA — primary action */}
-        <a
-          href={`https://wa.me/${WHATSAPP}?text=Hola%2C%20me%20gustar%C3%ADa%20informaci%C3%B3n%20sobre%20sus%20servicios.`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-4 rounded-[18px] p-5 mb-4 transition-all duration-200 active:scale-[0.98]"
-          style={{ background: '#24845E', color: 'white' }}
-        >
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/20 shrink-0">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-base">Escribir por WhatsApp</p>
-            <p className="text-sm opacity-80">Respuesta rápida garantizada</p>
-          </div>
-          <ArrowRight className="w-5 h-5 opacity-70 shrink-0" width={20} height={20} aria-hidden="true" />
-        </a>
-
-        {/* Info cards */}
-        <div className="flex flex-col gap-3 mb-6">
-          {[
-            { icon: Phone, label: 'Teléfono', value: PHONE, href: `tel:${PHONE.replace(/\s/g, '')}` },
-            { icon: Mail, label: 'Correo', value: EMAIL, href: `mailto:${EMAIL}` },
-            { icon: MapPin, label: 'Dirección', value: ADDRESS, href: MAPS_URL },
-          ].map(({ icon: Icon, label, value, href }) => (
-            <a
-              key={label}
-              href={href}
-              target={href.startsWith('http') ? '_blank' : undefined}
-              rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className="flex items-center gap-4 rounded-[14px] p-4 transition-all duration-200"
-              style={{ background: '#201A15', border: '1px solid #403328' }}
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: '#191511' }}
-              >
-                <Icon className="w-4 h-4" style={{ color: '#C69B62' }} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs mb-0.5" style={{ color: '#A39583' }}>{label}</p>
-                <p className="text-sm font-medium truncate" style={{ color: '#F4EEE5' }}>{value}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-
-        {/* Hours */}
-        <div
-          className="rounded-[14px] p-4 mb-6"
-          style={{ background: '#201A15', border: '1px solid #403328' }}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4" style={{ color: '#C69B62' }} />
-            <p className="text-sm font-semibold" style={{ color: '#F4EEE5' }}>Horarios</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            {hours.map(({ day, hours: h }) => (
-              <div key={day} className="flex justify-between items-center">
-                <span className="text-sm" style={{ color: '#B8AA99' }}>{day}</span>
-                <span className="text-sm font-medium" style={{ color: '#F4EEE5' }}>{h}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Map placeholder */}
-        <div
-          className="rounded-[14px] p-5 mb-6 flex flex-col items-center gap-3"
-          style={{ background: '#201A15', border: '1px solid #403328' }}
-        >
-          <MapPin className="w-8 h-8" style={{ color: '#857767' }} />
-          <p className="text-sm text-center" style={{ color: '#B8AA99' }}>{ADDRESS}</p>
+        {/* WhatsApp CTA — solo si esta barbería configuró el suyo */}
+        {whatsappDigitos && (
           <a
-            href={MAPS_URL}
+            href={`https://wa.me/${whatsappDigitos}?text=Hola%2C%20me%20gustar%C3%ADa%20informaci%C3%B3n%20sobre%20sus%20servicios.`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium transition-colors duration-200"
-            style={{ color: '#C69B62' }}
+            className="flex items-center gap-4 rounded-[18px] p-5 mb-4 transition-all duration-200 active:scale-[0.98]"
+            style={{ background: '#24845E', color: 'white' }}
           >
-            Ver en Google Maps
-            <ArrowUpRight className="w-4 h-4" width={16} height={16} aria-hidden="true" />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/20 shrink-0">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-base">Escribir por WhatsApp</p>
+              <p className="text-sm opacity-80">Respuesta rápida garantizada</p>
+            </div>
+            <ArrowRight className="w-5 h-5 opacity-70 shrink-0" width={20} height={20} aria-hidden="true" />
           </a>
-        </div>
+        )}
+
+        {/* Info cards — solo las que esta barbería configuró */}
+        {infoCards.length > 0 && (
+          <div className="flex flex-col gap-3 mb-6">
+            {infoCards.map(({ icon: Icon, label, value, href }) => (
+              <a
+                key={label}
+                href={href}
+                target={href.startsWith('http') ? '_blank' : undefined}
+                rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                className="flex items-center gap-4 rounded-[14px] p-4 transition-all duration-200"
+                style={{ background: '#201A15', border: '1px solid #403328' }}
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: '#191511' }}
+                >
+                  <Icon className="w-4 h-4" style={{ color: '#C69B62' }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs mb-0.5" style={{ color: '#A39583' }}>{label}</p>
+                  <p className="text-sm font-medium truncate" style={{ color: '#F4EEE5' }}>{value}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+
+        {/* Hours — el horario real de esta barbería, agrupado en filas legibles */}
+        {horario.length > 0 && (
+          <div
+            className="rounded-[14px] p-4 mb-6"
+            style={{ background: '#201A15', border: '1px solid #403328' }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-4 h-4" style={{ color: '#C69B62' }} />
+              <p className="text-sm font-semibold" style={{ color: '#F4EEE5' }}>Horarios</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              {horario.map(({ dias, texto }) => (
+                <div key={dias} className="flex justify-between items-center">
+                  <span className="text-sm" style={{ color: '#B8AA99' }}>{dias}</span>
+                  <span className="text-sm font-medium" style={{ color: '#F4EEE5' }}>{texto}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Map — solo si hay dirección configurada */}
+        {direccion && (
+          <div
+            className="rounded-[14px] p-5 mb-6 flex flex-col items-center gap-3"
+            style={{ background: '#201A15', border: '1px solid #403328' }}
+          >
+            <MapPin className="w-8 h-8" style={{ color: '#857767' }} />
+            <p className="text-sm text-center" style={{ color: '#B8AA99' }}>{direccion}</p>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 min-h-[44px] text-sm font-medium transition-colors duration-200"
+              style={{ color: '#C69B62' }}
+            >
+              Ver en Google Maps
+              <ArrowUpRight className="w-4 h-4" width={16} height={16} aria-hidden="true" />
+            </a>
+          </div>
+        )}
 
         {/* Contact form */}
         <div className="rounded-[18px] p-5" style={{ background: '#201A15', border: '1px solid #403328' }}>
