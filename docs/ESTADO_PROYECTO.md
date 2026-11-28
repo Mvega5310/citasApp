@@ -300,14 +300,20 @@ onLoad/onError>` oculto (igual que `PagoQrUploader`) y se oculta entero si la ba
 ninguno, en vez de mostrar un ícono roto. Sigue siendo solo una imagen: la app nunca procesa ni ve
 el pago real.
 
-**Autocompletar al cliente recurrente.** Al escribir un WhatsApp que ya reservó antes en esa misma
-barbería, se completan solos el nombre y el correo (`/api/bookings/client-lookup`, público pero
-limitado a 20 consultas/10 min por IP). Nuevo método `findRecentClientByWhatsApp` en `DataStore`
-(implementado en Postgres y Firestore — en Firestore necesita un índice compuesto `clientWhatsApp
+**Autocompletar al cliente recurrente.** Al escribir un **correo** que ya reservó antes en esa
+misma barbería, se completan solos el nombre y el WhatsApp (`/api/bookings/client-lookup`, público
+pero limitado a 20 consultas/10 min por IP). Nuevo método `findRecentClientByEmail` en `DataStore`
+(implementado en Postgres y Firestore — en Firestore necesita un índice compuesto `clientEmail
 asc, createdAt desc` en la subcolección de citas, que Firestore ofrece crear solo si falta). Nunca
 cruza barberías: la búsqueda está acotada al `slug` de la barbería actual. En `reservar/page.tsx`
-se dispara con un debounce de 600 ms tras un número con formato válido, solo una vez por visita, y
+se dispara con un debounce de 600 ms tras un correo con formato válido, solo una vez por visita, y
 nunca pisa un campo que la persona ya haya escrito a mano.
+
+Primero se hizo **por WhatsApp** y Marcos lo corrigió el mismo día: en el formulario el WhatsApp es
+el **último** campo (nombre → correo → WhatsApp), así que reconocer a alguien ahí no ahorraba nada,
+ya había tecleado todo. Por correo —el segundo campo— sí sirve: completa el nombre de arriba y el
+WhatsApp de abajo. La consulta descarta las citas sin WhatsApp (los adicionales registrados a mano
+desde el panel se guardan con correo y WhatsApp vacíos y no sirven para autocompletar).
 
 **Registro directo de una barbería nueva.** Antes, la única forma de crear una barbería era que
 Marcos la diera de alta a mano desde `/admin/barberias` (protegido por `authorizePlatformAdmin`).
@@ -330,6 +336,34 @@ prueba gratis (`updateTenantPlan` con `hasta` a futuro, `precio: 0`) y sigue apa
 solo deja de ser un paso obligatorio para que la cuenta exista. La validación de la dirección
 (`SLUG_RE`/`RESERVADOS`) se sacó a `lib/server/tenantSlug.ts` para que `/api/admin/tenants` y
 `/api/registro` usen exactamente las mismas reglas.
+
+### 11.6 "Descargar" dejaba la app en negro
+
+Marcos reportó que al tocar **Descargar** en el diálogo del QR la pantalla quedaba oscura y no
+había forma de volver: tocaba cerrar la app y abrirla de nuevo. Pasaba en móvil y en escritorio.
+
+La causa: era un `<a href="/api/qr/publico?descargar=1" download>`, y eso **navega** — el documento
+se va a la URL del archivo. En un navegador con barra de direcciones apenas se nota; dentro de la
+app instalada (PWA en `standalone`) no hay barra ni botón de atrás, así que la pantalla se quedaba
+en el documento del PNG, en negro y sin salida. El `Content-Disposition: attachment` del servidor
+estaba bien: el problema era pedir el archivo navegando.
+
+Arreglado con `lib/shared/descargarImagen.ts`: la imagen se baja a memoria con `fetch` y se guarda
+desde un blob, así que el documento nunca navega. En iOS se ofrece primero el panel del sistema
+(`navigator.share` con el archivo), que trae "Guardar imagen", porque ahí `download` sobre un blob
+no siempre guarda nada. Los tres sitios que descargaban QR usan el mismo helper: `CompartirDialog`,
+`PagoQrDialog` y `QrCard` (el del panel, que tenía exactamente el mismo bug).
+
+Verificado en el navegador: tras pulsar Descargar la URL no cambia, el diálogo sigue abierto y la
+petición aparece como `fetch` y no como navegación de documento.
+
+De paso, dos arreglos del encabezado del cliente que salieron al revisar esto en móvil:
+- El ícono nuevo de cobro empujaba el chip de horario a dos renglones y estiraba la barra. El chip
+  ahora es `whitespace-nowrap` y se esconde por debajo de 420 px, el mismo punto de corte que ya
+  usaba el nombre de la barbería (el horario completo está en Contacto).
+- Un nombre largo ("Barbería del Norte Premium") se partía en tres renglones: al enlace de la marca
+  le faltaba `min-w-0` y al nombre `truncate`, el mismo arreglo que ya se le había hecho a la barra
+  lateral del panel.
 
 ### 12. Detalles de interfaz resueltos
 

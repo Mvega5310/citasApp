@@ -567,15 +567,15 @@ export const postgresStore: DataStore = {
       'a.date, a.time'
     ),
 
-  async findRecentClientByWhatsApp(slug, whatsapp) {
-    const res = await query<{ client_name: string; client_email: string }>(
-      `SELECT a.client_name, a.client_email FROM appointments a JOIN tenants t ON t.id = a.tenant_id
-       WHERE t.slug = $1 AND a.client_whatsapp = $2
+  async findRecentClientByEmail(slug, email) {
+    const res = await query<{ client_name: string; client_whatsapp: string }>(
+      `SELECT a.client_name, a.client_whatsapp FROM appointments a JOIN tenants t ON t.id = a.tenant_id
+       WHERE t.slug = $1 AND a.client_email = $2 AND a.client_whatsapp <> ''
        ORDER BY a.created_at DESC LIMIT 1`,
-      [norm(slug), whatsapp]
+      [norm(slug), email]
     );
     const row = res.rows[0];
-    return row ? { clientName: row.client_name, clientEmail: row.client_email } : null;
+    return row ? { clientName: row.client_name, clientWhatsApp: row.client_whatsapp } : null;
   },
 
   async blockedSlots(slug, date) {

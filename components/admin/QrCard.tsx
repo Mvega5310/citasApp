@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { QrCode, Copy, Download, Check, Smartphone } from 'lucide-react';
+import { QrCode, Copy, Download, Check, Smartphone, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { guardarImagen } from '@/lib/shared/descargarImagen';
 
 const PAGINAS = [
   { id: 'inicio', label: 'Inicio' },
@@ -17,6 +18,7 @@ export default function QrCard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [descargando, setDescargando] = useState(false);
   // Cambia la URL de la imagen al cambiar de página: si no, el navegador
   // podría seguir mostrando la del código anterior desde su caché.
   const [version, setVersion] = useState(0);
@@ -53,6 +55,17 @@ export default function QrCard() {
       toast.error('No se pudo copiar. Selecciona la dirección y cópiala a mano.');
     }
   }, [destino]);
+
+  const descargar = useCallback(async () => {
+    setDescargando(true);
+    try {
+      await guardarImagen(`/api/qr?pagina=${pagina}&descargar=1`, `qr-${pagina}.png`);
+    } catch {
+      toast.error('No se pudo guardar el código. Mantén presionada la imagen para guardarla.');
+    } finally {
+      setDescargando(false);
+    }
+  }, [pagina]);
 
   return (
     <div className="bg-cafe-card rounded-xl border border-cafe-border shadow-sm p-6">
@@ -119,14 +132,15 @@ export default function QrCard() {
                 {copiado ? 'Copiado' : 'Copiar enlace'}
               </button>
 
-              <a
-                href={`/api/qr?pagina=${pagina}&descargar=1`}
-                download={`qr-${pagina}.png`}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition"
+              <button
+                type="button"
+                onClick={descargar}
+                disabled={descargando}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition disabled:opacity-50"
               >
-                <Download className="w-3.5 h-3.5" />
+                {descargando ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                 Descargar
-              </a>
+              </button>
             </div>
 
             <p className="text-xs text-cafe-subtle mt-3 flex items-start gap-1.5 leading-relaxed">

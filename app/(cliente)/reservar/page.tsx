@@ -307,25 +307,27 @@ export default function BookingPage() {
     getValues,
   } = useForm<FormData>();
 
-  // Cliente recurrente: con solo el WhatsApp que ya usó antes en esta
-  // barbería, se le completan nombre y correo sin que vuelva a teclearlos.
+  // Cliente recurrente: con solo el correo que ya usó antes en esta barbería,
+  // se le completan el nombre y el WhatsApp sin que vuelva a teclearlos. Va
+  // por el correo y no por el WhatsApp porque el WhatsApp es el último campo:
+  // reconocerlo ahí no ahorraba nada, ya lo había escrito todo.
   // Solo una vez por visita (reconocidoRef), y nunca pisa algo que la persona
   // ya haya escrito a mano.
-  const clientWhatsApp = watch('clientWhatsApp');
+  const clientEmail = watch('clientEmail');
   const reconocidoRef = useRef(false);
   useEffect(() => {
-    const digitos = (clientWhatsApp ?? '').replace(/[^\d+]/g, '');
-    if (reconocidoRef.current || !/^\+?[0-9]{7,15}$/.test(digitos)) return;
+    const correo = (clientEmail ?? '').trim().toLowerCase();
+    if (reconocidoRef.current || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return;
     let vigente = true;
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/bookings/client-lookup?whatsapp=${encodeURIComponent(digitos)}`);
+        const res = await fetch(`/api/bookings/client-lookup?email=${encodeURIComponent(correo)}`);
         if (!res.ok || !vigente) return;
         const data = await res.json();
         if (!data.found) return;
         reconocidoRef.current = true;
         if (!getValues('clientName')) setValue('clientName', data.clientName);
-        if (!getValues('clientEmail')) setValue('clientEmail', data.clientEmail);
+        if (!getValues('clientWhatsApp')) setValue('clientWhatsApp', data.clientWhatsApp);
         toast.success('Te reconocimos: completamos tus datos.');
       } catch {}
     }, 600);
@@ -333,7 +335,7 @@ export default function BookingPage() {
       vigente = false;
       clearTimeout(t);
     };
-  }, [clientWhatsApp, getValues, setValue]);
+  }, [clientEmail, getValues, setValue]);
 
   useEffect(() => {
     const serviceId = searchParams.get('service');

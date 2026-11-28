@@ -1,6 +1,9 @@
 'use client';
 
-import { X, Download } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import { X, Download, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { guardarImagen } from '@/lib/shared/descargarImagen';
 
 /**
  * Solo la imagen del QR de cobro, sin "copiar enlace" ni compartir nativo:
@@ -16,7 +19,18 @@ export default function PagoQrDialog({
   salonName: string;
   onCerrar: () => void;
 }) {
-  const descarga = `${base}${base.includes('?') ? '&' : '?'}descargar=1`;
+  const [descargando, setDescargando] = useState(false);
+
+  const descargar = useCallback(async () => {
+    setDescargando(true);
+    try {
+      await guardarImagen(`${base}${base.includes('?') ? '&' : '?'}descargar=1`, 'qr-pago.png');
+    } catch {
+      toast.error('No se pudo guardar el código. Mantén presionada la imagen para guardarla.');
+    } finally {
+      setDescargando(false);
+    }
+  }, [base]);
 
   return (
     <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" onClick={onCerrar}>
@@ -45,14 +59,15 @@ export default function PagoQrDialog({
           </div>
           <p className="text-xs text-cafe-subtle mt-3 text-center">Mantén presionado el código para guardarlo</p>
 
-          <a
-            href={descarga}
-            download="qr-pago.png"
-            className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition mt-4"
+          <button
+            type="button"
+            onClick={descargar}
+            disabled={descargando}
+            className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition mt-4 disabled:opacity-50"
           >
-            <Download className="w-4 h-4" />
+            {descargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Descargar
-          </a>
+          </button>
         </div>
       </div>
     </div>

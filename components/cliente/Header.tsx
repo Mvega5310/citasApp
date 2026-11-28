@@ -38,7 +38,9 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Marca */}
-          <Link href="/" className="flex items-center gap-3 min-h-[44px]">
+          {/* min-w-0 + truncate: sin esto un nombre largo ("Barbería del Norte
+              Premium") se parte en varios renglones y estira la barra. */}
+          <Link href="/" className="flex items-center gap-3 min-h-[44px] min-w-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/api/logo?size=64"
@@ -51,15 +53,19 @@ export default function Header() {
               // un placeholder a propósito, no como un logo roto.
               className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-cafe-border bg-cafe-soft"
             />
-            <span className="font-display text-lg font-medium tracking-tight text-cafe-text hidden min-[420px]:block">
+            <span className="font-display text-lg font-medium tracking-tight text-cafe-text hidden min-[420px]:block truncate">
               {catalog?.salonName ?? ''}
             </span>
           </Link>
 
           {/* Horario + navegación de escritorio */}
           <div className="flex items-center gap-2 md:gap-4">
+            {/* Se esconde en las pantallas más angostas, igual que el nombre
+                de la barbería: con los dos íconos al lado ya no cabe, y el
+                horario completo está en Contacto. `whitespace-nowrap` para
+                que nunca se parta en dos renglones y descuadre la barra. */}
             {catalog && (
-            <span className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-cafe-card/70 border border-cafe-border text-cafe-muted">
+            <span className="hidden min-[420px]:flex items-center gap-1.5 shrink-0 whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full bg-cafe-card/70 border border-cafe-border text-cafe-muted">
               <Clock className="w-3.5 h-3.5 text-cafe-gold" width={14} height={14} aria-hidden="true" />
               {getScheduleChip(catalog.schedule)}
             </span>
@@ -67,13 +73,13 @@ export default function Header() {
 
             {/* Potestad del cliente, no solo de quien administra: cualquiera
                 que esté mirando puede mandarle esto a un conocido. */}
-            <CompartirBoton className="flex items-center justify-center w-9 h-9 rounded-full text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-card/70 transition-colors duration-200" />
+            <CompartirBoton className="flex items-center justify-center w-9 h-9 shrink-0 rounded-full text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-card/70 transition-colors duration-200" />
 
             {/* Solo aparece si la barbería configuró un QR de cobro. */}
             <PagoQrBoton
               salonName={catalog?.salonName ?? ''}
               variant="icon"
-              className="flex items-center justify-center w-9 h-9 rounded-full text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-card/70 transition-colors duration-200"
+              className="flex items-center justify-center w-9 h-9 shrink-0 rounded-full text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-card/70 transition-colors duration-200"
             />
 
             <Link

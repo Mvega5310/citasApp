@@ -6,26 +6,26 @@ import { logger } from '@/lib/server/logger';
 
 export const dynamic = 'force-dynamic';
 
-const PHONE_REGEX = /^\+?[0-9]{7,15}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MINUTE = 60 * 1000;
 
 /**
- * Autocompletar a un cliente recurrente: con solo el WhatsApp que ya usó
- * antes en ESTA barbería, se le devuelven su nombre y correo para no
- * volver a teclearlos. Nunca cruza barberías (lo pidió Marcos: un cliente de
- * Darlyn no debe aparecer reconocido en la barbería de otro).
+ * Autocompletar a un cliente recurrente: con solo el correo que ya usó antes
+ * en ESTA barbería, se le devuelven su nombre y su WhatsApp para no volver a
+ * teclearlos. Nunca cruza barberías (un cliente de Darlyn no debe aparecer
+ * reconocido en la barbería de otro).
  *
- * Solo nombre y correo, nunca el historial de citas, y limitado por IP: no es
- * un dato súper sensible, pero sí personal, y sin límite cualquiera podría
- * usarlo para probar números al azar.
+ * Solo nombre y WhatsApp, nunca el historial de citas, y limitado por IP: no
+ * es un dato súper sensible, pero sí personal, y sin límite cualquiera podría
+ * usarlo para probar correos al azar.
  */
 export async function GET(request: Request) {
   const tenantResult = await resolveRequestTenant(request);
   if (!tenantResult.ok) return tenantResult.response;
 
   const { searchParams } = new URL(request.url);
-  const whatsapp = (searchParams.get('whatsapp') ?? '').replace(/[^\d+]/g, '');
-  if (!PHONE_REGEX.test(whatsapp)) {
+  const email = (searchParams.get('email') ?? '').trim().toLowerCase();
+  if (!EMAIL_REGEX.test(email)) {
     return NextResponse.json({ found: false });
   }
 
@@ -40,9 +40,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const cliente = await store().findRecentClientByWhatsApp(tenantResult.tenant.slug, whatsapp);
+    const cliente = await store().findRecentClientByEmail(tenantResult.tenant.slug, email);
     if (!cliente) return NextResponse.json({ found: false });
-    return NextResponse.json({ found: true, clientName: cliente.clientName, clientEmail: cliente.clientEmail });
+    return NextResponse.json({ found: true, clientName: cliente.clientName, clientWhatsApp: cliente.clientWhatsApp });
   } catch (error) {
     logger.warn('client_lookup_failed', { error: error instanceof Error ? error.message : 'unknown' });
     return NextResponse.json({ found: false });

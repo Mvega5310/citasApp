@@ -402,18 +402,23 @@ export const firestoreStore: DataStore = {
     return found;
   },
 
-  async findRecentClientByWhatsApp(slug, whatsapp) {
-    // Requiere un índice compuesto (clientWhatsApp asc, createdAt desc) en la
+  async findRecentClientByEmail(slug, email) {
+    // Requiere un índice compuesto (clientEmail asc, createdAt desc) en la
     // subcolección de citas; Firestore avisa con un enlace para crearlo si falta.
     const snap = await appointmentsCol(adminDb(), slug)
-      .where('clientWhatsApp', '==', whatsapp)
+      .where('clientEmail', '==', email)
       .orderBy('createdAt', 'desc')
-      .limit(1)
+      .limit(5)
       .get();
-    const doc = snap.docs[0];
-    if (!doc) return null;
-    const data = doc.data();
-    return { clientName: data.clientName as string, clientEmail: data.clientEmail as string };
+    // Las citas registradas a mano desde el panel van sin WhatsApp: no sirven
+    // para autocompletar, así que se busca la más reciente que sí lo tenga.
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      if (data.clientWhatsApp) {
+        return { clientName: data.clientName as string, clientWhatsApp: data.clientWhatsApp as string };
+      }
+    }
+    return null;
   },
 
   async blockedSlots(slug, date) {

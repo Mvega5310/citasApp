@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { X, Copy, Check, Share2, Download } from 'lucide-react';
+import { X, Copy, Check, Share2, Download, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { guardarImagen } from '@/lib/shared/descargarImagen';
 
 /**
  * Qué mostrar y a qué URLs pegarle. Dos usos: el admin comparte su propio
@@ -40,6 +41,7 @@ export default function CompartirDialog({
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [descargando, setDescargando] = useState(false);
 
   useEffect(() => {
     let vigente = true;
@@ -72,6 +74,17 @@ export default function CompartirDialog({
       toast.error('No se pudo copiar. Selecciona la dirección y cópiala a mano.');
     }
   }, [destino]);
+
+  const descargar = useCallback(async () => {
+    setDescargando(true);
+    try {
+      await guardarImagen(fuente.descarga, fuente.archivo);
+    } catch {
+      toast.error('No se pudo guardar el código. Mantén presionada la imagen para guardarla.');
+    } finally {
+      setDescargando(false);
+    }
+  }, [fuente.descarga, fuente.archivo]);
 
   // navigator.share no existe en todos los navegadores (sobre todo de
   // escritorio): se ofrece como otro atajo más, no como el único camino.
@@ -151,14 +164,15 @@ export default function CompartirDialog({
                 </button>
               )}
 
-              <a
-                href={fuente.descarga}
-                download={fuente.archivo}
-                className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition"
+              <button
+                type="button"
+                onClick={descargar}
+                disabled={descargando}
+                className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition disabled:opacity-50"
               >
-                <Download className="w-4 h-4" />
+                {descargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 Descargar
-              </a>
+              </button>
             </div>
           </div>
         )}

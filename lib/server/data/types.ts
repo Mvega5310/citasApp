@@ -290,10 +290,15 @@ export interface DataStore {
   /** Citas activas sin recordatorio en esas fechas, de todas las barberías. */
   reminderCandidates(dates: string[]): Promise<AppointmentRecord[]>;
   /**
-   * Nombre y correo de la última reserva con ese WhatsApp en esta barbería,
+   * Nombre y WhatsApp de la última reserva con ese correo en esta barbería,
    * para autocompletar a un cliente recurrente. null si nunca reservó aquí.
+   *
+   * Por correo y no por WhatsApp: en el formulario el WhatsApp es el ÚLTIMO
+   * campo, así que reconocer a alguien ahí no ahorraba nada -ya lo había
+   * tecleado todo-. El correo va de segundo, así que completa el nombre de
+   * arriba y el WhatsApp de abajo.
    */
-  findRecentClientByWhatsApp(slug: string, whatsapp: string): Promise<{ clientName: string; clientEmail: string } | null>;
+  findRecentClientByEmail(slug: string, email: string): Promise<{ clientName: string; clientWhatsApp: string } | null>;
 
   // ── Horarios bloqueados ──
   blockedSlots(slug: string, date: string): Promise<string[]>;
