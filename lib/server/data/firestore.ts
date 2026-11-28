@@ -402,6 +402,20 @@ export const firestoreStore: DataStore = {
     return found;
   },
 
+  async findRecentClientByWhatsApp(slug, whatsapp) {
+    // Requiere un índice compuesto (clientWhatsApp asc, createdAt desc) en la
+    // subcolección de citas; Firestore avisa con un enlace para crearlo si falta.
+    const snap = await appointmentsCol(adminDb(), slug)
+      .where('clientWhatsApp', '==', whatsapp)
+      .orderBy('createdAt', 'desc')
+      .limit(1)
+      .get();
+    const doc = snap.docs[0];
+    if (!doc) return null;
+    const data = doc.data();
+    return { clientName: data.clientName as string, clientEmail: data.clientEmail as string };
+  },
+
   async blockedSlots(slug, date) {
     const snap = await blockedDoc(adminDb(), slug, date).get();
     return snap.exists ? ((snap.data()?.slots as string[]) ?? []) : [];

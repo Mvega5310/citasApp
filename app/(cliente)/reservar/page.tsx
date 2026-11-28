@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import toast from 'react-hot-toast';
 import {
   CalendarCheck,
   CalendarPlus,
@@ -18,6 +19,7 @@ import Header from '@/components/cliente/Header';
 import Calendar from '@/components/shared/Calendar';
 import ServiceIcon from '@/components/shared/ServiceIcon';
 import BottomNav from '@/components/cliente/BottomNav';
+import PagoQrBoton from '@/components/cliente/PagoQrBoton';
 import { getAvailableHoursForDate } from '@/lib/shared/services';
 import { useCatalog } from '@/lib/shared/useCatalog';
 import { normalizeBookingPayload, validateBookingPayload } from '@/lib/server/booking';
@@ -107,6 +109,7 @@ function Tirilla({
   additionalTimes = [],
   email,
   salonName,
+  barberId,
   onReset,
 }: {
   result: BookingResult;
@@ -116,6 +119,7 @@ function Tirilla({
   additionalTimes?: string[];
   email: string;
   salonName: string;
+  barberId?: string | null;
   onReset: () => void;
 }) {
   const code = btCode(result.id);
@@ -246,6 +250,13 @@ function Tirilla({
               </svg>
               Compartir por WhatsApp
             </a>
+            {/* Solo aparece si el barbero (o el negocio) configuró un QR de cobro. */}
+            <PagoQrBoton
+              barberId={barberId}
+              salonName={salonName}
+              variant="block"
+              className="btn-outline w-full justify-center text-sm gap-2"
+            />
             <button className="btn-outline w-full text-sm gap-2" onClick={() => {}}>
               <CalendarPlus className="w-4 h-4" width={16} height={16} aria-hidden="true" />
               Agregar al calendario
@@ -291,7 +302,38 @@ export default function BookingPage() {
     handleSubmit,
     formState: { errors },
     reset: resetForm,
+    watch,
+    setValue,
+    getValues,
   } = useForm<FormData>();
+
+  // Cliente recurrente: con solo el WhatsApp que ya usó antes en esta
+  // barbería, se le completan nombre y correo sin que vuelva a teclearlos.
+  // Solo una vez por visita (reconocidoRef), y nunca pisa algo que la persona
+  // ya haya escrito a mano.
+  const clientWhatsApp = watch('clientWhatsApp');
+  const reconocidoRef = useRef(false);
+  useEffect(() => {
+    const digitos = (clientWhatsApp ?? '').replace(/[^\d+]/g, '');
+    if (reconocidoRef.current || !/^\+?[0-9]{7,15}$/.test(digitos)) return;
+    let vigente = true;
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/bookings/client-lookup?whatsapp=${encodeURIComponent(digitos)}`);
+        if (!res.ok || !vigente) return;
+        const data = await res.json();
+        if (!data.found) return;
+        reconocidoRef.current = true;
+        if (!getValues('clientName')) setValue('clientName', data.clientName);
+        if (!getValues('clientEmail')) setValue('clientEmail', data.clientEmail);
+        toast.success('Te reconocimos: completamos tus datos.');
+      } catch {}
+    }, 600);
+    return () => {
+      vigente = false;
+      clearTimeout(t);
+    };
+  }, [clientWhatsApp, getValues, setValue]);
 
   useEffect(() => {
     const serviceId = searchParams.get('service');
@@ -364,6 +406,7 @@ export default function BookingPage() {
     setConfirmedEmail('');
     setAdditionalTimes([]);
     resetForm();
+    reconocidoRef.current = false;
   };
 
   const buildValidatedBooking = (data: FormData, slotTime: string) => {
@@ -893,6 +936,7 @@ export default function BookingPage() {
             additionalTimes={additionalTimes}
             email={confirmedEmail}
             salonName={catalog?.salonName ?? 'BeautyTurno'}
+            barberId={barberoElegido || null}
             onReset={handleReset}
           />
         )}

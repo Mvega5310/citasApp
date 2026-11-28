@@ -286,6 +286,51 @@ Arreglado ampliando `PublicCatalog` con un campo `contact` (mismos campos de `Sa
   barbería del remitente (`emailContextFor`), nunca al de Marcos. El bug era solo de pantalla, los
   mensajes de verdad nunca llegaron a la bandeja equivocada.
 
+### 11.5 QR de cobro visible al cliente, autocompletar de recurrentes, y registro directo
+
+Tres pedidos de Marcos en la misma conversación, construidos juntos:
+
+**QR de cobro visible al cliente.** El QR de pago (11.3) solo se veía logueado en el panel. Ahora
+`/api/qr/pago` (público, sin sesión, resuelve la barbería por el host como `/api/qr/publico`) lo
+expone al cliente en dos sitios: un ícono en la barra superior (`components/cliente/Header.tsx`,
+siempre el QR del negocio) y un botón en la tirilla de confirmación (`Tirilla`, en
+`reservar/page.tsx`, con el QR del barbero elegido y el del negocio como respaldo — mismo orden que
+ya usaba el panel). `components/cliente/PagoQrBoton.tsx` detecta si existe un QR con un `<img
+onLoad/onError>` oculto (igual que `PagoQrUploader`) y se oculta entero si la barbería no configuró
+ninguno, en vez de mostrar un ícono roto. Sigue siendo solo una imagen: la app nunca procesa ni ve
+el pago real.
+
+**Autocompletar al cliente recurrente.** Al escribir un WhatsApp que ya reservó antes en esa misma
+barbería, se completan solos el nombre y el correo (`/api/bookings/client-lookup`, público pero
+limitado a 20 consultas/10 min por IP). Nuevo método `findRecentClientByWhatsApp` en `DataStore`
+(implementado en Postgres y Firestore — en Firestore necesita un índice compuesto `clientWhatsApp
+asc, createdAt desc` en la subcolección de citas, que Firestore ofrece crear solo si falta). Nunca
+cruza barberías: la búsqueda está acotada al `slug` de la barbería actual. En `reservar/page.tsx`
+se dispara con un debounce de 600 ms tras un número con formato válido, solo una vez por visita, y
+nunca pisa un campo que la persona ya haya escrito a mano.
+
+**Registro directo de una barbería nueva.** Antes, la única forma de crear una barbería era que
+Marcos la diera de alta a mano desde `/admin/barberias` (protegido por `authorizePlatformAdmin`).
+Pensando en promocionar la app en varias plataformas sin tener que registrar cada barbería uno por
+uno, ahora existe `/registro`, público. Verificación de correo **antes** de crear nada: el
+formulario no escribe en la base, firma los datos en un JWT de 24 h (`lib/server/registroToken.ts`,
+mismo patrón que `cancelToken.ts`, con `ADMIN_SECRET`) y lo manda por correo
+(`sendRegistroVerificationEmail`); solo al hacer clic en `/registro/confirmar` se crea la barbería
+de verdad. Así un correo mal escrito —muy fácil desde el celular— no deja una cuenta fantasma sin
+nadie que pueda entrar a ella: si el enlace nunca llega, no se creó nada y la persona puede volver
+a intentarlo con el correo correcto.
+
+No hay tabla de "registros pendientes" a propósito: al no guardar nada hasta la confirmación, no
+queda ningún rastro que limpiar si nadie hace clic. `/registro/confirmar` es idempotente — si el
+enlace ya se usó (`store().lookupTenant(slug)` ya la encuentra) simplemente avisa que ya estaba
+creada en vez de fallar o reintentar, lo que además protege contra los clientes de correo que abren
+los enlaces solos para revisarlos antes de que la persona los vea. La barbería nace con 15 días de
+prueba gratis (`updateTenantPlan` con `hasta` a futuro, `precio: 0`) y sigue apareciendo en
+`/admin/barberias` igual que las que crea Marcos a mano: el control de plataforma no desaparece,
+solo deja de ser un paso obligatorio para que la cuenta exista. La validación de la dirección
+(`SLUG_RE`/`RESERVADOS`) se sacó a `lib/server/tenantSlug.ts` para que `/api/admin/tenants` y
+`/api/registro` usen exactamente las mismas reglas.
+
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

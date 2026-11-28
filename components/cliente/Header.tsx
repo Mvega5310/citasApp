@@ -6,6 +6,7 @@ import { Clock, LockKeyhole } from 'lucide-react';
 import type { WeekSchedule } from '@/lib/shared/services';
 import { useCatalog } from '@/lib/shared/useCatalog';
 import CompartirBoton from '@/components/cliente/CompartirBoton';
+import PagoQrBoton from '@/components/cliente/PagoQrBoton';
 
 // El nombre llega en el catálogo, que es por barbería. Mientras carga queda
 // vacío a propósito: mostrar un nombre de respaldo enseñaría el de otra
@@ -67,6 +68,13 @@ export default function Header() {
             {/* Potestad del cliente, no solo de quien administra: cualquiera
                 que esté mirando puede mandarle esto a un conocido. */}
             <CompartirBoton className="flex items-center justify-center w-9 h-9 rounded-full text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-card/70 transition-colors duration-200" />
+
+            {/* Solo aparece si la barbería configuró un QR de cobro. */}
+            <PagoQrBoton
+              salonName={catalog?.salonName ?? ''}
+              variant="icon"
+              className="flex items-center justify-center w-9 h-9 rounded-full text-cafe-muted hover:text-cafe-goldlight hover:bg-cafe-card/70 transition-colors duration-200"
+            />
 
             <Link
               href="/admin"

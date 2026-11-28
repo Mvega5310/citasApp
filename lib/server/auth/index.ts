@@ -261,3 +261,18 @@ export function appOrigin(request: Request, tenantSlug: string): string {
   const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
   return local ? `http://${host}` : appUrl ?? 'http://localhost:3000';
 }
+
+/**
+ * Igual que `appOrigin`, pero para una barbería recién creada por el registro
+ * directo (`/registro/confirmar`), que corre como página de servidor y no
+ * tiene el Request original a mano. Una barbería recién registrada nunca es
+ * la barbería por defecto, así que no hace falta esa rama.
+ */
+export function appOriginForNewTenant(slug: string): string {
+  const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+  if (process.env.NODE_ENV === 'production') {
+    if (!domain) throw new AuthError('Falta configurar NEXT_PUBLIC_APP_DOMAIN para generar enlaces', 500);
+    return `https://${slug}.${domain}`;
+  }
+  return process.env.APP_URL?.replace(/\/$/, '') ?? 'http://localhost:3000';
+}

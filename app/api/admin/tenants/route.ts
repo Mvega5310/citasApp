@@ -6,22 +6,7 @@ import { sendAdminInvitation } from '@/lib/server/email';
 import { emailContextFor, tenantFromSlug } from '@/lib/server/settings';
 import { logger } from '@/lib/server/logger';
 import { estadoDelPlan } from '@/lib/server/suscripcion';
-
-/** Mismo formato que acepta el resolutor y que valida el CHECK del esquema. */
-const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
-
-/**
- * Nombres que no pueden ser una barbería porque chocarían con la
- * infraestructura: unos son subdominios que ya significan otra cosa, otros se
- * confundirían con rutas de la plataforma, y `www` ya lo trata el resolutor
- * como la barbería por defecto.
- */
-const RESERVADOS = new Set([
-  'www', 'admin', 'api', 'app', 'mail', 'email', 'smtp', 'ftp', 'cdn', 'static',
-  'assets', 'blog', 'docs', 'help', 'soporte', 'support', 'status', 'panel',
-  'dashboard', 'login', 'cuenta', 'account', 'billing', 'pago', 'pagos',
-  'test', 'staging', 'dev', 'demo-test', 'rsend', 'send', '_acme-challenge',
-]);
+import { validarSlug } from '@/lib/server/tenantSlug';
 
 export async function GET(request: Request) {
   const authorized = await authorizePlatformAdmin(request);
@@ -58,14 +43,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Cuerpo inválido' }, { status: 400 });
   }
 
-  if (!SLUG_RE.test(slug)) {
-    return NextResponse.json(
-      { error: 'La dirección solo admite minúsculas, números y guiones, y no puede empezar ni terminar en guión.' },
-      { status: 400 }
-    );
-  }
-  if (RESERVADOS.has(slug)) {
-    return NextResponse.json({ error: `"${slug}" está reservado, elige otra dirección.` }, { status: 400 });
+  const errorSlug = validarSlug(slug);
+  if (errorSlug) {
+    return NextResponse.json({ error: errorSlug }, { status: 400 });
   }
   // El nombre es obligatorio: es lo que ve el cliente en el encabezado y en
   // los correos hasta que la barbería lo cambie en su Configuración.

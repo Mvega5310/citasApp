@@ -10,6 +10,7 @@ import {
 } from '../lib/shared/services';
 import { validateBookingPayload } from '../lib/server/booking';
 import { cleanOptionalText, isValidEmail, isValidPhone, parsePaginationParams } from '../lib/server/api';
+import { validarSlug } from '../lib/server/tenantSlug';
 
 let failures = 0;
 
@@ -141,6 +142,18 @@ runTest('should sanitize and validate common API inputs', () => {
   assert.equal(isValidEmail('ana@example.com'), true);
   assert.equal(isValidPhone('+573024075828'), true);
   assert.equal(isValidPhone('123'), false);
+});
+
+runTest('should validate a tenant slug the same way the resolver and the schema do', () => {
+  assert.equal(validarSlug('barberia-del-norte'), null);
+  assert.equal(validarSlug('a1'), null);
+  // Mayúsculas y espacios no son el formato del subdominio
+  assert.ok(validarSlug('Barberia-Norte'));
+  assert.ok(validarSlug('-empieza-mal'));
+  assert.ok(validarSlug('termina-mal-'));
+  // Chocaría con la infraestructura o con una ruta de la plataforma
+  assert.ok(validarSlug('admin'));
+  assert.ok(validarSlug('registro'), 'su propia página de registro debe quedar reservada');
 });
 
 runTest('should clamp pagination params to safe limits', () => {
@@ -331,6 +344,19 @@ async function runAsyncTest(name: string, fn: () => Promise<void>) {
       if (savedFrom) process.env.EMAIL_FROM = savedFrom;
       else delete process.env.EMAIL_FROM;
     }
+  });
+
+  await runAsyncTest('should sign and verify a registro token, and reject a tampered one', async () => {
+    const { generarTokenRegistro, verificarTokenRegistro } = await import('../lib/server/registroToken');
+    const datos = { slug: 'barberia-del-norte', name: 'Barbería del Norte', adminName: 'Ana', adminEmail: 'ana@test.co' };
+
+    const token = await generarTokenRegistro(datos);
+    const verificado = await verificarTokenRegistro(token);
+    assert.deepEqual(verificado, datos);
+
+    // Un token cualquiera (o uno de otro propósito) no debe aceptarse
+    assert.equal(await verificarTokenRegistro('no-soy-un-token'), null);
+    assert.equal(await verificarTokenRegistro(`${token}x`), null, 'un token alterado no debe verificar');
   });
 
   await runAsyncTest('should report a failed send when Resend rejects the email', async () => {

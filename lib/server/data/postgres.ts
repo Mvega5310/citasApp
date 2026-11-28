@@ -567,6 +567,17 @@ export const postgresStore: DataStore = {
       'a.date, a.time'
     ),
 
+  async findRecentClientByWhatsApp(slug, whatsapp) {
+    const res = await query<{ client_name: string; client_email: string }>(
+      `SELECT a.client_name, a.client_email FROM appointments a JOIN tenants t ON t.id = a.tenant_id
+       WHERE t.slug = $1 AND a.client_whatsapp = $2
+       ORDER BY a.created_at DESC LIMIT 1`,
+      [norm(slug), whatsapp]
+    );
+    const row = res.rows[0];
+    return row ? { clientName: row.client_name, clientEmail: row.client_email } : null;
+  },
+
   async blockedSlots(slug, date) {
     const res = await query<{ time: string }>(
       `SELECT b.time FROM blocked_slots b JOIN tenants t ON t.id = b.tenant_id

@@ -890,6 +890,80 @@ export async function sendAdminInvitation(payload: {
   }
 }
 
+function buildRegistroVerificationEmail(payload: {
+  adminName: string;
+  businessName: string;
+  confirmLink: string;
+  expiresIn: string;
+}) {
+  return `
+    <div style="${baseStyle}">
+      <div style="${cardStyle}">
+        <div style="${headerStyle}">
+          <div style="font-size:32px; margin-bottom:8px;">✂️</div>
+          <h1 style="color:#ffffff; margin:0; font-size:22px; font-weight:700;">Confirma tu registro</h1>
+          <p style="color:#fce7f3; margin:6px 0 0; font-size:14px;">BeautyTurno</p>
+        </div>
+        <div style="${bodyStyle}">
+          <p style="color:#374151; margin:0 0 20px; font-size:16px;">
+            Hola <strong>${payload.adminName}</strong>,
+          </p>
+          <p style="color:#374151; margin:0 0 28px; font-size:15px; line-height:1.6;">
+            Falta un paso para activar <strong>${payload.businessName}</strong> en BeautyTurno. Confirma este
+            correo para crear la barbería y recibir tu enlace de acceso al panel:
+          </p>
+          <div style="text-align:center; margin-bottom:28px;">
+            <a href="${payload.confirmLink}"
+               style="display:inline-block; background:linear-gradient(135deg,#ec4899,#db2777); color:#ffffff; text-decoration:none; padding:14px 32px; border-radius:10px; font-weight:700; font-size:15px; letter-spacing:0.3px;">
+              Confirmar y crear mi barbería
+            </a>
+          </div>
+          <div style="padding:14px 16px; background:#fdf2f8; border-radius:8px; border-left:4px solid #ec4899;">
+            <p style="margin:0; font-size:13px; color:#9d174d; line-height:1.5;">
+              🔒 Este enlace expira en <strong>${payload.expiresIn}</strong>. Si no solicitaste este registro, ignora
+              este mensaje y no se creará nada.
+            </p>
+          </div>
+        </div>
+        <div style="${footerStyle}">
+          BeautyTurno · ${new Date().getFullYear()}<br/>
+          <span style="color:#d1d5db;">Este es un mensaje automático, no respondas a este correo.</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Verificación de correo del registro directo: antes de crear la barbería,
+ * no después. Así un correo escrito mal (muy fácil al teclear en el celular)
+ * no deja una cuenta fantasma con nadie que pueda entrar a ella — si el
+ * enlace nunca llega, nada se crea y quien se registró puede volver a
+ * intentarlo con el correo correcto.
+ */
+export async function sendRegistroVerificationEmail(payload: {
+  adminName: string;
+  adminEmail: string;
+  businessName: string;
+  confirmLink: string;
+  expiresIn: string;
+}): Promise<boolean> {
+  const transporter = mailerFor();
+  const from = senderFor();
+  if (!transporter) return false;
+  try {
+    await transporter.sendMail({
+      from,
+      to: payload.adminEmail,
+      subject: `Confirma el registro de "${payload.businessName}" en BeautyTurno`,
+      html: buildRegistroVerificationEmail(esc(payload)),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function buildReminderEmail(payload: {
   brand?: EmailBrand;
   clientName: string;

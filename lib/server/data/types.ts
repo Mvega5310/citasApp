@@ -289,6 +289,11 @@ export interface DataStore {
   isClientBlocked(slug: string, email: string): Promise<boolean>;
   /** Citas activas sin recordatorio en esas fechas, de todas las barberías. */
   reminderCandidates(dates: string[]): Promise<AppointmentRecord[]>;
+  /**
+   * Nombre y correo de la última reserva con ese WhatsApp en esta barbería,
+   * para autocompletar a un cliente recurrente. null si nunca reservó aquí.
+   */
+  findRecentClientByWhatsApp(slug: string, whatsapp: string): Promise<{ clientName: string; clientEmail: string } | null>;
 
   // ── Horarios bloqueados ──
   blockedSlots(slug: string, date: string): Promise<string[]>;
