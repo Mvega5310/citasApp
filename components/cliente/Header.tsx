@@ -26,6 +26,21 @@ function getScheduleChip(schedule: WeekSchedule): string {
   return `Hoy · ${rule.start}–${rule.end}`;
 }
 
+/**
+ * Lo mismo pero sin la palabra "Hoy", para el teléfono.
+ *
+ * El chip llegó a estar escondido con `min-[420px]`, y como casi ningún
+ * teléfono llega a 420 px de ancho (un iPhone 14 Pro son 393) desapareció
+ * justo donde más se mira. Acortarlo deja sitio para los íconos sin quitarle
+ * al cliente el dato de si está abierto.
+ */
+function getScheduleChipCorto(schedule: WeekSchedule): string {
+  const day = new Date().getDay();
+  const rule = schedule[day];
+  if (!rule || rule.closed) return 'Cerrado';
+  return `${rule.start}–${rule.end}`;
+}
+
 export default function Header() {
   const pathname = usePathname();
   const { catalog } = useCatalog();
@@ -60,15 +75,16 @@ export default function Header() {
 
           {/* Horario + navegación de escritorio */}
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Se esconde en las pantallas más angostas, igual que el nombre
-                de la barbería: con los dos íconos al lado ya no cabe, y el
-                horario completo está en Contacto. `whitespace-nowrap` para
-                que nunca se parta en dos renglones y descuadre la barra. */}
+            {/* Saber si está abierto es de lo primero que mira un cliente, así
+                que se muestra siempre; lo que cambia es el largo. El nombre de
+                la barbería es el que cede espacio (truncate), no este dato.
+                `whitespace-nowrap` para que nunca se parta en dos renglones. */}
             {catalog && (
-            <span className="hidden min-[420px]:flex items-center gap-1.5 shrink-0 whitespace-nowrap text-xs font-medium px-3 py-1.5 rounded-full bg-cafe-card/70 border border-cafe-border text-cafe-muted">
-              <Clock className="w-3.5 h-3.5 text-cafe-gold" width={14} height={14} aria-hidden="true" />
-              {getScheduleChip(catalog.schedule)}
-            </span>
+              <span className="flex items-center gap-1.5 shrink-0 whitespace-nowrap text-xs font-medium px-2.5 sm:px-3 py-1.5 rounded-full bg-cafe-card/70 border border-cafe-border text-cafe-muted">
+                <Clock className="w-3.5 h-3.5 text-cafe-gold shrink-0" width={14} height={14} aria-hidden="true" />
+                <span className="hidden sm:inline">{getScheduleChip(catalog.schedule)}</span>
+                <span className="sm:hidden">{getScheduleChipCorto(catalog.schedule)}</span>
+              </span>
             )}
 
             {/* Potestad del cliente, no solo de quien administra: cualquiera
@@ -85,10 +101,14 @@ export default function Header() {
             <Link
               href="/admin"
               prefetch={false}
-              className="md:hidden flex items-center gap-1.5 min-h-[44px] px-2 text-xs font-semibold text-cafe-muted hover:text-cafe-goldlight transition-colors duration-200"
+              aria-label="Ingresar"
+              className="md:hidden flex items-center gap-1.5 shrink-0 min-h-[44px] px-2 text-xs font-semibold text-cafe-muted hover:text-cafe-goldlight transition-colors duration-200"
             >
-              <LockKeyhole className="w-3.5 h-3.5" width={14} height={14} aria-hidden="true" />
-              Ingresar
+              <LockKeyhole className="w-3.5 h-3.5 shrink-0" width={14} height={14} aria-hidden="true" />
+              {/* Abajo de 360 px queda solo el candado: en un teléfono muy
+                  angosto esta palabra es lo que menos falta hace -el candado
+                  ya se entiende- y así el horario y los íconos siguen cabiendo. */}
+              <span className="hidden min-[360px]:inline">Ingresar</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-1" aria-label="Principal">

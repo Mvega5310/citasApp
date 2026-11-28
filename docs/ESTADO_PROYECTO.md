@@ -399,6 +399,56 @@ Lo que sí se construyó, que cubre mejor el caso real:
 3. La búsqueda por correo (11.5) se queda como respaldo para el caso de otro dispositivo: reservó
    desde el celular y ahora está en el computador.
 
+### 11.8 El diálogo del QR salía cortado: `backdrop-filter` y el bloque contenedor
+
+Marcos reportó que al abrir el QR, en PC y en móvil, el diálogo "sale arriba" e incompleto. No era
+un ajuste de gusto sino un bug de CSS con una causa exacta.
+
+El encabezado del cliente (`components/cliente/Header.tsx`) y la barra superior del panel
+(`AdminSidebar.tsx`) llevan `backdrop-blur-md`. **Un elemento con `backdrop-filter` distinto de
+`none` se convierte en el bloque contenedor de sus descendientes `position: fixed`** — igual que
+`transform` o `filter`. Como el diálogo se renderizaba dentro del encabezado, su `fixed inset-0` no
+medía la pantalla sino la franja del encabezado. Medido en el navegador:
+
+| Overlay `fixed inset-0` | Tamaño real (pantalla 375×812) |
+|---|---|
+| Dentro del encabezado | 375 × **64** |
+| Colgado de `<body>` | 375 × **812** |
+
+Con un overlay de 64 px de alto, `items-center` centraba la tarjeta de ~435 px en y=32: unos 170 px
+quedaban por encima del borde de la pantalla, inalcanzables. De ahí que se viera cortada y sin
+título.
+
+Arreglado con `components/shared/ModalPortal.tsx`, que cuelga el diálogo de `<body>` con
+`createPortal` y así escapa del bloque contenedor. Lo usan `CompartirDialog` y `PagoQrDialog`.
+De paso bloquea el scroll del fondo mientras está abierto y cierra con Esc. Ojo con un detalle del
+portal: la función `onCerrar` se guarda en un `ref` y el efecto va con dependencias vacías, porque
+quien lo usa suele pasar una función nueva en cada render y con ella en las dependencias el efecto
+se repetiría y acabaría "restaurando" el scroll al valor ya bloqueado, dejando la página trabada.
+
+El alto máximo es `90dvh` por estilo en línea con `90vh` por clase de respaldo: en el móvil la barra
+de direcciones hace que `vh` sea más alto que lo que de verdad se ve, y si el navegador no entiende
+`dvh` descarta esa declaración y queda `vh`.
+
+**Verificado**: overlay de 375×812 colgado de `<body>`, tarjeta centrada (centro del diálogo = mitad
+de la pantalla, al píxel) y completamente visible a 320, 375, 393 y 1280 px; Esc cierra y restaura
+el scroll.
+
+### 11.9 El horario volvió a verse en el teléfono
+
+Al agregar el segundo ícono al encabezado se había escondido el chip del horario tras
+`hidden min-[420px]:flex` para que la barra no se desbordara. Error de criterio: **casi ningún
+teléfono llega a 420 px** (un iPhone 14 Pro son 393), así que el dato desapareció justo donde más se
+mira, y Marcos lo notó enseguida.
+
+Saber si está abierto es de lo primero que mira un cliente, así que ahora se muestra siempre y lo
+que cambia es el largo: `Hoy · 09:00–19:00` de `sm` para arriba, `09:00–19:00` abajo. Quien cede
+espacio es el nombre de la barbería, que ya truncaba. Abajo de 360 px la palabra "Ingresar" se
+esconde y queda solo el candado (con `aria-label`), que es lo que menos falta hace ahí.
+
+**Verificado** con el peor caso —nombre largo y los dos íconos a la vez— a 320, 375, 393 y 1280 px:
+el chip se ve en todos y la fila no se desborda en ninguno.
+
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { X, Copy, Check, Share2, Download, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ModalPortal from '@/components/shared/ModalPortal';
 import { guardarImagen } from '@/lib/shared/descargarImagen';
 
 /**
@@ -99,84 +100,90 @@ export default function CompartirDialog({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
-      onClick={onCerrar}
-    >
+    <ModalPortal onCerrar={onCerrar}>
       <div
-        className="bg-cafe-card rounded-2xl shadow-xl w-full max-w-sm p-6 border border-cafe-border max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4"
+        onClick={onCerrar}
       >
-        <div className="flex items-start justify-between mb-1">
-          <h2 className="text-lg font-display font-medium text-cafe-text">{titulo}</h2>
-          <button onClick={onCerrar} aria-label="Cerrar" className="text-cafe-subtle hover:text-cafe-text">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        {mensaje && <p className="text-xs text-cafe-subtle mb-5 leading-relaxed">{mensaje}</p>}
+        <div
+          // 90dvh por estilo y 90vh por clase: en el móvil la barra de
+          // direcciones hace que vh sea más alto que lo que de verdad se ve.
+          // Si el navegador no entiende dvh, descarta esa línea y queda vh.
+          style={{ maxHeight: '90dvh' }}
+          className="bg-cafe-card rounded-2xl shadow-xl w-full max-w-sm p-6 border border-cafe-border max-h-[90vh] overflow-y-auto overscroll-contain"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start justify-between mb-1">
+            <h2 className="text-lg font-display font-medium text-cafe-text">{titulo}</h2>
+            <button onClick={onCerrar} aria-label="Cerrar" className="text-cafe-subtle hover:text-cafe-text">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          {mensaje && <p className="text-xs text-cafe-subtle mb-5 leading-relaxed">{mensaje}</p>}
 
-        {error ? (
-          <p className="text-sm text-cafe-muted bg-cafe-soft border border-cafe-border rounded-lg p-4 mt-4">
-            {error}
-          </p>
-        ) : (
-          <div className="flex flex-col items-center">
-            <div className="bg-white rounded-xl p-3 w-40 h-40 flex items-center justify-center mt-3">
-              {cargando ? (
-                <div className="w-6 h-6 border-2 border-cafe-border border-t-cafe-gold rounded-full animate-spin" />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={fuente.imagen}
-                  alt={`Código QR que lleva a ${destino}`}
-                  className="w-full h-full object-contain"
-                />
-              )}
-            </div>
-            <p className="text-xs text-cafe-subtle mt-3 text-center">
-              Mantén presionado el código para guardarlo
+          {error ? (
+            <p className="text-sm text-cafe-muted bg-cafe-soft border border-cafe-border rounded-lg p-4 mt-4">
+              {error}
             </p>
+          ) : (
+            <div className="flex flex-col items-center">
+              <div className="bg-white rounded-xl p-3 w-40 h-40 flex items-center justify-center mt-3 shrink-0">
+                {cargando ? (
+                  <div className="w-6 h-6 border-2 border-cafe-border border-t-cafe-gold rounded-full animate-spin" />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={fuente.imagen}
+                    alt={`Código QR que lleva a ${destino}`}
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+              <p className="text-xs text-cafe-subtle mt-3 text-center">
+                Mantén presionado el código para guardarlo
+              </p>
 
-            <p className="text-sm text-cafe-text font-mono break-all mt-4 text-center">
-              {destino || '…'}
-            </p>
+              <p className="text-sm text-cafe-text font-mono break-all mt-4 text-center">
+                {destino || '…'}
+              </p>
 
-            <div className="flex flex-wrap justify-center gap-2 mt-4 w-full">
-              <button
-                type="button"
-                onClick={copiar}
-                disabled={!destino}
-                className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition disabled:opacity-50"
-              >
-                {copiado ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copiado ? 'Copiado' : 'Copiar enlace'}
-              </button>
-
-              {puedeCompartirNativo && (
+              <div className="flex flex-wrap justify-center gap-2 mt-4 w-full">
                 <button
                   type="button"
-                  onClick={compartirNativo}
+                  onClick={copiar}
                   disabled={!destino}
-                  className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg bg-cafe-gold hover:bg-cafe-goldlight text-cafe-bg transition disabled:opacity-50"
+                  className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition disabled:opacity-50"
                 >
-                  <Share2 className="w-4 h-4" />
-                  Compartir
+                  {copiado ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copiado ? 'Copiado' : 'Copiar enlace'}
                 </button>
-              )}
 
-              <button
-                type="button"
-                onClick={descargar}
-                disabled={descargando}
-                className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition disabled:opacity-50"
-              >
-                {descargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                Descargar
-              </button>
+                {puedeCompartirNativo && (
+                  <button
+                    type="button"
+                    onClick={compartirNativo}
+                    disabled={!destino}
+                    className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg bg-cafe-gold hover:bg-cafe-goldlight text-cafe-bg transition disabled:opacity-50"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    Compartir
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={descargar}
+                  disabled={descargando}
+                  className="flex items-center gap-2 px-3.5 py-2.5 text-sm font-medium rounded-lg border border-cafe-border bg-cafe-soft text-cafe-text hover:border-cafe-gold transition disabled:opacity-50"
+                >
+                  {descargando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  Descargar
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
