@@ -365,6 +365,40 @@ De paso, dos arreglos del encabezado del cliente que salieron al revisar esto en
   le faltaba `min-w-0` y al nombre `truncate`, el mismo arreglo que ya se le había hecho a la barra
   lateral del panel.
 
+### 11.7 Por qué el autocompletar NO busca por nombre
+
+Marcos propuso autocompletar escribiendo el **nombre**, y que si se repite sugiera los correos y
+números asociados. **No se hizo, y no por precisión sino por privacidad.**
+
+La diferencia está en cuál de los dos datos es el secreto. Buscar por correo funciona porque hay
+que saber el correo exacto de antemano: es confirmar algo que ya se sabe. Buscar por nombre invierte
+eso — el nombre es público y adivinable ("Juan", "María"), y lo que devolvería es justamente lo
+privado. Cualquier visitante de la página pública, sin cuenta, podría escribir nombres comunes y
+llevarse los correos y teléfonos de la clientela. Sería un directorio de clientes servido desde la
+página de reservas. Mostrar varios candidatos para elegir es exactamente el momento en que se le
+enseñan a alguien los datos de contacto de otra persona.
+
+Lo que sí se construyó, que cubre mejor el caso real:
+
+1. **Memoria en el propio teléfono** (`lib/shared/datosDelCliente.ts`). Al confirmar una reserva se
+   guardan nombre, correo y WhatsApp en `localStorage`, separados por barbería
+   (`bt:cliente:<hostname>`). Al volver al paso de datos ya está todo puesto, sin preguntarle nada
+   al servidor y sin exponer nada de nadie: solo le devuelve a la persona lo que ella misma
+   escribió en ese mismo dispositivo. Cubre el caso normal —reservar desde el celular de uno— mucho
+   mejor que cualquier búsqueda.
+
+   Por si el teléfono es compartido (una tablet en el local, el celular de la casa), se avisa con
+   "Completamos tus datos de la última vez" y un **"No soy yo"** que limpia los campos y borra lo
+   guardado. Todo va en `try/catch`: Safari en navegación privada lanza al tocar `localStorage`, y
+   eso no puede tumbar una reserva.
+
+2. **`autoComplete` en los tres campos** (`name`, `email`, `tel`) más `inputMode`. Faltaban desde el
+   principio, así que el teléfono nunca ofrecía los datos que el propio sistema ya tiene guardados.
+   Es el atajo que funciona incluso la primera vez que alguien entra a esa barbería.
+
+3. La búsqueda por correo (11.5) se queda como respaldo para el caso de otro dispositivo: reservó
+   desde el celular y ahora está en el computador.
+
 ### 12. Detalles de interfaz resueltos
 
 - **Logo**: `/api/logo` renderizaba un JPEG de 1,78 MB con ImageResponse en edge y devolvía un PNG de

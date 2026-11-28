@@ -23,6 +23,11 @@ import PagoQrBoton from '@/components/cliente/PagoQrBoton';
 import { getAvailableHoursForDate } from '@/lib/shared/services';
 import { useCatalog } from '@/lib/shared/useCatalog';
 import { normalizeBookingPayload, validateBookingPayload } from '@/lib/server/booking';
+import {
+  guardarDatosDelCliente,
+  leerDatosDelCliente,
+  olvidarDatosDelCliente,
+} from '@/lib/shared/datosDelCliente';
 import { logger } from '@/lib/server/logger';
 import { Service } from '@/types';
 
@@ -307,14 +312,44 @@ export default function BookingPage() {
     getValues,
   } = useForm<FormData>();
 
-  // Cliente recurrente: con solo el correo que ya usó antes en esta barbería,
-  // se le completan el nombre y el WhatsApp sin que vuelva a teclearlos. Va
-  // por el correo y no por el WhatsApp porque el WhatsApp es el último campo:
+  // Atajo principal para quien vuelve: sus propios datos, guardados en SU
+  // teléfono la última vez que reservó aquí. Cubre el caso normal -reservar
+  // desde el celular de uno- sin preguntarle nada al servidor.
+  const [recordado, setRecordado] = useState(false);
+  const precargadoRef = useRef(false);
+
+  // Cliente recurrente desde OTRO dispositivo: con solo el correo que ya usó
+  // antes en esta barbería, se le completan el nombre y el WhatsApp. Va por el
+  // correo y no por el WhatsApp porque el WhatsApp es el último campo:
   // reconocerlo ahí no ahorraba nada, ya lo había escrito todo.
   // Solo una vez por visita (reconocidoRef), y nunca pisa algo que la persona
   // ya haya escrito a mano.
   const clientEmail = watch('clientEmail');
   const reconocidoRef = useRef(false);
+
+  // Al llegar al paso de datos, no antes: así los campos ya están montados.
+  useEffect(() => {
+    if (step !== 4 || precargadoRef.current) return;
+    precargadoRef.current = true;
+    const guardados = leerDatosDelCliente();
+    if (!guardados) return;
+    if (!getValues('clientName')) setValue('clientName', guardados.clientName);
+    if (!getValues('clientEmail')) setValue('clientEmail', guardados.clientEmail);
+    if (!getValues('clientWhatsApp')) setValue('clientWhatsApp', guardados.clientWhatsApp);
+    setRecordado(true);
+    // Ya tiene sus datos: sobra ir a preguntar al servidor por ese correo.
+    reconocidoRef.current = true;
+  }, [step, getValues, setValue]);
+
+  // "No soy yo": el teléfono puede ser prestado o de la casa.
+  const olvidarme = () => {
+    olvidarDatosDelCliente();
+    setValue('clientName', '');
+    setValue('clientEmail', '');
+    setValue('clientWhatsApp', '');
+    setRecordado(false);
+    reconocidoRef.current = false;
+  };
   useEffect(() => {
     const correo = (clientEmail ?? '').trim().toLowerCase();
     if (reconocidoRef.current || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return;
@@ -409,6 +444,9 @@ export default function BookingPage() {
     setAdditionalTimes([]);
     resetForm();
     reconocidoRef.current = false;
+    // Que la siguiente reserva vuelva a precargarse sola.
+    precargadoRef.current = false;
+    setRecordado(false);
   };
 
   const buildValidatedBooking = (data: FormData, slotTime: string) => {
@@ -467,6 +505,13 @@ export default function BookingPage() {
         : await postSlot(data, allTimes[0]);
 
       logger.info('bookings_created', { count: allTimes.length });
+      // Solo al confirmar: si la reserva falló, no tiene sentido recordar
+      // unos datos que quizá eran los que estaban mal.
+      guardarDatosDelCliente({
+        clientName: data.clientName,
+        clientEmail: data.clientEmail,
+        clientWhatsApp: data.clientWhatsApp,
+      });
       setConfirmedEmail(data.clientEmail);
       setBookingResult(result);
       setStep(5);
@@ -708,14 +753,39 @@ export default function BookingPage() {
               </div>
             )}
 
+            {/* El teléfono puede ser prestado o de la casa: se avisa que los
+                datos vienen de antes y se deja salida en un toque. */}
+            {recordado && (
+              <div
+                className="flex items-center justify-between gap-3 rounded-[14px] px-4 py-3 mb-4"
+                style={{ background: '#201A15', border: '1px solid #403328' }}
+              >
+                <p className="text-xs" style={{ color: '#B8AA99' }}>
+                  Completamos tus datos de la última vez.
+                </p>
+                <button
+                  type="button"
+                  onClick={olvidarme}
+                  className="text-xs font-semibold shrink-0 touch-manipulation"
+                  style={{ color: '#C69B62' }}
+                >
+                  No soy yo
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               {/* Name */}
               <div>
                 <label className="block text-xs font-medium mb-1.5" style={{ color: '#B8AA99' }}>
                   Nombre completo *
                 </label>
+                {/* autoComplete: sin esto el teléfono no ofrece los datos que
+                    el propio sistema ya tiene guardados. Sirve incluso la
+                    primera vez que alguien entra a esta barbería. */}
                 <input
                   type="text"
+                  autoComplete="name"
                   placeholder="Tu nombre completo"
                   className="input-field"
                   {...register('clientName', {
@@ -735,6 +805,8 @@ export default function BookingPage() {
                 </label>
                 <input
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   placeholder="tu@email.com"
                   className="input-field"
                   {...register('clientEmail', {
@@ -757,6 +829,8 @@ export default function BookingPage() {
                 </label>
                 <input
                   type="tel"
+                  autoComplete="tel"
+                  inputMode="tel"
                   placeholder="+57 300 123 4567"
                   className="input-field"
                   {...register('clientWhatsApp', {

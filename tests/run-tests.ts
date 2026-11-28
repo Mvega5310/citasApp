@@ -346,6 +346,50 @@ async function runAsyncTest(name: string, fn: () => Promise<void>) {
     }
   });
 
+  await runAsyncTest('should remember the client on their own device, per barbería', async () => {
+    // localStorage falso: el módulo solo toca window.localStorage y window.location
+    const almacen = new Map<string, string>();
+    (globalThis as Record<string, unknown>).window = {
+      localStorage: {
+        getItem: (k: string) => almacen.get(k) ?? null,
+        setItem: (k: string, v: string) => void almacen.set(k, v),
+        removeItem: (k: string) => void almacen.delete(k),
+      },
+      location: { hostname: 'norte.citas.proyects.store' },
+    };
+    try {
+      const { leerDatosDelCliente, guardarDatosDelCliente, olvidarDatosDelCliente } = await import(
+        '../lib/shared/datosDelCliente'
+      );
+      const ana = { clientName: 'Ana Pérez', clientEmail: 'ana@test.co', clientWhatsApp: '+573000000000' };
+
+      assert.equal(leerDatosDelCliente(), null, 'sin nada guardado no hay atajo');
+      guardarDatosDelCliente(ana);
+      assert.deepEqual(leerDatosDelCliente(), ana);
+
+      // Otra barbería en el mismo teléfono no ve los datos de la primera
+      const w = (globalThis as Record<string, unknown>).window as { location: { hostname: string } };
+      w.location.hostname = 'darlyn.citas.proyects.store';
+      assert.equal(leerDatosDelCliente(), null, 'no se cruzan los datos entre barberías');
+      w.location.hostname = 'norte.citas.proyects.store';
+      assert.deepEqual(leerDatosDelCliente(), ana);
+
+      // "No soy yo" en un teléfono prestado
+      olvidarDatosDelCliente();
+      assert.equal(leerDatosDelCliente(), null);
+
+      // Basura guardada a mano no debe reventar ni precargar a medias
+      almacen.set('bt:cliente:norte.citas.proyects.store', 'no soy json');
+      assert.equal(leerDatosDelCliente(), null);
+      almacen.set('bt:cliente:norte.citas.proyects.store', JSON.stringify({ clientName: 'Ana' }));
+      assert.equal(leerDatosDelCliente(), null, 'un registro incompleto se descarta entero');
+      almacen.set('bt:cliente:norte.citas.proyects.store', 'null');
+      assert.equal(leerDatosDelCliente(), null);
+    } finally {
+      delete (globalThis as Record<string, unknown>).window;
+    }
+  });
+
   await runAsyncTest('should sign and verify a registro token, and reject a tampered one', async () => {
     const { generarTokenRegistro, verificarTokenRegistro } = await import('../lib/server/registroToken');
     const datos = { slug: 'barberia-del-norte', name: 'Barbería del Norte', adminName: 'Ana', adminEmail: 'ana@test.co' };
